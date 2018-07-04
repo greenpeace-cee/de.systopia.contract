@@ -16,6 +16,9 @@ class CRM_Contract_Handler_ModificationConflicts{
   }
 
   function checkForConflicts($contractId){
+    if (empty($contractId)) {
+      throw new Exception('Missing contract ID, cannot check for conflicts');
+    }
 
     $this->contractId = $contractId;
     // Black and white listing happens as follows: an array of scheduled
