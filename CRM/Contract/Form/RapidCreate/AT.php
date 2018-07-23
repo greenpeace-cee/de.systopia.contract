@@ -7,10 +7,10 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
-class CRM_Contract_Form_RapidCreate extends CRM_Core_Form{
+class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
 
   function buildQuickForm(){
-    CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'templates/CRM/Contract/Form/RapidCreate.js');
+    CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'templates/CRM/Contract/Form/RapidCreate/AT.js');
     CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'js/rapidcreate_address_autocomplete.js', 10, 'page-header');
     // ### Contact information ###
     $prefixes = array_column(civicrm_api3('OptionValue', 'get', ['option_group_id' => 'individual_prefix', 'is_active' => 1])['values'], 'label', 'value');
@@ -123,8 +123,9 @@ class CRM_Contract_Form_RapidCreate extends CRM_Core_Form{
 
 
     $this->addButtons([
-      array('type' => 'cancel', 'name' => 'Cancel'),
-      array('type' => 'submit', 'name' => 'Create')
+      ['type' => 'submit', 'name' => 'Save', 'subName' => 'done', 'isDefault' => TRUE, 'icon' => 'check'],
+      ['type' => 'submit', 'name' => 'Save and new', 'subName' => 'new'],
+      ['type' => 'cancel', 'name' => 'Cancel'],
     ]);
 
     $this->setDefaults();
@@ -346,8 +347,11 @@ class CRM_Contract_Form_RapidCreate extends CRM_Core_Form{
       $tshirtResult = civicrm_api3('Activity', 'create', $tshirtActivityParams);
     }
 
-
-    $this->controller->_destination = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$contact['id']}");
+    if (array_key_exists('_qf_AT_submit_new', $submitted)) {
+      $this->controller->_destination = CRM_Utils_System::url('civicrm/member/add', "reset=1&action=add&context=standalone");
+    } else {
+      $this->controller->_destination = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$contact['id']}");
+    }
 
   }
 

@@ -201,7 +201,18 @@ function contract_civicrm_buildForm($formName, &$form) {
         if($cid = CRM_Utils_Request::retrieve('cid', 'Integer')){
           CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/contract/create', 'cid='.$cid, true));
         }else{
-          CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/contract/rapidcreate', true));
+          $domain = strtolower(civicrm_api3('Setting', 'GetValue', [
+            'name' => 'contract_domain',
+            'group' => 'Contract preferences'
+          ]));
+          if (empty($domain)) {
+            $default = civicrm_api3('Setting', 'getdefaults', [
+              'name' => 'contract_domain',
+              'group' => 'Contract preferences'
+            ]);
+            $domain = strtolower(reset($default['values'])['contract_domain']);
+          }
+          CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/contract/rapidcreate/' . $domain, true));
         }
       }
 

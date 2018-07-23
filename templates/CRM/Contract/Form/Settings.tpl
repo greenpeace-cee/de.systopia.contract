@@ -13,6 +13,12 @@
       <div class="clear"></div>
     </div>
 
+    <div class="crm-section payment-modify">
+        <div class="label">{$form.contract_domain.label}</div>
+        <div class="content">{$form.contract_domain.html}</div>
+        <div class="clear"></div>
+    </div>
+
     <div class="crm-submit-buttons">
       {include file="CRM/common/formButtons.tpl" location="bottom"}
     </div>

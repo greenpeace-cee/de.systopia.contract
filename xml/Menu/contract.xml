@@ -13,9 +13,15 @@
     <access_arguments>edit memberships</access_arguments>
   </item>
   <item>
-    <path>civicrm/contract/rapidcreate</path>
+    <path>civicrm/contract/rapidcreate/at</path>
     <title>Rapid Create contract</title>
-    <page_callback>CRM_Contract_Form_RapidCreate</page_callback>
+    <page_callback>CRM_Contract_Form_RapidCreate_AT</page_callback>
+    <access_arguments>edit memberships</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/contract/rapidcreate/pl</path>
+    <title>Rapid Create contract</title>
+    <page_callback>CRM_Contract_Form_RapidCreate_PL</page_callback>
     <access_arguments>edit memberships</access_arguments>
   </item>
   <item>
