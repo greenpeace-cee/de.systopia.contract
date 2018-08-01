@@ -17,7 +17,8 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     // ### Contact information ###
     $genders = array_column(civicrm_api3('OptionValue', 'get', [
       'option_group_id' => 'gender',
-      'is_active' => 1,
+      'is_active'       => 1,
+      'options'         => ['limit' => 0]
     ])['values'], 'label', 'value');
     $this->add('select', 'gender_id', 'Gender', $genders, TRUE);
     $this->add('text', 'formal_title', 'Title', ['class' => 'huge']);
@@ -76,11 +77,11 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     $this->addDate('join_date', ts('Member since'), TRUE, ['formatType' => 'activityDate']);
     $this->addDate('start_date', ts('Membership start date'), TRUE, ['formatType' => 'activityDate']);
     $this->add('select', 'campaign_id', ts('Campaign'), CRM_Contract_Configuration::getCampaignList(), TRUE, ['class' => 'crm-select2']);
-    foreach (civicrm_api3('MembershipType', 'get', [])['values'] as $MembershipType) {
+    foreach (civicrm_api3('MembershipType', 'get', ['options' => ['limit' => 0]])['values'] as $MembershipType) {
       $MembershipTypeOptions[$MembershipType['id']] = $MembershipType['name'];
     };
     $this->add('select', 'membership_type_id', ts('Membership type'), ['' => '- none -'] + $MembershipTypeOptions, TRUE, ['class' => 'crm-select2']);
-    foreach (civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id"])['values'] as $key => $value) {
+    foreach (civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id", 'options' => ['limit' => 0]])['values'] as $key => $value) {
       $mediumOptions[$key] = $value;
     }
     $this->add('select', 'activity_medium', ts('Source media'), ['' => '- none -'] + $mediumOptions, FALSE, ['class' => 'crm-select2']);
@@ -88,7 +89,8 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     $membershipVenueOptions = [];
     foreach (civicrm_api3('OptionValue', 'get', [
       'option_group_id' => 'contract_direct_dialogue_venue',
-      'is_active' => 1,
+      'is_active'       => 1,
+      'options'         => ['limit' => 0]
     ])['values'] as $optionValue) {
       $membershipVenueOptions[$optionValue['value']] = $optionValue['label'];
     };
@@ -104,7 +106,8 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     ], TRUE);
     foreach (civicrm_api3('OptionValue', 'get', [
       'option_group_id' => 'contact_channel',
-      'is_active' => 1,
+      'is_active'       => 1,
+      'options'         => ['limit' => 0]
     ])['values'] as $optionValue) {
       $membershipChannelOptions[$optionValue['value']] = $optionValue['label'];
     };
@@ -179,8 +182,9 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     $defaults['iban'] = 'PL';
 
     $defaults['membership_type_id'] = civicrm_api3('MembershipType', 'getvalue', [
-      'return' => 'id',
-      'name' => 'Supporter',
+      'return'  => 'id',
+      'name'    => 'Supporter',
+      'options' => ['limit' => 0]
     ]);
 
     $defaults['campaign_id'] = civicrm_api3('Campaign', 'getvalue', [

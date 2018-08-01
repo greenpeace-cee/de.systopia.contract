@@ -13,7 +13,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
     CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'templates/CRM/Contract/Form/RapidCreate/AT.js');
     CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'js/rapidcreate_address_autocomplete.js', 10, 'page-header');
     // ### Contact information ###
-    $prefixes = array_column(civicrm_api3('OptionValue', 'get', ['option_group_id' => 'individual_prefix', 'is_active' => 1])['values'], 'label', 'value');
+    $prefixes = array_column(civicrm_api3('OptionValue', 'get', ['option_group_id' => 'individual_prefix', 'is_active' => 1, 'options' => ['limit' => 0]])['values'], 'label', 'value');
     $this->add('select', 'prefix_id', 'Prefix', $prefixes, true);
     $this->add('text', 'formal_title', 'Title', array('class' => 'huge'));
     $this->add('text', 'first_name', 'First name', array('class' => 'huge'));
@@ -65,9 +65,9 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
 
     $this->addCheckbox('tshirt_order', 'Is this a T-shirt order?', ['' => true]);
     // A dropdown-field "Shirt Type" needs to be in rthe form - the T-Shirt types available should be taken from the option group "shirt_type"
-    $shirtDesigns = array_column(civicrm_api3('OptionValue', 'get', ['option_group_id' => 'order_type', 'label' => ['LIKE' => '%T-Shirt%']])['values'], 'name', 'value');
-    $shirtSizes = array_column(civicrm_api3('OptionValue', 'get', ['option_group_id' => 'shirt_size'])['values'], 'name', 'value');
-    $shirtTypes = array_column(civicrm_api3('OptionValue', 'get', ['option_group_id' => 'shirt_type'])['values'], 'name', 'value');
+    $shirtDesigns = array_column(civicrm_api3('OptionValue', 'get', ['option_group_id' => 'order_type', 'label' => ['LIKE' => '%T-Shirt%'], 'options' => ['limit' => 0]])['values'], 'name', 'value');
+    $shirtSizes = array_column(civicrm_api3('OptionValue', 'get', ['option_group_id' => 'shirt_size', 'options' => ['limit' => 0]])['values'], 'name', 'value');
+    $shirtTypes = array_column(civicrm_api3('OptionValue', 'get', ['option_group_id' => 'shirt_type', 'options' => ['limit' => 0]])['values'], 'name', 'value');
     $this->add('select', 'shirt_design', 'Shirt design', $shirtDesigns);
     $this->add('select', 'shirt_type', 'Shirt cut', $shirtTypes);
     $this->add('select', 'shirt_size', 'Shirt size', $shirtSizes);
@@ -95,12 +95,12 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
     //   'placeholder' => ts('- none -')
     // ], true);
     // Membership type (membership)
-    foreach(civicrm_api3('MembershipType', 'get', [])['values'] as $MembershipType){
+    foreach(civicrm_api3('MembershipType', 'get', ['options' => ['limit' => 0]])['values'] as $MembershipType){
       $MembershipTypeOptions[$MembershipType['id']] = $MembershipType['name'];
     };
     $this->add('select', 'membership_type_id', ts('Membership type'), array('' => '- none -') + $MembershipTypeOptions, true, array('class' => 'crm-select2'));
     // Source media (activity)
-    foreach(civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id"])['values'] as $key => $value){
+    foreach(civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id", 'options' => ['limit' => 0]])['values'] as $key => $value){
       $mediumOptions[$key] = $value;
     }
     $this->add('select', 'activity_medium', ts('Source media'), array('' => '- none -') + $mediumOptions, false, array('class' => 'crm-select2'));
@@ -111,9 +111,10 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
     // DD-Fundraiser
     $this->addEntityRef('membership_dialoger', ts('DD-Fundraiser'), array('api' => array('params' => array('contact_type' => 'Individual', 'contact_sub_type' => 'Dialoger'))), true);
     // Membership channel
-    foreach(civicrm_api3('OptionValue', 'get', array(
+    foreach(civicrm_api3('OptionValue', 'get', [
       'option_group_id' => 'contact_channel',
-      'is_active'       => 1))['values'] as $optionValue){
+      'is_active'       => 1,
+      'options'         => ['limit' => 0]])['values'] as $optionValue){
       $membershipChannelOptions[$optionValue['value']] = $optionValue['label'];
     };
     $this->add('select', 'membership_channel', ts('Membership channel'), array('' => '- none -') + $membershipChannelOptions, true, array('class' => 'crm-select2'));

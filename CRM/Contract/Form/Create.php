@@ -61,13 +61,13 @@ class CRM_Contract_Form_Create extends CRM_Core_Form{
     // ]);
 
     // Membership type (membership)
-    foreach(civicrm_api3('MembershipType', 'get', [])['values'] as $MembershipType){
+    foreach(civicrm_api3('MembershipType', 'get', ['options' => ['limit' => 0]])['values'] as $MembershipType){
       $MembershipTypeOptions[$MembershipType['id']] = $MembershipType['name'];
     };
     $this->add('select', 'membership_type_id', ts('Membership type'), array('' => '- none -') + $MembershipTypeOptions, true, array('class' => 'crm-select2'));
 
     // Source media (activity)
-    foreach(civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id"])['values'] as $key => $value){
+    foreach(civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id", 'options' => ['limit' => 0]])['values'] as $key => $value){
       $mediumOptions[$key] = $value;
     }
     $this->add('select', 'activity_medium', ts('Source media'), array('' => '- none -') + $mediumOptions, false, array('class' => 'crm-select2'));
@@ -82,9 +82,10 @@ class CRM_Contract_Form_Create extends CRM_Core_Form{
     $this->addEntityRef('membership_dialoger', ts('DD-Fundraiser'), array('api' => array('params' => array('contact_type' => 'Individual', 'contact_sub_type' => 'Dialoger'))));
 
     // Membership channel
-    foreach(civicrm_api3('OptionValue', 'get', array(
+    foreach(civicrm_api3('OptionValue', 'get', [
       'option_group_id' => 'contact_channel',
-      'is_active'       => 1))['values'] as $optionValue){
+      'is_active'       => 1,
+      'options'         => ['limit' => 0]])['values'] as $optionValue){
       $membershipChannelOptions[$optionValue['value']] = $optionValue['label'];
     };
     $this->add('select', 'membership_channel', ts('Membership channel'), array('' => '- none -') + $membershipChannelOptions, false, array('class' => 'crm-select2'));
