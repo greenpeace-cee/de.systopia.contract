@@ -72,7 +72,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
     $this->assign('current_cycle_day', $current_cycle_day);
 
     // Validate that the contract has a valid start status
-    $this->membershipStatus = civicrm_api3('MembershipStatus', 'getsingle', ['id' => $this->membership['status_id'], 'options' => ['limit' => 0]]);
+    $this->membershipStatus = civicrm_api3('MembershipStatus', 'getsingle', ['id' => $this->membership['status_id']]);
     if(!in_array($this->membershipStatus['name'], $this->modificationActivity->getStartStatuses())){
       CRM_Core_Error::fatal("You cannot {$this->modificationActivity->getAction()} a membership when its status is '{$this->membershipStatus['name']}'.");
     }
@@ -86,7 +86,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
     $this->addDateTime('activity_date', ts('Schedule date'), TRUE);
 
     // Add the interaction medium
-    foreach(civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id", 'options' => ['limit' => 0]])['values'] as $key => $value){
+    foreach(civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id", 'options' => ['limit' => 0, 'sort' => 'weight']])['values'] as $key => $value){
       $mediumOptions[$key] = $value;
     }
     $this->add('select', 'activity_medium', ts('Source media'), array('' => '- none -') + $mediumOptions, false, array('class' => 'crm-select2'));
@@ -154,7 +154,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
     $formUtils->addPaymentContractSelect2('recurring_contribution', $this->membership['contact_id'], false, $this->get('id'));
 
     // Membership type (membership)
-    foreach(civicrm_api3('MembershipType', 'get', ['options' => ['limit' => 0]])['values'] as $MembershipType){
+    foreach(civicrm_api3('MembershipType', 'get', ['options' => ['limit' => 0, 'sort' => 'weight']])['values'] as $MembershipType){
       $MembershipTypeOptions[$MembershipType['id']] = $MembershipType['name'];
     };
     $this->add('select', 'membership_type_id', ts('Membership type'), array('' => '- none -') + $MembershipTypeOptions, true, array('class' => 'crm-select2'));
@@ -181,7 +181,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
       'option_group_id' => 'contract_cancel_reason',
       'filter'          => 0,
       'is_active'       => 1,
-      'options'         => ['limit' => 0]])['values'] as $cancelReason){
+      'options'         => ['limit' => 0, 'sort' => 'weight']])['values'] as $cancelReason){
       $cancelOptions[$cancelReason['value']] = $cancelReason['label'];
     };
     $this->addRule('activity_date', 'Scheduled date is required for a cancellation', 'required');
