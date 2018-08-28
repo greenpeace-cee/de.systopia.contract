@@ -151,8 +151,8 @@ function contract_civicrm_buildForm($formName, &$form) {
       // removed: $formUtils->showPaymentContractDetails();
       $formUtils->addMembershipContractFileDownloadLink($membershipId);
 
-      // GP-814 - hide 'edit' button if 'delete in CiviMember' is not granted
-      if (!CRM_Core_Permission::check('delete in CiviMember')) {
+      // GP-814 - hide 'edit' button if 'edit core membership CiviContract' is not granted
+      if (!CRM_Core_Permission::check('edit core membership CiviContract')) {
         CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'js/membership_view_hide_edit.js');
       }
 
@@ -387,4 +387,18 @@ function contract_civicrm_searchTasks($objectType, &$tasks) {
           'result' => false);
     }
   }
+}
+
+/**
+ * Add CiviContract permissions
+ *
+ * @param $permissions
+ */
+function contract_civicrm_permission(&$permissions) {
+  $permissions += [
+    'edit core membership CiviContract' => [
+      ts('CiviContract: Edit core membership', ['domain' => 'de.systopia.contract']),
+      ts('Allow editing memberships using the core membership form', array('domain' => 'de.systopia.contract')),
+    ]
+  ];
 }
