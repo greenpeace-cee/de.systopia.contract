@@ -46,4 +46,11 @@ class CRM_Contract_Upgrader extends CRM_Contract_Upgrader_Base {
     return TRUE;
   }
 
+  public function upgrade_1390() {
+    $this->ctx->log->info('Applying update 1390');
+    $logging = new CRM_Logging_Schema();
+    $logging->fixSchemaDifferences();
+    return TRUE;
+  }
+
 }
