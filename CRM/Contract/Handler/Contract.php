@@ -507,8 +507,13 @@ class CRM_Contract_Handler_Contract{
    */
   private function convertFileFields($params){
     foreach($params as $key => $param) {
-      if (is_array($param) && !empty($param['fid'])) {
-        $params[$key] = $param['fid'];
+      if (is_array($param)) {
+        if (!empty($param['fid'])) {
+          $params[$key] = $param['fid'];
+        }
+        else if (!empty($param['id']) && array_key_exists('data', $param)) {
+          unset($params[$key]);
+        }
       }
     }
     return $params;
