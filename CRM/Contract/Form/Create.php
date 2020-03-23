@@ -8,9 +8,9 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
-class CRM_Contract_Form_Create extends CRM_Core_Form{
+class CRM_Contract_Form_Create extends CRM_Core_Form {
 
-  function buildQuickForm(){
+  function buildQuickForm() {
 
 
     $this->cid = CRM_Utils_Request::retrieve('cid', 'Integer');
@@ -100,8 +100,8 @@ class CRM_Contract_Form_Create extends CRM_Core_Form{
 
 
     $this->addButtons([
-      array('type' => 'cancel', 'name' => 'Cancel'),
-      array('type' => 'submit', 'name' => 'Create')
+      ['type' => 'cancel', 'name' => 'Cancel', 'submitOnce' => TRUE],
+      ['type' => 'submit', 'name' => 'Create', 'submitOnce' => TRUE],
     ]);
 
     $this->setDefaults();
@@ -143,7 +143,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form{
   }
 
 
-  function setDefaults($defaultValues = null, $filter = null){
+  function setDefaults($defaultValues = null, $filter = null) {
 
     list($defaults['join_date'], $null) = CRM_Utils_Date::setDateDefaults(NULL, 'activityDateTime');
     list($defaults['start_date'], $null) = CRM_Utils_Date::setDateDefaults(NULL, 'activityDateTime');
@@ -156,7 +156,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form{
     parent::setDefaults($defaults);
   }
 
-  function postProcess(){
+  function postProcess() {
     $submitted = $this->exportValues();
 
     if ($submitted['payment_option'] == 'create') {

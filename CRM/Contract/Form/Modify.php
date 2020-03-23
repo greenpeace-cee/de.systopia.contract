@@ -109,10 +109,10 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
       $this->addPauseFields();
     }
 
-    $this->addButtons(array(
-        array('type' => 'cancel', 'name' => 'Discard changes'), // since Cancel looks bad when viewed next to the Cancel action
-        array('type' => 'submit', 'name' => $this->change_class::getChangeTitle(), 'isDefault' => true)
-    ));
+    $this->addButtons([
+      ['type' => 'cancel', 'name' => 'Discard changes', 'submitOnce' => TRUE], // since Cancel looks bad when viewed next to the Cancel action
+      ['type' => 'submit', 'name' => $this->change_class::getChangeTitle(), 'isDefault' => true, 'submitOnce' => TRUE],
+    ]);
 
     $this->setDefaults();
   }

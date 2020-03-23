@@ -122,9 +122,9 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
 
 
     $this->addButtons([
-      ['type' => 'submit', 'name' => 'Save', 'subName' => 'done', 'isDefault' => TRUE, 'icon' => 'check'],
-      ['type' => 'submit', 'name' => 'Save and new', 'subName' => 'new'],
-      ['type' => 'cancel', 'name' => 'Cancel'],
+      ['type' => 'submit', 'name' => 'Save', 'subName' => 'done', 'isDefault' => TRUE, 'icon' => 'check', 'submitOnce' => TRUE],
+      ['type' => 'submit', 'name' => 'Save and new', 'subName' => 'new', 'submitOnce' => TRUE],
+      ['type' => 'cancel', 'name' => 'Cancel', 'submitOnce' => TRUE],
     ]);
 
     $this->setDefaults();
