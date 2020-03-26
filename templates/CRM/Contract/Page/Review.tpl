@@ -31,7 +31,7 @@
   </tr>
 
   {foreach from=$activities item=a}
-    <tr class="{if $activityStatuses[$a.status_id] eq 'Needs Review'}needs-review{/if} {if $activityStatuses[$a.status_id] eq 'Scheduled'}scheduled{/if}">
+    <tr class="{if $activityStatuses[$a.status_id] eq 'Needs Review'}needs-review{/if} {if $activityStatuses[$a.status_id] eq 'Scheduled'}scheduled{/if} {if $activityStatuses[$a.status_id] eq 'Failed'}failed{/if}">
 
       <td>{$a.id} {$activityTypes[$a.activity_type_id]}</td>
       <td>{$a.activity_date_time|crmDate}</td>
