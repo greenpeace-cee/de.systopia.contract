@@ -6,6 +6,10 @@ table.dataTable.display tbody tr.needs-review td,
 table.dataTable.display tbody tr.needs-review:hover td {
     background-color: rgb(255,220,220) !important;
 }
+table.dataTable.display tbody tr.failed td,
+table.dataTable.display tbody tr.failed td {
+    background-color: #e6ab5e !important;
+}
 
 /* exclude review rows from shoreditch overflow handling  */
 .page-civicrm-contact #memberships table tr.crm-membership-review table td:not(:last-child) {

@@ -60,6 +60,12 @@ CRM.$(function($) {
     }else{
       membershipRow.removeClass('scheduled');
     }
+
+    if(contractStatus.failed > 0){
+      membershipRow.addClass('failed');
+    }else{
+      membershipRow.removeClass('failed');
+    }
   }
 
   function toggleReviewPane(membershipId){
