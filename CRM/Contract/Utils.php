@@ -263,4 +263,36 @@ class CRM_Contract_Utils
     return $e->getMessage() . "\r\n" . $e->getTraceAsString();
   }
 
+
+  /**
+   * Strip all custom_* elements from $data unless they're contract activity fields
+   *
+   * This serves as a workaround for an APIv3 issue where a call to Activity.get
+   * with the "return" parameter set to any custom field will return all other
+   * custom fields that have a default value set, even if the custom field is
+   * not enabled for the relevant (contract) activity type
+   *
+   * @todo remove this code once APIv4 is used
+   *
+   * @param array $data
+   */
+  public static function stripNonContractActivityCustomFields(array &$data) {
+    // whitelist of contract activity custom fields
+    $allowedFields = array_map(
+      function($field) {
+        return $field['id'];
+      },
+      CRM_Contract_CustomData::getCustomFieldsForGroups(['contract_cancellation','contract_updates'])
+    );
+    foreach ($data as $field => $value) {
+      if (substr($field, 0, 7) === 'custom_') {
+        $customFieldId = substr($field, 7);
+        if (!in_array($customFieldId, $allowedFields)) {
+          // field starts with custom_ and ID is not on whitelist => remove
+          unset($data[$field]);
+        }
+      }
+    }
+  }
+
 }

@@ -72,6 +72,7 @@ function civicrm_api3_Contract_process_scheduled_modifications($params) {
   $counter = 0;
   $scheduled_activities = civicrm_api3('Activity', 'get', $activityParams);
   foreach ($scheduled_activities['values'] as $scheduled_activity) {
+    CRM_Contract_Utils::stripNonContractActivityCustomFields($scheduled_activity);
     $counter++;
     if ($counter > $params['limit']) {
       break;
