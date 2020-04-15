@@ -485,7 +485,7 @@ class CRM_Contract_SepaLogic {
   public static function getPaymentFrequencies() {
     // this is a hand-picked list of options
     $optionValues = civicrm_api3('OptionValue', 'get', array(
-      'value'           => array('IN' => array(1, 2, 4, 12)),
+      'value'           => array('IN' => array(1, 2, 3, 4, 6, 12)),
       'return'          => 'label,value',
       'option_group_id' => 'payment_frequency',
     ));
