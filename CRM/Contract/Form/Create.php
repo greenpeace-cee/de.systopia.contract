@@ -11,8 +11,6 @@
 class CRM_Contract_Form_Create extends CRM_Core_Form {
 
   function buildQuickForm() {
-
-
     $this->cid = CRM_Utils_Request::retrieve('cid', 'Integer');
     if (empty($this->cid)) {
       $this->cid = $this->get('cid');
@@ -44,10 +42,13 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     $this->add('select', 'payment_option', ts('Payment'), array('create' => 'create new mandate', 'select' => 'select existing contract'));
     $this->add('select', 'cycle_day', ts('Cycle day'), CRM_Contract_SepaLogic::getCycleDays());
     $this->add('text',   'iban', ts('IBAN'), array('class' => 'huge'));
-    $this->add('text',   'bic', ts('BIC'));
+    if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
+      $this->add('text', 'bic', ts('BIC'));
+    }
     $this->add('text',   'payment_amount', ts('Installment amount'), array('size' => 6));
     $this->add('select', 'payment_frequency', ts('Payment Frequency'), CRM_Contract_SepaLogic::getPaymentFrequencies());
     $this->assign('bic_lookup_accessible', CRM_Contract_SepaLogic::isLittleBicExtensionAccessible());
+    $this->assign('is_enable_bic', CRM_Contract_Utils::isDefaultCreditorUsesBic());
 
     // Contract dates
     $this->addDate('join_date', ts('Member since'), TRUE, array('formatType' => 'activityDate'));
@@ -105,7 +106,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     ]);
 
     $this->setDefaults();
-
   }
 
   /**
@@ -142,7 +142,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     return parent::validate();
   }
 
-
   function setDefaults($defaultValues = null, $filter = null) {
 
     list($defaults['join_date'], $null) = CRM_Utils_Date::setDateDefaults(NULL, 'activityDateTime');
@@ -160,42 +159,43 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     $submitted = $this->exportValues();
 
     if ($submitted['payment_option'] == 'create') {
-        // calculate some stuff
-        if ($submitted['cycle_day'] < 1 || $submitted['cycle_day'] > 30) {
-          // invalid cycle day
-          $submitted['cycle_day'] = CRM_Contract_SepaLogic::nextCycleDay();
-        }
+      // calculate some stuff
+      if ($submitted['cycle_day'] < 1 || $submitted['cycle_day'] > 30) {
+        // invalid cycle day
+        $submitted['cycle_day'] = CRM_Contract_SepaLogic::nextCycleDay();
+      }
 
-        // calculate amount
-        //TODO we can probably remove the calculation of $annual_amount
-        $annual_amount = CRM_Contract_SepaLogic::formatMoney($submitted['payment_frequency'] * CRM_Contract_SepaLogic::formatMoney($submitted['payment_amount']));
-        $frequency_interval = 12 / $submitted['payment_frequency'];
-        $amount = CRM_Contract_SepaLogic::formatMoney($submitted['payment_amount']);
-
-        $new_mandate = CRM_Contract_SepaLogic::createNewMandate(array(
-              'type'               => 'RCUR',
-              'contact_id'         => $this->get('cid'),
-              'amount'             => $amount,
-              'currency'           => CRM_Contract_SepaLogic::getCreditor()->currency,
-              'start_date'         => CRM_Utils_Date::processDate($submitted['start_date'], null, null, 'Y-m-d H:i:s'),
-              'creation_date'      => date('YmdHis'), // NOW
-              'date'               => CRM_Utils_Date::processDate($submitted['start_date'], null, null, 'Y-m-d H:i:s'),
-              'validation_date'    => date('YmdHis'), // NOW
-              'iban'               => $submitted['iban'],
-              'bic'                => $submitted['bic'],
-              // 'source'             => ??
-              'campaign_id'        => $submitted['campaign_id'],
-              'financial_type_id'  => 2, // Membership Dues
-              'frequency_unit'     => 'month',
-              'cycle_day'          => $submitted['cycle_day'],
-              'frequency_interval' => $frequency_interval,
-            ));
-        $params['membership_payment.membership_recurring_contribution'] = $new_mandate['entity_id'];
-        $params['membership_general.membership_dialoger'] = $submitted['membership_dialoger']; // DD fundraiser
+      // calculate amount
+      //TODO we can probably remove the calculation of $annual_amount
+      $annual_amount = CRM_Contract_SepaLogic::formatMoney($submitted['payment_frequency'] * CRM_Contract_SepaLogic::formatMoney($submitted['payment_amount']));
+      $frequency_interval = 12 / $submitted['payment_frequency'];
+      $amount = CRM_Contract_SepaLogic::formatMoney($submitted['payment_amount']);
+      $new_mandate_params = [
+        'type'               => 'RCUR',
+        'contact_id'         => $this->get('cid'),
+        'amount'             => $amount,
+        'currency'           => CRM_Contract_SepaLogic::getCreditor()->currency,
+        'start_date'         => CRM_Utils_Date::processDate($submitted['start_date'], null, null, 'Y-m-d H:i:s'),
+        'creation_date'      => date('YmdHis'), // NOW
+        'date'               => CRM_Utils_Date::processDate($submitted['start_date'], null, null, 'Y-m-d H:i:s'),
+        'validation_date'    => date('YmdHis'), // NOW
+        'iban'               => $submitted['iban'],
+        // 'source'             => ??
+        'campaign_id'        => $submitted['campaign_id'],
+        'financial_type_id'  => 2, // Membership Dues
+        'frequency_unit'     => 'month',
+        'cycle_day'          => $submitted['cycle_day'],
+        'frequency_interval' => $frequency_interval,
+      ];
+      if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
+        $new_mandate_params['bic'] = $submitted['bic'];
+      }
+      $new_mandate = CRM_Contract_SepaLogic::createNewMandate($new_mandate_params);
+      $params['membership_payment.membership_recurring_contribution'] = $new_mandate['entity_id'];
+      $params['membership_general.membership_dialoger'] = $submitted['membership_dialoger']; // DD fundraiser
     } else {
-        $params['membership_payment.membership_recurring_contribution'] = $submitted['recurring_contribution']; // Recurring contribution
+      $params['membership_payment.membership_recurring_contribution'] = $submitted['recurring_contribution']; // Recurring contribution
     }
-
 
     // Create the contract (the membership)
 
@@ -223,6 +223,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     $membershipResult = civicrm_api3('Contract', 'create', $params);
 
     $this->controller->_destination = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$this->get('cid')}");
-
   }
+
 }

@@ -15,6 +15,15 @@ class CRM_Contract_Utils
   private static $coreMembershipHistoryActivityIds;
   static $customFieldCache;
 
+  /**
+   * Is default sepa creditor uses bic?
+   * Uses like a cache
+   *
+   * @var boolean
+   * @static
+   */
+  private static $isDefaultCreditorUsesBic = NULL;
+
   public static function singleton()
   {
     if (!self::$_singleton) {
@@ -69,7 +78,6 @@ class CRM_Contract_Utils
     }
     return $activityField;
   }
-
 
   static function getCustomFieldId($customField)
   {
@@ -263,7 +271,6 @@ class CRM_Contract_Utils
     return $e->getMessage() . "\r\n" . $e->getTraceAsString();
   }
 
-
   /**
    * Strip all custom_* elements from $data unless they're contract activity fields
    *
@@ -293,6 +300,50 @@ class CRM_Contract_Utils
         }
       }
     }
+  }
+
+  /**
+   * Is sepa creditor uses bic?
+   *
+   * @param $creditorId
+   * @return bool
+   */
+  public static function isCreditorUsesBic($creditorId) {
+    if (empty($creditorId)) {
+      return FALSE;
+    }
+
+    try {
+      $sepaCreditors = civicrm_api3('SepaCreditor', 'get', [
+        'sequential' => 1,
+        'return' => ["uses_bic"],
+        'creditor_id' => $creditorId,
+      ]);
+    } catch (CiviCRM_API3_Exception $e) {
+      return FALSE;
+    }
+
+    if (!empty($sepaCreditors['values']) && !empty($sepaCreditors['values'][0])
+      && isset($sepaCreditors['values'][0]['uses_bic']) && $sepaCreditors['values'][0]['uses_bic'] == 1) {
+      return TRUE;
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Is default sepa creditor uses bic?
+   * Uses cache
+   *
+   * @return bool
+   */
+  public static function isDefaultCreditorUsesBic() {
+    if (self::$isDefaultCreditorUsesBic == NULL) {
+      $defaultCreditorId = (int) CRM_Sepa_Logic_Settings::getSetting('batching_default_creditor');
+      self::$isDefaultCreditorUsesBic = self::isCreditorUsesBic($defaultCreditorId);
+    }
+
+    return self::$isDefaultCreditorUsesBic;
   }
 
 }

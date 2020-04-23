@@ -49,11 +49,15 @@
       <div class="content">{$form.iban.html}</div>
       <div class="clear"></div>
     </div>
-    <div class="crm-section payment-modify">
-      <div class="label">{$form.bic.label}</div>
-      <div class="content">{$form.bic.html}</div>
-      <div class="clear"></div>
-    </div>
+
+    {if $bic_lookup_accessible && $is_enable_bic}
+      <div class="crm-section payment-modify">
+        <div class="label">{$form.bic.label}</div>
+        <div class="content">{$form.bic.html}</div>
+        <div class="clear"></div>
+      </div>
+    {/if}
+
     <div class="crm-section payment-modify">
       <div class="label">{$form.payment_amount.label}</div>
       <div class="content">{$form.payment_amount.html}&nbsp;<span id="payment_amount_currency"></span></div>
@@ -122,7 +126,7 @@
 
 {if $modificationActivity eq 'update' OR $modificationActivity eq 'revive'}
 
-{if $bic_lookup_accessible}
+{if $bic_lookup_accessible && $is_enable_bic}
   {include file="CRM/Contract/Form/bic_lookup.tpl" location="bottom"}
 {/if}
 

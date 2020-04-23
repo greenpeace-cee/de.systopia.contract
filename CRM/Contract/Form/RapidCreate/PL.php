@@ -69,10 +69,13 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
 
     $this->add('select', 'cycle_day', ts('Cycle day'), CRM_Contract_SepaLogic::getCycleDays());
     $this->add('text', 'iban', ts('IBAN'), ['class' => 'huge'], TRUE);
-    $this->add('text', 'bic', ts('BIC'), NULL, TRUE);
+    if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
+      $this->add('text', 'bic', ts('BIC'), NULL, TRUE);
+    }
     $this->add('text', 'payment_amount', ts('Installment amount'), ['size' => 6], TRUE);
     $this->add('select', 'payment_frequency', ts('Payment Frequency'), CRM_Contract_SepaLogic::getPaymentFrequencies(), TRUE);
     $this->assign('bic_lookup_accessible', CRM_Contract_SepaLogic::isLittleBicExtensionAccessible());
+    $this->assign('is_enable_bic', CRM_Contract_Utils::isDefaultCreditorUsesBic());
 
     // ### Contract information ###
     $this->addDate('join_date', ts('Member since'), TRUE, ['formatType' => 'activityDate']);
@@ -128,7 +131,6 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     ]);
 
     $this->setDefaults();
-
   }
 
   /**
@@ -176,7 +178,6 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
 
     return parent::validate();
   }
-
 
   function setDefaults($defaultValues = NULL, $filter = NULL) {
 
@@ -298,7 +299,7 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     // calculate amount
     $amount = CRM_Contract_SepaLogic::formatMoney($submitted['payment_amount']);
     $frequency_interval = 12 / $submitted['payment_frequency'];
-    $new_mandate = CRM_Contract_SepaLogic::createNewMandate([
+    $new_mandate_params = [
       'type' => 'RCUR',
       'contact_id' => $contact['id'],
       'amount' => $amount,
@@ -308,15 +309,17 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
       'date' => CRM_Utils_Date::processDate($submitted['start_date'], NULL, NULL, 'Y-m-d H:i:s'),
       'validation_date' => date('YmdHis'), // NOW
       'iban' => $submitted['iban'],
-      'bic' => $submitted['bic'],
       // 'source'             => ??
       'campaign_id' => $submitted['campaign_id'],
       'financial_type_id' => 2, // Membership Dues
       'frequency_unit' => 'month',
       'cycle_day' => $submitted['cycle_day'],
       'frequency_interval' => $frequency_interval,
-    ]);
-
+    ];
+    if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
+      $new_mandate_params['bic'] = $submitted['bic'];
+    }
+    $new_mandate = CRM_Contract_SepaLogic::createNewMandate($new_mandate_params);
 
     $contractParams['contact_id'] = $contact['id'];
     $contractParams['membership_type_id'] = $submitted['membership_type_id'];
@@ -345,7 +348,6 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     } else {
       $this->controller->_destination = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$contact['id']}");
     }
-
 
   }
 

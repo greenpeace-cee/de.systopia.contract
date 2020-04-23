@@ -68,6 +68,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
 
     // check if BIC lookup is possible
     $this->assign('bic_lookup_accessible', CRM_Contract_SepaLogic::isLittleBicExtensionAccessible());
+    $this->assign('is_enable_bic', CRM_Contract_Utils::isDefaultCreditorUsesBic());
 
     // assign current cycle day
     $current_cycle_day = CRM_Contract_RecurringContribution::getCycleDay($this->membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')]);
@@ -174,7 +175,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
 
     $this->add('select', 'cycle_day', ts('Cycle day'), CRM_Contract_SepaLogic::getCycleDays());
     $this->add('text',   'iban', ts('IBAN'), array('class' => 'huge'));
-    $this->add('text',   'bic', ts('BIC'));
+    if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
+      $this->add('text',   'bic', ts('BIC'));
+    }
     $this->add('text',   'payment_amount', ts('Installment Amount'), array('size' => 6));
     $this->add('select', 'payment_frequency', ts('Payment Frequency'), CRM_Contract_SepaLogic::getPaymentFrequencies());
   }
@@ -195,12 +198,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
 
   }
 
-
-  function addPauseFields(){
-
+  function addPauseFields() {
     // Resume date
     $this->addDate('resume_date', ts('Resume Date'), TRUE, array('formatType' => 'activityDate'));
-
   }
 
   function setDefaults($defaultValues = null, $filter = null){
@@ -227,8 +227,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
     parent::setDefaults($defaults);
   }
 
-
-  function validate(){
+  function validate() {
     $submitted = $this->exportValues();
     $activityDate = CRM_Utils_Date::processDate($submitted['activity_date'], $submitted['activity_date_time']);
     $midnightThisMorning = date('Ymd000000');
@@ -266,7 +265,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
     return parent::validate();
   }
 
-  function postProcess(){
+  function postProcess() {
 
     // Construct a call to contract.modify
     // The following fields to be submitted in all cases
@@ -293,7 +292,8 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
           $params['membership_payment.membership_frequency'] = $submitted['payment_frequency'];
           $params['membership_payment.cycle_day'] = $submitted['cycle_day'];
           $params['membership_payment.to_ba']   = CRM_Contract_BankingLogic::getCreditorBankAccount();
-          $params['membership_payment.from_ba'] = CRM_Contract_BankingLogic::getOrCreateBankAccount($this->membership['contact_id'], $submitted['iban'], $submitted['bic']);
+          $submittedBic = (CRM_Contract_Utils::isDefaultCreditorUsesBic()) ? $submitted['bic'] : NULL;
+          $params['membership_payment.from_ba'] = CRM_Contract_BankingLogic::getOrCreateBankAccount($this->membership['contact_id'], $submitted['iban'], $submittedBic);
           break;
 
         default:
@@ -318,4 +318,5 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
     civicrm_api3('Contract', 'modify', $params);
     civicrm_api3('Contract', 'process_scheduled_modifications', ['id' => $params['id']]);
   }
+
 }
