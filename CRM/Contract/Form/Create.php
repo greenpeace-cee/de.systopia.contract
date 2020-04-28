@@ -137,6 +137,10 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
       if (!empty($submitted['bic']) && !CRM_Contract_SepaLogic::validateBIC($submitted['bic'])) {
         HTML_QuickForm::setElementError ( 'bic', 'Please enter a valid BIC');
       }
+
+      if (!empty($submitted['join_date']) && CRM_Utils_Date::processDate(date('Ymd')) < CRM_Utils_Date::processDate($submitted['join_date'])) {
+        HTML_QuickForm::setElementError('join_date', ts('Join date cannot be in the future.'));
+      }
     }
 
     return parent::validate();
