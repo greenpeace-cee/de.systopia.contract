@@ -52,10 +52,14 @@ class CRM_Contract_BankingLogic {
    * submitted contact, IBAN, and BIC.
    * The account will be created if it doesn't exist yet
    *
-   * @todo cache results?
+   * @param $contact_id
+   * @param $iban
+   * @param $bic
+   *
    * @return int account ID
+   * @todo cache results?
    */
-  public static function getOrCreateBankAccount($contact_id, $iban, $bic) {
+  public static function getOrCreateBankAccount($contact_id, $iban, $bic = NULL) {
     if (empty($iban)) {
       return '';
     }
@@ -86,11 +90,15 @@ class CRM_Contract_BankingLogic {
 
       // if we get here, that means that there is no such bank account
       //  => create one
-      $data = array('BIC' => $bic, 'country' => substr($iban, 0, 2));
+      $data = array('country' => substr($iban, 0, 2));
+      if (!empty($bic)) {
+        $data['BIC'] = $bic;
+      }
       $bank_account = civicrm_api3('BankingAccount', 'create', array(
         'contact_id'  => $contact_id,
         'description' => "Bulk Importer",
-        'data_parsed' => json_encode($data)));
+        'data_parsed' => json_encode($data))
+      );
 
       $bank_account_reference = civicrm_api3('BankingAccountReference', 'create', array(
         'reference'         => $iban,

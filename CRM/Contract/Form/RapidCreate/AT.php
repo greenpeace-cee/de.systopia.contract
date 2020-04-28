@@ -8,9 +8,9 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
-class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
+class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
 
-  function buildQuickForm(){
+  function buildQuickForm() {
     CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'templates/CRM/Contract/Form/RapidCreate/AT.js');
     CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'js/rapidcreate_address_autocomplete.js', 10, 'page-header');
     // ### Contact information ###
@@ -73,7 +73,6 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
     $this->add('select', 'shirt_type', 'Shirt cut', $shirtTypes);
     $this->add('select', 'shirt_size', 'Shirt size', $shirtSizes);
 
-
     // ### Mandate information ###
     CRM_Core_Resources::singleton()->addVars('de.systopia.contract', array(
       'creditor'    => CRM_Contract_SepaLogic::getCreditor(),
@@ -82,10 +81,13 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
 
     $this->add('select', 'cycle_day', ts('Cycle day'), CRM_Contract_SepaLogic::getCycleDays());
     $this->add('text',   'iban', ts('IBAN'), array('class' => 'huge'), true);
-    $this->add('text',   'bic', ts('BIC'), null, true);
+    if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
+      $this->add('text', 'bic', ts('BIC'), null, true);
+    }
     $this->add('text',   'payment_amount', ts('Installment amount'), array('size' => 6));
     $this->add('select', 'payment_frequency', ts('Payment Frequency'), CRM_Contract_SepaLogic::getPaymentFrequencies());
     $this->assign('bic_lookup_accessible', CRM_Contract_SepaLogic::isLittleBicExtensionAccessible());
+    $this->assign('is_enable_bic', CRM_Contract_Utils::isDefaultCreditorUsesBic());
 
     // ### Contract information ###
     $this->addDate('join_date', ts('Member since'), TRUE, array('formatType' => 'activityDate'));
@@ -127,7 +129,6 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
       $this->add('wysiwyg', 'activity_details', ts('Notes'));
     }
 
-
     $this->addButtons([
       ['type' => 'submit', 'name' => 'Save', 'subName' => 'done', 'isDefault' => TRUE, 'icon' => 'check', 'submitOnce' => TRUE],
       ['type' => 'submit', 'name' => 'Save and new', 'subName' => 'new', 'submitOnce' => TRUE],
@@ -135,7 +136,6 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
     ]);
 
     $this->setDefaults();
-
   }
 
   /**
@@ -188,8 +188,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
     return parent::validate();
   }
 
-
-  function setDefaults($defaultValues = null, $filter = null){
+  function setDefaults($defaultValues = null, $filter = null) {
 
     list($defaults['join_date'], $null) = CRM_Utils_Date::setDateDefaults(NULL, 'activityDateTime');
     list($defaults['start_date'], $null) = CRM_Utils_Date::setDateDefaults(NULL, 'activityDateTime');
@@ -208,7 +207,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
     parent::setDefaults($defaults);
   }
 
-  function postProcess(){
+  function postProcess() {
     $submitted = $this->exportValues();
 
     // Create contact
@@ -297,7 +296,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
     // calculate amount
     $amount = CRM_Contract_SepaLogic::formatMoney($submitted['payment_amount']);
     $frequency_interval = 12 / $submitted['payment_frequency'];
-    $new_mandate = CRM_Contract_SepaLogic::createNewMandate(array(
+    $new_mandate_params = [
       'type'               => 'RCUR',
       'contact_id'         => $contact['id'],
       'amount'             => $amount,
@@ -307,14 +306,17 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form{
       'date'               => CRM_Utils_Date::processDate($submitted['start_date'], null, null, 'Y-m-d H:i:s'),
       'validation_date'    => date('YmdHis'), // NOW
       'iban'               => $submitted['iban'],
-      'bic'                => $submitted['bic'],
       // 'source'             => ??
       'campaign_id'        => $submitted['campaign_id'],
       'financial_type_id'  => 2, // Membership Dues
       'frequency_unit'     => 'month',
       'cycle_day'          => $submitted['cycle_day'],
       'frequency_interval' => $frequency_interval,
-    ));
+    ];
+    if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
+      $new_mandate_params['bic'] = $submitted['bic'];
+    }
+    $new_mandate = CRM_Contract_SepaLogic::createNewMandate($new_mandate_params);
     $contractParams['membership_payment.membership_recurring_contribution'] = $new_mandate['entity_id'];
     $contractParams['membership_general.membership_dialoger'] = $submitted['membership_dialoger']; // DD fundraiser
 
