@@ -153,13 +153,6 @@ class CRM_Contract_SepaLogic {
       if (empty($donor_account['iban'])) {
         throw new Exception("No donor bank account given.");
       }
-      if (empty($donor_account['bic'])) {
-        // this could be problem until SEPA-245 is implemented
-        //  (https://github.com/Project60/org.project60.sepa/issues/245)
-        error_log("de.systopia.contract: Trying to create SepaMandate without BIC for membership [{$membership_id}].");
-        CRM_Core_Session::setStatus(ts("The created mandate for membership [%1] has no BIC.", [1 => $membership_id]), ts('Potential Problem'), 'alert');
-      }
-
 
       // we need to create a new mandate
       $new_mandate_values =  array(
