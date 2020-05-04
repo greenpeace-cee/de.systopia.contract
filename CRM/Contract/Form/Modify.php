@@ -242,23 +242,35 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
       }
     }
 
-    if (isset($submitted['payment_option']) && $submitted['payment_option'] == 'modify') {
-      if($submitted['payment_amount'] && !$submitted['payment_frequency']){
-        HTML_QuickForm::setElementError ( 'payment_frequency', 'Please specify a frequency when specifying an amount');
-      }
-      if($submitted['payment_frequency'] && !$submitted['payment_amount']){
-        HTML_QuickForm::setElementError ( 'payment_amount', 'Please specify an amount when specifying a frequency');
-      }
+    if (isset($submitted['payment_option'])) {
+      if ($submitted['payment_option'] == 'modify') {
+        if($submitted['payment_amount'] && !$submitted['payment_frequency']){
+          HTML_QuickForm::setElementError ( 'payment_frequency', 'Please specify a frequency when specifying an amount');
+        }
+        if($submitted['payment_frequency'] && !$submitted['payment_amount']){
+          HTML_QuickForm::setElementError ( 'payment_amount', 'Please specify an amount when specifying a frequency');
+        }
 
-      // SEPA validation
-      if (!empty($submitted['iban']) && !CRM_Contract_SepaLogic::validateIBAN($submitted['iban'])) {
-        HTML_QuickForm::setElementError ( 'iban', 'Please enter a valid IBAN');
-      }
-      if (!empty($submitted['iban']) && CRM_Contract_SepaLogic::isOrganisationIBAN($submitted['iban'])) {
-        HTML_QuickForm::setElementError ( 'iban', "Do not use any of the organisation's own IBANs");
-      }
-      if (!empty($submitted['bic']) && !CRM_Contract_SepaLogic::validateBIC($submitted['bic'])) {
-        HTML_QuickForm::setElementError ( 'bic', 'Please enter a valid BIC');
+        // SEPA validation
+        if (!empty($submitted['iban']) && !CRM_Contract_SepaLogic::validateIBAN($submitted['iban'])) {
+          HTML_QuickForm::setElementError ( 'iban', 'Please enter a valid IBAN');
+        }
+        if (!empty($submitted['iban']) && CRM_Contract_SepaLogic::isOrganisationIBAN($submitted['iban'])) {
+          HTML_QuickForm::setElementError ( 'iban', "Do not use any of the organisation's own IBANs");
+        }
+        if (empty($submitted['iban'])) {
+          HTML_QuickForm::setElementError ( 'iban', ts('%1 is a required field.', array(1 => 'IBAN')));
+        }
+        if (!empty($submitted['bic']) && !CRM_Contract_SepaLogic::validateBIC($submitted['bic'])) {
+          HTML_QuickForm::setElementError ( 'bic', 'Please enter a valid BIC');
+        }
+        if (empty($submitted['bic']) && CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
+          HTML_QuickForm::setElementError ( 'bic', ts('%1 is a required field.', array(1 => 'BIC')));
+        }
+      } elseif ($submitted['payment_option'] == 'select') {
+        if (empty($submitted['recurring_contribution'])) {
+          HTML_QuickForm::setElementError('recurring_contribution', ts('%1 is a required field.', array(1 => ts('Mandate / Recurring Contribution'))));
+        }
       }
     }
 

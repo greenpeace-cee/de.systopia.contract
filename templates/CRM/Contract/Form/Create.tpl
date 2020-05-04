@@ -26,7 +26,7 @@
   </div>
 
   <div class="crm-section payment-select">
-    <div class="label">{$form.recurring_contribution.label}</div>
+    <div class="label">{$form.recurring_contribution.label} <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span></div>
     <div class="content">{$form.recurring_contribution.html}</div>
     <div class="clear"></div>
     <div class="label"></div>
@@ -39,14 +39,14 @@
     <div class="clear"></div>
   </div>
   <div class="crm-section payment-create">
-    <div class="label">{$form.iban.label}</div>
+    <div class="label">{$form.iban.label} <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span></div>
     <div class="content">{$form.iban.html}</div>
     <div class="clear"></div>
   </div>
 
   {if $is_enable_bic}
     <div class="crm-section payment-create">
-      <div class="label">{$form.bic.label}</div>
+      <div class="label">{$form.bic.label} <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span></div>
       <div class="content">{$form.bic.html}</div>
       <div class="clear"></div>
     </div>
