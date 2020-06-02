@@ -175,6 +175,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
 
     $this->add('select', 'cycle_day', ts('Cycle day'), CRM_Contract_SepaLogic::getCycleDays());
     $this->add('text',   'iban', ts('IBAN'), array('class' => 'huge'));
+    $this->addCheckbox('use_previous_iban', ts('Use previous IBAN'), ['' => TRUE]);
     if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
       $this->add('text',   'bic', ts('BIC'));
     }

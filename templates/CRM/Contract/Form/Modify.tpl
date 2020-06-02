@@ -49,6 +49,11 @@
       <div class="content">{$form.iban.html}</div>
       <div class="clear"></div>
     </div>
+    <div class="crm-section payment-modify">
+      <div class="label">{$form.use_previous_iban.label}</div>
+      <div class="content">{$form.use_previous_iban.html}</div>
+      <div class="clear"></div>
+    </div>
 
     {if $is_enable_bic}
       <div class="crm-section payment-modify">
@@ -138,6 +143,10 @@ cj("#payment_option").change(function() {
   showHidePaymentElements();
 });
 
+cj('#use_previous_iban_1').change(function() {
+  usePreviousIban();
+});
+
 function showHidePaymentElements(){
   var new_mode = cj("#payment_option").val();
   if (new_mode == "select") {
@@ -152,7 +161,16 @@ function showHidePaymentElements(){
   }
 }
 
-
+function usePreviousIban() {
+  if (cj('#use_previous_iban_1').is(':checked')) {
+    cj('[name=iban]').val(CRM.vars['de.systopia.contract'].current_contract.fields.iban);
+    cj('[name=iban]').prop('readonly', true);
+  }
+  else {
+    cj('[name=iban]').val('');
+    cj('[name=iban]').prop('readonly', false);
+  }
+}
 
 /**
  * update the payment info shown
@@ -199,7 +217,7 @@ function updatePaymentSummaryText() {
     }
 
     // fill with old fields
-    if (!iban.length) {
+    if (!iban.length && cj('#use_previous_iban_1').is(':checked')) {
       iban = current_values.fields.iban;
     }
     if (installment == '0.00') {
@@ -231,6 +249,7 @@ function updatePaymentSummaryText() {
 // call once for the UI to adjust
 cj(document).ready(function() {
   showHidePaymentElements();
+  usePreviousIban();
   cj('[name=recurring_contribution]').change(updatePaymentSummaryText);
   cj("div.payment-modify").change(updatePaymentSummaryText);
   cj("#activity_date").parent().parent().change(updatePaymentSummaryText);
