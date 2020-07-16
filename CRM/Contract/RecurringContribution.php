@@ -18,10 +18,18 @@ class CRM_Contract_RecurringContribution {
   /**
    * Return a detailed list of recurring contribution
    * for the given contact
+   *
+   * @param $cid
+   * @param bool $thatAreNotAssignedToOtherContracts
+   * @param null $contractId
+   * @param bool $useCache
+   *
+   * @return array|mixed
+   * @throws \CiviCRM_API3_Exception
    */
-  public static function getAllForContact($cid, $thatAreNotAssignedToOtherContracts = true, $contractId = null){
+  public static function getAllForContact($cid, $thatAreNotAssignedToOtherContracts = TRUE, $contractId = NULL, $useCache = TRUE) {
     $object = new CRM_Contract_RecurringContribution();
-    return $object->getAll($cid, $thatAreNotAssignedToOtherContracts, $contractId);
+    return $object->getAll($cid, $thatAreNotAssignedToOtherContracts, $contractId, $useCache);
   }
 
   /**
@@ -81,13 +89,22 @@ class CRM_Contract_RecurringContribution {
 
   /**
    * Render all recurring contributions for that contact
+   *
+   * @param $cid
+   * @param bool $thatAreNotAssignedToOtherContracts
+   * @param null $contractId
+   * @param bool $useCache
+   *
+   * @return array|mixed
+   * @throws \CiviCRM_API3_Exception
    */
-  public function getAll($cid, $thatAreNotAssignedToOtherContracts = true, $contractId = null){
+  public function getAll($cid, $thatAreNotAssignedToOtherContracts = TRUE, $contractId = NULL, $useCache = TRUE) {
     $return = array();
 
+    // TODO: this smells like premature optimiziation, check if we can drop
     // see if we have that cached (it's getting called multiple times)
     $cache_key = "{$cid}-{$thatAreNotAssignedToOtherContracts}-{$contractId}";
-    if (isset(self::$cached_results[$cache_key])) {
+    if (isset(self::$cached_results[$cache_key]) && $useCache) {
       return self::$cached_results[$cache_key];
     }
 
@@ -125,19 +142,37 @@ class CRM_Contract_RecurringContribution {
     }
 
     // We don't want to return recurring contributions for selection if they are
-    // already assigned to OTHER contracts
+    // or will be assigned to OTHER contracts
     if ($thatAreNotAssignedToOtherContracts && !empty($return)) {
-      // find contracts already using any of our collected recrruing contributions:
+      // find contracts already using any of our collected recurring contributions:
       $rcField = CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution');
-      $contract_using_rcs = civicrm_api3('Membership', 'get', array(
-        $rcField => array('IN' => array_keys($return)),
-        'return' => $rcField));
+      $contract_using_rcs = civicrm_api3('Membership', 'get', [
+        $rcField  => ['IN' => array_keys($return)],
+        'return'  => $rcField,
+        'options' => ['limit' => 0],
+      ]);
 
       // remove the ones from the $return list that are being used by other contracts
       foreach ($contract_using_rcs['values'] as $contract) {
         // but leave the current one in
         if ($contract['id'] != $contractId) {
           unset($return[$contract[$rcField]]);
+        }
+      }
+      if (!empty($return)) {
+        // find pending contract updates using our recurring contributions
+        $rcUpdateField = CRM_Contract_Utils::getCustomFieldId('contract_updates.ch_recurring_contribution');
+        $updates_using_rcs = civicrm_api3('Activity', 'get', [
+          'return'       => [$rcUpdateField, 'source_record_id'],
+          'status_id'    => ['IN' => ['Scheduled', 'Needs Review']],
+          $rcUpdateField => ['IN' => array_keys($return)],
+          'options'      => ['limit' => 0],
+        ]);
+        // remove any matches not associated with the current contract
+        foreach ($updates_using_rcs['values'] as $update) {
+          if ($update['source_record_id'] != $contractId) {
+            unset($return[$update[$rcUpdateField]]);
+          }
         }
       }
     }
