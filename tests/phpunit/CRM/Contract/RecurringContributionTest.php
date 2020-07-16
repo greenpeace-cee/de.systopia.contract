@@ -60,4 +60,39 @@ class CRM_Contract_RecurringContributionTest extends CRM_Contract_ContractTestBa
     $this->assertCount(0, $rcurUnused, 'Expected zero unused recurring contribution');
   }
 
+  public function testIsAssignableToContract() {
+    $contact_id = $this->createContactWithRandomEmail()['id'];
+    // create two contracts
+    $contract1 = $this->createNewContract([
+      'is_sepa'            => TRUE,
+      'amount'             => '10.00',
+      'frequency_unit'     => 'month',
+      'frequency_interval' => '1',
+      'contact_id'         => $contact_id,
+    ]);
+    $contract2 = $this->createNewContract([
+      'is_sepa'            => TRUE,
+      'amount'             => '10.00',
+      'frequency_unit'     => 'month',
+      'frequency_interval' => '1',
+      'contact_id'         => $contact_id,
+    ]);
+
+    $rcur = new CRM_Contract_RecurringContribution();
+    $this->assertTrue(
+      $rcur->isAssignableToContract(
+        $contract1['membership_payment.membership_recurring_contribution'],
+        $contract1['id']
+      ),
+      'Recurring contribution should be assignable to its membership'
+    );
+    $this->assertFalse(
+      $rcur->isAssignableToContract(
+        $contract1['membership_payment.membership_recurring_contribution'],
+        $contract2['id']
+      ),
+      'Recurring contribution should NOT be assignable to other memberships'
+    );
+  }
+
 }

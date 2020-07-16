@@ -126,15 +126,25 @@ abstract class CRM_Contract_Change implements  CRM_Contract_Change_SubjectRender
   /**
    * Make sure that the data for this change is valid
    *
+   * This performs checks that apply to all contract changes. Further checks
+   * may be performed in child classes.
+   *
    * @throws Exception if the data is not valid
    */
   public function verifyData() {
-    // simply check if all required fields are there
-    // ...anything else needs to be checked in the specific class...
+    // check if all required fields are there
     $required_fields = $this->getRequiredFields();
     foreach ($required_fields as $required_field) {
       if (!isset($this->data[$required_field])) {
         throw new Exception("Parameter '{$required_field}' missing.");
+      }
+    }
+    // if a recurring contribution is associated with this change, check that it
+    // is not yet in use by another contract
+    if (!empty($this->data['contract_updates.ch_recurring_contribution'])) {
+      $rcur = new CRM_Contract_RecurringContribution();
+      if (!$rcur->isAssignableToContract($this->data['contract_updates.ch_recurring_contribution'], $this->getContractID())) {
+        throw new Exception('Recurring contribution already in use for different contract');
       }
     }
   }

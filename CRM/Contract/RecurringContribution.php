@@ -181,6 +181,30 @@ class CRM_Contract_RecurringContribution {
     return $return;
   }
 
+  /**
+   * Check if a recurring contribution can be assigned to a contract
+   *
+   * @param $contribution_recur_id
+   * @param $contract_id
+   *
+   * @return bool
+   * @throws \CiviCRM_API3_Exception
+   */
+  public function isAssignableToContract($contribution_recur_id, $contract_id) {
+    $rcField = CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution');
+    $contract_using_rc = civicrm_api3('Membership', 'getcount', [
+      $rcField  => $contribution_recur_id,
+      'id'      => ['<>' => $contract_id],
+    ]);
+    $rcUpdateField = CRM_Contract_Utils::getCustomFieldId('contract_updates.ch_recurring_contribution');
+    $updates_using_rc = civicrm_api3('Activity', 'getcount', [
+      'status_id'        => ['IN' => ['Scheduled', 'Needs Review']],
+      $rcUpdateField     => $contribution_recur_id,
+      'source_record_id' => ['<>' => $contract_id],
+    ]);
+    return $contract_using_rc === 0 && $updates_using_rc === 0;
+  }
+
 
   /**
    * Render the given recurring contribution
