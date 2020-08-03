@@ -83,7 +83,7 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
     $requested_day = date('Y-m-d', strtotime($this->data['activity_date_time']));
     $scheduled_activities = civicrm_api3('Activity', 'get', array(
         'source_record_id' => $this->getContractID(),
-        'activity_type_id' => $this->getActvityTypeID(),
+        'activity_type_id' => $this->getActivityTypeID(),
         'status_id'        => 'Scheduled',
         'option.limit'     => 0,
         'sequential'       => 1,

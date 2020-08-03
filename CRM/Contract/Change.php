@@ -15,7 +15,7 @@ use CRM_Contract_ExtensionUtil as E;
  * This new 'Change' concept is the replacement for the CRM_Contract_ModificationActivity
  *  and the CRM_Contract_Handlers
  */
-abstract class CRM_Contract_Change implements  CRM_Contract_Change_SubjectRendererInterface {
+abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendererInterface {
 
   /**
    * Data representing the data. Will mostly be the activity data
@@ -81,7 +81,7 @@ abstract class CRM_Contract_Change implements  CRM_Contract_Change_SubjectRender
   protected function __construct($data) {
     $this->data = $data;
     // make sure activity_type_id is numeric
-    $this->data['activity_type_id'] = $this->getActvityTypeID();
+    $this->data['activity_type_id'] = $this->getActivityTypeID();
   }
 
   ################################################################################
@@ -269,7 +269,7 @@ abstract class CRM_Contract_Change implements  CRM_Contract_Change_SubjectRender
    *
    * @return int activity type ID
    */
-  public function getActvityTypeID() {
+  public function getActivityTypeID() {
     if (is_numeric($this->data['activity_type_id'])) {
       return $this->data['activity_type_id'];
     }

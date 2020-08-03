@@ -265,4 +265,94 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     );
   }
 
+  /**
+   * Test campaign propagation behaviour
+   */
+  public function testCampaign() {
+    $campaign_id = $this->callAPISuccess('Campaign', 'create', [
+      'title' => 'sign',
+    ])['id'];
+    $upgrade_campaign_id = $this->callAPISuccess('Campaign', 'create', [
+      'title' => 'upgrade',
+    ])['id'];
+    $revive_campaign_id = $this->callAPISuccess('Campaign', 'create', [
+      'title' => 'revive',
+    ])['id'];
+    // create contract with campaign_id
+    $contract = $this->createNewContract([
+      'is_sepa'            => 1,
+      'amount'             => '10.00',
+      'frequency_unit'     => 'month',
+      'frequency_interval' => '1',
+      'campaign_id'        => $campaign_id,
+    ]);
+
+    $this->assertEquals(
+      $campaign_id,
+      $contract['campaign_id'],
+      'campaign_id should be set for contract'
+    );
+    $this->assertContributionRecurCampaignMatches($contract['membership_payment.membership_recurring_contribution'], $campaign_id);
+    $this->assertLatestContractActivityCampaignMatches($contract['id'], $campaign_id);
+
+    // upgrade contract using a different campaign
+    $this->modifyContract($contract['id'], 'update', 'now', [
+      'membership_payment.membership_annual' => '240.00',
+      'campaign_id'                          => $upgrade_campaign_id,
+    ]);
+    $this->runContractEngine($contract['id']);
+
+    $contract = $this->getContract($contract['id']);
+    $this->assertEquals(240.00, $contract['membership_payment.membership_annual'], 'contract amount should have changed');
+    $this->assertEquals(
+      $campaign_id,
+      $contract['campaign_id'],
+      'campaign_id for contract should be unchanged'
+    );
+    $this->assertContributionRecurCampaignMatches($contract['membership_payment.membership_recurring_contribution'], $upgrade_campaign_id);
+    $this->assertLatestContractActivityCampaignMatches($contract['id'], $upgrade_campaign_id);
+
+    // cancel contract
+    $this->modifyContract($contract['id'], 'cancel', 'now', [
+      'membership_cancellation.membership_cancel_reason' => 'Unknown'
+    ]);
+    $this->runContractEngine($contract['id']);
+
+    // revive contract using another campaign
+    $this->modifyContract($contract['id'], 'revive', 'now', [
+      'membership_payment.membership_annual'             => '240.00',
+      'campaign_id'                                      => $revive_campaign_id,
+    ]);
+    $this->runContractEngine($contract['id']);
+
+    $contract = $this->getContract($contract['id']);
+    $this->assertContributionRecurCampaignMatches($contract['membership_payment.membership_recurring_contribution'], $revive_campaign_id);
+    $this->assertLatestContractActivityCampaignMatches($contract['id'], $revive_campaign_id);
+  }
+
+  private function assertContributionRecurCampaignMatches($contributionRecurId, $campaignId) {
+    $rcur_campaign_id = $this->callAPISuccess('ContributionRecur', 'getvalue', [
+      'id'     => $contributionRecurId,
+      'return' => 'campaign_id',
+    ]);
+    $this->assertEquals(
+      $campaignId,
+      $rcur_campaign_id,
+      'campaign_id of recurring contribution should match'
+    );
+  }
+
+  private function assertLatestContractActivityCampaignMatches($contractId, $campaignId) {
+    $activity_campaign_id = $this->callAPISuccess('Activity', 'getvalue', [
+      'source_record_id' => $contractId,
+      'return'           => 'campaign_id',
+      'options'          => ['limit' => 1, 'sort' => 'activity_date_time DESC'],
+    ]);
+    $this->assertEquals(
+      $campaignId,
+      $activity_campaign_id,
+      'campaign_id of contract activity should match'
+    );
+  }
+
 }

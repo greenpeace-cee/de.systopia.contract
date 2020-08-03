@@ -61,7 +61,7 @@ function civicrm_api3_Contract_process_scheduled_modifications($params) {
       'option.limit'       => $params['limit'],
       'sequential'         => 1, // in the scheduled order(!)
       'option.sort'        => 'activity_date_time ASC, id ASC',
-      'return'             => 'id,activity_type_id,status_id,activity_date_time,subject,source_record_id,' . CRM_Contract_Change::getCustomFieldList(),
+      'return'             => 'id,activity_type_id,status_id,activity_date_time,subject,source_record_id,campaign_id,' . CRM_Contract_Change::getCustomFieldList(),
   ];
   if (!empty($params['id'])) {
     $activityParams['source_record_id'] = (int) $params['id'];
