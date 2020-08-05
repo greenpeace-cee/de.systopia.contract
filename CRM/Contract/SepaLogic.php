@@ -68,7 +68,7 @@ class CRM_Contract_SepaLogic {
     }
 
     // GP-1732: maybe the revive of current RecurringContribution is requested...
-    if ($action == 'revive' && !empty($desired_state['contract_updates.ch_recurring_contribution'])) {
+    if (!empty($desired_state['contract_updates.ch_recurring_contribution'])) {
       // ...so consider this to be a change even if it's the same as before
       $mandate_relevant_changes[] = 'contract_updates.ch_recurring_contribution';
     }

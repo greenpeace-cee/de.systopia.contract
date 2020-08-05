@@ -77,6 +77,9 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
       // this means a new mandate has been created -> set
       $contract_update['membership_payment.membership_recurring_contribution'] = $new_payment_contract;
     }
+    /*else if (!empty($this->getParameter('contract_updates.ch_recurring_contribution'))) {
+      $contract_update['membership_payment.membership_recurring_contribution'] = $this->getParameter('contract_updates.ch_recurring_contribution');
+    }*/
 
     // perform the update
     $this->updateContract($contract_update);

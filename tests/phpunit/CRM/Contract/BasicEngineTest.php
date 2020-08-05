@@ -330,6 +330,31 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->assertLatestContractActivityCampaignMatches($contract['id'], $revive_campaign_id);
   }
 
+  /**
+   * Test updates in which recurring contributions were changed outside of CE
+   */
+  public function testContributionRecurChanged() {
+    $contract = $this->createNewContract([
+      'is_sepa'            => 1,
+      'amount'             => '10.00',
+      'frequency_unit'     => 'month',
+      'frequency_interval' => '1',
+    ]);
+    $this->callAPISuccess('ContributionRecur', 'create', [
+      'id'     => $contract['membership_payment.membership_recurring_contribution'],
+      'amount' => '20.00',
+    ]);
+    echo "modify!\n";
+    // upgrade contract using the same recurring contribution
+    $this->modifyContract($contract['id'], 'update', 'now', [
+      'membership_payment.membership_recurring_contribution' => $contract['membership_payment.membership_recurring_contribution'],
+    ]);
+    echo "run!\n";
+    $this->runContractEngine($contract['id']);
+    $contract = $this->getContract($contract['id']);
+    $this->assertEquals(240.00, $contract['membership_payment.membership_annual'], 'contract amount should have changed');
+  }
+
   private function assertContributionRecurCampaignMatches($contributionRecurId, $campaignId) {
     $rcur_campaign_id = $this->callAPISuccess('ContributionRecur', 'getvalue', [
       'id'     => $contributionRecurId,
