@@ -19,7 +19,7 @@ class CRM_Contract_FormUtils {
 
   }
 
-  public function addPaymentContractSelect2($elementName, $contactId, $required = TRUE, $contractId) {
+  public function addPaymentContractSelect2($elementName, $contactId, $required = TRUE, $contractId = NULL) {
     $recurringContributionOptions[''] = '- none -';
     foreach ($this->recurringContribution->getAll($contactId, TRUE, $contractId) as $key => $rc) {
       $recurringContributionOptions[$key] = $rc['label'];

@@ -142,7 +142,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
       // 'graceful_collections'    => CRM_Contract_SepaLogic::getNextCollections(),
       'action'                  => $this->modify_action,
       'current_contract'        => CRM_Contract_RecurringContribution::getCurrentContract($this->membership['contact_id'], $this->membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')]),
-      'recurring_contributions' => CRM_Contract_RecurringContribution::getAllForContact($this->membership['contact_id'], TRUE, $this->get('id'))));
+      'recurring_contributions' => CRM_Contract_RecurringContribution::getAllForContact($this->membership['contact_id'], TRUE)));
     CRM_Contract_SepaLogic::addJsSepaTools();
 
     // add a generic switch to clean up form
@@ -158,7 +158,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
 
 
     $formUtils = new CRM_Contract_FormUtils($this, 'Membership');
-    $formUtils->addPaymentContractSelect2('recurring_contribution', $this->membership['contact_id'], false, $this->get('id'));
+    $formUtils->addPaymentContractSelect2('recurring_contribution', $this->membership['contact_id'], FALSE);
 
     // Membership type (membership)
     foreach(civicrm_api3('MembershipType', 'get', ['options' => ['limit' => 0, 'sort' => 'weight']])['values'] as $MembershipType){

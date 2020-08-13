@@ -27,7 +27,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     $this->assign('contact', $this->contact);
 
     $formUtils = new CRM_Contract_FormUtils($this, 'Membership');
-    $formUtils->addPaymentContractSelect2('recurring_contribution', $this->get('cid'), false, null);
+    $formUtils->addPaymentContractSelect2('recurring_contribution', $this->get('cid'), FALSE);
     CRM_Core_Resources::singleton()->addVars('de.systopia.contract', array(
       'cid'                     => $this->get('cid'),
       'debitor_name'            => $this->contact['display_name'],
