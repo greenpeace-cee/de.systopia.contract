@@ -48,9 +48,10 @@ class CRM_Contract_ContractTestBase extends \PHPUnit_Framework_TestCase implemen
     if (empty($default_creditor_id)) {
       // create if there isn't
       $creditor = $this->callAPISuccess('SepaCreditor', 'create', [
-          'creditor_type'  => 'SEPA',
-          'currency'       => 'EUR',
-          'mandate_active' => 1
+        'creditor_type'  => 'SEPA',
+        'currency'       => 'EUR',
+        'mandate_active' => 1,
+        'iban'           => 'AT483200000012345864',
       ]);
       CRM_Sepa_Logic_Settings::setSetting($creditor['id'], 'batching_default_creditor');
     }

@@ -191,7 +191,8 @@ function contract_civicrm_buildForm($formName, &$form) {
           $customGroupTableId = isset($form->_groupTree[$result['custom_group_id']]['table_id']) ? $form->_groupTree[$result['custom_group_id']]['table_id'] : '-1';
           $elementName = "custom_{$result['id']}_{$customGroupTableId}";
           $form->removeElement($elementName);
-          $formUtils->addPaymentContractSelect2($elementName, $contactId, true, $id);
+          // TODO: is this dead code?
+          $formUtils->addPaymentContractSelect2($elementName, $contactId, TRUE, $id);
           // NOTE for initial launch: all custom membership fields should be editable
           $formUtils->removeMembershipEditDisallowedCustomFields();
         }
