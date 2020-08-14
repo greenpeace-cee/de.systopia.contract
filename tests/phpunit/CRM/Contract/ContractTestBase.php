@@ -482,4 +482,20 @@ class CRM_Contract_ContractTestBase extends \PHPUnit_Framework_TestCase implemen
   public function setActivityFlavour($type) {
     // TODO: this needs to be implemented when other flavours are available
   }
+
+  /**
+   * Get mandate currently associated with a contract
+   *
+   * @param $contract_id
+   *
+   * @return array
+   * @throws \CiviCRM_API3_Exception
+   */
+  public function getMandateForContract($contract_id) {
+    $contract = $this->getContract($contract_id);
+    return civicrm_api3('SepaMandate', 'getsingle', [
+      'entity_table' => 'civicrm_contribution_recur',
+      'entity_id' => $contract['membership_payment.membership_recurring_contribution'],
+    ]);
+  }
 }

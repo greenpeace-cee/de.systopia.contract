@@ -50,7 +50,19 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
    */
   public function execute() {
     $contract_before = $this->getContract(TRUE);
+    if (!$this->getParameter('contract_updates.ch_membership_type')) {
+      // FIXME: replicating weird behaviour by old engine
+      $this->setParameter('contract_updates.ch_membership_type', $contract_before['membership_type_id']);
+    }
 
+    $contract_update = $this->buildContractUpdate($contract_before);
+
+    // perform the update
+    $this->updateContract($contract_update);
+    $this->updateChangeActivity($this->getContract(), $contract_before);
+  }
+
+  protected function buildContractUpdate($contract_before) {
     // compile upgrade
     $contract_update = [];
 
@@ -60,29 +72,31 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
       if ($contract_before['membership_type_id'] != $membership_type_update) {
         $contract_update['membership_type_id'] = $membership_type_update;
       }
-    } else {
-      // FIXME: replicating weird behaviour by old engine
-      $this->setParameter('contract_updates.ch_membership_type', $contract_before['membership_type_id']);
     }
 
     // adjust mandate/payment mode?
     $new_payment_contract = CRM_Contract_SepaLogic::updateSepaMandate(
-        $this->getContractID(),
-        $contract_before,
-        $this->data,
-        $this->data,
-        $this->getActionName());
+      $this->getContractID(),
+      $contract_before,
+      $this->data,
+      $this->data,
+      $this->getActionName());
 
     if ($new_payment_contract) {
       // this means a new mandate has been created -> set
       $contract_update['membership_payment.membership_recurring_contribution'] = $new_payment_contract;
     }
 
-    // perform the update
-    $this->updateContract($contract_update);
+    return $contract_update;
+  }
 
-    // update change activity
-    $contract_after = $this->getContract();
+  /**
+   * Update contract change activity based on contract diff after execution
+   *
+   * @param $contract_after
+   * @param $contract_before
+   */
+  protected function updateChangeActivity($contract_after, $contract_before) {
     foreach (CRM_Contract_Change::$field_mapping_change_contract as $membership_field => $change_field) {
       // copy fields
       if (isset($contract_after[$membership_field])) {

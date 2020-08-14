@@ -133,6 +133,20 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       $this->runContractEngine($contract['id'], '+1 day');
       $contract_changed2 = $this->getContract($contract['id']);
       $this->assertEquals($this->getMembershipStatusID('Paused'), $contract_changed2['status_id'], "The contract isn't paused");
+      $mandate = $this->getMandateForContract($contract['id']);
+      $this->assertEquals('ONHOLD', $mandate['status'], 'Mandate should be on hold');
+
+      // run engine again for the day after tomorrow
+      $this->runContractEngine($contract['id'], '+2 days');
+      $contract_changed2 = $this->getContract($contract['id']);
+      $this->assertEquals($this->getMembershipStatusID('Current'), $contract_changed2['status_id'], "The contract isn't paused");
+      $mandate = $this->getMandateForContract($contract['id']);
+      $this->assertEquals('FRST', $mandate['status'], 'Mandate should be active');
+      $this->assertEquals(
+        $contract_changed1['membership_payment.membership_recurring_contribution'],
+        $contract_changed2['membership_payment.membership_recurring_contribution'],
+        'Recurring contribution should have remained the same'
+      );
     }
   }
 
@@ -352,6 +366,51 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       $campaignId,
       $activity_campaign_id,
       'campaign_id of contract activity should match'
+    );
+  }
+
+  /**
+   * Test a pause/resume where resume contains a change
+   */
+  public function testPauseResumeWithUpdate() {
+    // create a new contract
+    $contract = $this->createNewContract(['is_sepa' => TRUE]);
+
+    // schedule and update for tomorrow
+    $this->modifyContract($contract['id'], 'pause', 'tomorrow', [
+      'membership_payment.membership_annual' => '240.00',
+      'membership_payment.cycle_day'         => 10,
+    ]);
+    $resume_activity_id = $this->callAPISuccess('Activity', 'getvalue', [
+      'return'           => 'id',
+      'activity_type_id' => 'Contract_Resumed',
+      'source_record_id' => $contract['id'],
+    ]);
+    // change an update fields in the resume activity
+    $cycle_day_key = CRM_Contract_Utils::getCustomFieldId('contract_updates.ch_cycle_day');
+    $this->callAPISuccess('Activity', 'create', [
+      'id'           => $resume_activity_id,
+      $cycle_day_key => '10',
+    ]);
+
+    // run engine for tomorrow
+    $this->runContractEngine($contract['id'], '+1 day');
+    $contract_changed1 = $this->getContract($contract['id']);
+    $this->assertEquals($this->getMembershipStatusID('Paused'), $contract_changed1['status_id'], "The contract isn't paused");
+    $mandate = $this->getMandateForContract($contract['id']);
+    $this->assertEquals('ONHOLD', $mandate['status'], 'Mandate should be on hold');
+
+    // run engine again for the day after tomorrow
+    $this->runContractEngine($contract['id'], '+2 days');
+    $contract_changed2 = $this->getContract($contract['id']);
+    $this->assertEquals($this->getMembershipStatusID('Current'), $contract_changed2['status_id'], "The contract isn't paused");
+    $mandate = $this->getMandateForContract($contract['id']);
+    $this->assertEquals('FRST', $mandate['status'], 'Mandate should be active');
+    $this->assertEquals('10', $contract_changed2['membership_payment.cycle_day'], 'cycle_day should have changed');
+    $this->assertNotEquals(
+      $contract_changed1['membership_payment.membership_recurring_contribution'],
+      $contract_changed2['membership_payment.membership_recurring_contribution'],
+      'Recurring contribution should have changed'
     );
   }
 
