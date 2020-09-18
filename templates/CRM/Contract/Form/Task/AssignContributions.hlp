@@ -10,6 +10,10 @@
   <p>{ts domain="de.systopia.contract"}Set the financial type of all contributions to the financial type specified in the selected contract's type.{/ts}</p>
 {/htxt}
 
+{htxt id='id-adjust-campaign'}
+  <p>{ts domain="de.systopia.contract"}Set the campaign of all contributions to the campaign of the selected contract's recurring contribution.{/ts}</p>
+{/htxt}
+
 {htxt id='id-re-assign'}
   <p>{ts domain="de.systopia.contract"}If selected even already assigned contributions will be detached from their current contract, and re-assigned to the selected one.{/ts}</p>
 {/htxt}

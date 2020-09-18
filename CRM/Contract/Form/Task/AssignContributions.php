@@ -44,6 +44,11 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
         ['' => true]);
     $this->setDefaults(['adjust_financial_type' => 'checked']);
 
+    $this->addCheckbox(
+      'adjust_campaign',
+      E::ts('Adjust Campaign'),
+      ['' => true]);
+
     // option: re-assign
     $this->addCheckbox(
         'reassign',
@@ -98,7 +103,7 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
     $excluded_contribution_id_list = implode(',', $excluded_contribution_ids);
     $NOT_IN_EXCLUDED = empty($excluded_contribution_id_list) ? 'TRUE' : "id NOT IN ({$excluded_contribution_id_list})";
     CRM_Core_DAO::executeQuery("INSERT IGNORE INTO civicrm_membership_payment (contribution_id,membership_id)
-                                      SELECT 
+                                      SELECT
                                         id              AS contribution_id,
                                         {$contract_id}  AS membership_id
                                       FROM civicrm_contribution
@@ -120,7 +125,7 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
     // load recurring contribution, too
     $contribution_recur = civicrm_api3('ContributionRecur', 'getsingle', array(
         'id'     => $contract['contribution_recur_id'],
-        'return' => 'start_date,end_date'));
+        'return' => 'start_date,end_date,campaign_id'));
     $contribution_recur['start_date'] = empty($contribution_recur['start_date']) ? NULL : date('YmdHis', strtotime($contribution_recur['start_date']));
     $contribution_recur['end_date']   = empty($contribution_recur['end_date'])   ? NULL : date('YmdHis', strtotime($contribution_recur['end_date']));
 
@@ -150,6 +155,11 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
       // update financial type - if requested
       if (!empty($values['adjust_financial_type'])) {
         $contribution_update['financial_type_id'] = $contract['financial_type_id'];
+      }
+      // update campaign if requested
+      if (!empty($values['adjust_campaign'])) {
+        // if rcur has no campaign, pass null as string to force it to NULL
+        $contribution_update['campaign_id'] = $contribution_recur['campaign_id'] ?? 'null';
       }
 
       // now the non-sepa options: if NOT a SEPA contract AND NOT a SEPA contribution
@@ -278,16 +288,18 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
        p.membership_recurring_contribution AS contribution_recur_id,
        IF(pi.name IN ('RCUR', 'FRST'), 'SEPA', pi.label)
                                            AS contribution_recur_pi,
-       s.id                                AS sepa_mandate_id
+       s.id                                AS sepa_mandate_id,
+       cmp.title                           AS rcur_campaign
       FROM civicrm_contribution c
       LEFT JOIN civicrm_membership m               ON m.contact_id = c.contact_id
       LEFT JOIN civicrm_value_membership_payment p ON p.entity_id = m.id
-      LEFT JOIN civicrm_contribution_recur r       ON r.id = p.membership_recurring_contribution 
+      LEFT JOIN civicrm_contribution_recur r       ON r.id = p.membership_recurring_contribution
       LEFT JOIN civicrm_option_value pi            ON pi.value = r.payment_instrument_id AND pi.option_group_id = {$payment_instruments_group_id}
       LEFT JOIN civicrm_membership_type t          ON t.id = m.membership_type_id
       LEFT JOIN civicrm_financial_type f           ON f.id = t.financial_type_id
-      LEFT JOIN civicrm_sdd_mandate s              ON s.entity_id = p.membership_recurring_contribution 
+      LEFT JOIN civicrm_sdd_mandate s              ON s.entity_id = p.membership_recurring_contribution
                                                     AND s.entity_table = 'civicrm_contribution_recur'
+      LEFT JOIN civicrm_campaign cmp               ON cmp.id = r.campaign_id
       WHERE c.id IN ({$contribution_id_list})
         AND p.membership_recurring_contribution IS NOT NULL
       GROUP BY m.id
@@ -306,6 +318,7 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
             'to_ba'                 => $search->to_ba,
             'contact_id'            => $search->contact_id,
             'financial_type_id'     => $search->financial_type_id,
+            'rcur_campaign'         => $search->rcur_campaign,
         );
       }
     }

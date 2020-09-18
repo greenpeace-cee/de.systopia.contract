@@ -23,6 +23,12 @@
   <div class="clear"></div>
 </div>
 
+<div class="crm-section">
+  <div class="label">{$form.adjust_campaign.label} <a onclick='CRM.help("{ts domain="de.systopia.contract"}Adjust Campaign{/ts}", {literal}{"id":"id-adjust-campaign","file":"CRM\/Contract\/Form\/Task\/AssignContributions"}{/literal}); return false;' href="#" title="{ts domain="de.systopia.contract"}Help{/ts}" class="helpicon">&nbsp;</a></td></div>
+  <div class="content">{$form.adjust_campaign.html}&nbsp;<span class="membership-campaign">(unknown)</span></div>
+  <div class="clear"></div>
+</div>
+
 <div class="crm-section non-sepa-contract-only">
   <div class="label">{$form.assign_mode.label} <a onclick='CRM.help("{ts domain="de.systopia.contract"}Assign to Recurring Contribution{/ts}", {literal}{"id":"id-assign-mode","file":"CRM\/Contract\/Form\/Task\/AssignContributions"}{/literal}); return false;' href="#" title="{ts domain="de.systopia.contract"}Help{/ts}" class="helpicon">&nbsp;</a></td></div>
   <div class="content">{$form.assign_mode.html}</div>
@@ -42,8 +48,15 @@ var contracts = {$contracts};
 cj("#contract_id").change(function() {
   // rebuild segment list
   var contract = contracts[cj("#contract_id").val()];
-  // show membership type
+  // show financial type
   cj("span.membership-financial-type").html("(" + contract['financial_type'] + ")");
+  // show campaign
+  if (contract['rcur_campaign'] === null) {
+    cj("span.membership-campaign").html("(Contribution campaign will be removed)");
+  } else {
+    cj("span.membership-campaign").html("(" + contract['rcur_campaign'] + ")");
+  }
+
 
   // show non-sepa options
   if (contract['sepa_mandate_id']) {
