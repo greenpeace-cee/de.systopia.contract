@@ -369,7 +369,11 @@ class CRM_Contract_ContractTestBase extends \PHPUnit_Framework_TestCase implemen
    */
   public function getLastChangeActivity($contract_id, $types = NULL, $status = []) {
     $activities = $this->getChangeActivities($contract_id, $types, $status);
-    return reset($activities); // the first one should be the last one
+
+    // Get the activity with the highest id value
+    return array_reduce($activities, function ($carry, $item) {
+      return (int) $carry['id'] > (int) $item['id'] ? $carry : $item;
+    });
   }
 
   /**

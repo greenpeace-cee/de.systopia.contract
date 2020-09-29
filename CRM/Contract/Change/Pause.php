@@ -82,6 +82,7 @@ class CRM_Contract_Change_Pause extends CRM_Contract_Change {
     // update change activity
     $contract_after = $this->getContract(TRUE);
     $this->setParameter('subject', $this->getSubject($contract_after, $contract));
+    $this->setParameter("activity_date_time", date('Y-m-d H:i:s'));
     $this->setStatus('Completed');
     $this->save();
   }

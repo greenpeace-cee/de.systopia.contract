@@ -57,6 +57,37 @@ class CRM_Contract_CompatibilityTest extends CRM_Contract_ContractTestBase
   }
 
   /**
+   * Check if the timestamp of the change activity is updated during execution
+   *
+   * @see https://redmine.greenpeace.at/issues/11200
+   */
+  public function testUpdateActivityDateTime () {
+    $contract = $this->createNewContract([
+      'is_sepa'            => 1,
+      'amount'             => '12.00',
+      'frequency_unit'     => 'month',
+      'frequency_interval' => '1',
+      'cycle_day'          => 25,
+      'iban'               => 'DE89370400440532013000',
+      'bic'                => 'GENODEM1GLS',
+    ]);
+
+    // modify contract
+    $this->modifyContract($contract['id'], 'update', 'tomorrow', [ 'amount' => '15.00' ]);
+
+    // get the resulting change activity
+    $change_activity = $this->getLastChangeActivity($contract['id']);
+    $this->assertNotEmpty($change_activity, "There should be a change activity after the upgrade");
+
+    // compare activity timestamps before and after execution
+    $activityId = $change_activity["id"];
+    $scheduledTime = $change_activity["activity_date_time"];
+    $this->runContractEngine($contract['id'], '+2 days');
+    $updatedActivity = $this->callAPISuccess('Activity', 'get', [ 'id' => $activityId ])["values"][$activityId];
+    $this->assertNotEquals($scheduledTime, $updatedActivity["activity_date_time"], "activity_date_time should have changed");
+  }
+
+  /**
    * Check if the subject of the change activity is as requested
    *
    * @see https://redmine.greenpeace.at/issues/1276#note-74
