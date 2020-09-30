@@ -225,6 +225,13 @@ class CRM_Contract_SepaLogic {
           'contribution_status_id' => 1));
       }
     }
+
+    if (!empty($recurring_contribution_id)) {
+      $recurringContribution = new CRM_Contribute_DAO_ContributionRecur();
+      $recurringContribution->get("id", $recurring_contribution_id);
+      $recurringContribution->cancel_reason = $reason;
+      $recurringContribution->save();
+    }
   }
 
   /**
