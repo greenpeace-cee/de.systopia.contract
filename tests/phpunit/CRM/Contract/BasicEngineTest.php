@@ -75,6 +75,22 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
 
       // make sure status is cancelled
       $this->assertEquals($this->getMembershipStatusID('Cancelled'), $contract_changed2['status_id'], "The contract wasn't cancelled");
+
+      // make sure 'cancel_reason' of the associated recurring contribution is updated
+      $recurringContributionId = $contract_changed2["membership_payment.membership_recurring_contribution"];
+      $recurringContribution = new CRM_Contribute_DAO_ContributionRecur();
+      $recurringContribution->get("id", $recurringContributionId);
+
+      $cancelReasonOptionValue = civicrm_api3("OptionValue", "getsingle", [
+        "option_group_id" => "contract_cancel_reason",
+        "name" => "Unknown",
+      ])["value"];
+
+      $this->assertEquals(
+        $recurringContribution->cancel_reason,
+        $cancelReasonOptionValue,
+        "'cancel_reason' of the recurring contribution should be ${cancelReasonOptionValue} (='Unknown')"
+      );
     }
   }
 
