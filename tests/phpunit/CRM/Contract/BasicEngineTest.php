@@ -91,6 +91,15 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
         $cancelReasonOptionValue,
         "'cancel_reason' of the recurring contribution should be ${cancelReasonOptionValue} (='Unknown')"
       );
+
+      $this->assertNotEmpty(
+        $recurringContribution->cancel_date,
+        'cancel_date should be set after cancellation'
+      );
+      $this->assertNotEmpty(
+        $recurringContribution->end_date,
+        'end_date should be set after cancellation'
+      );
     }
   }
 
