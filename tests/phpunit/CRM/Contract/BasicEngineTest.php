@@ -100,6 +100,17 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
         $recurringContribution->end_date,
         'end_date should be set after cancellation'
       );
+
+      // make sure membership_cancellation fields are set
+      $this->assertEquals(
+        $contract_changed2["membership_cancellation.membership_cancel_reason"],
+        1
+      );
+
+      $this->assertEquals(
+        $contract_changed2["membership_cancellation.membership_cancel_date"],
+        date("Y-m-d 00:00:00")
+      );
     }
   }
 
