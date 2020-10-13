@@ -222,6 +222,7 @@ class CRM_Contract_SepaLogic {
         civicrm_api3('ContributionRecur', 'create', array(
           'id'                     => $recurring_contribution_id,
           'end_date'               => date('YmdHis'),
+          'cancel_date'            => date('YmdHis'),
           'contribution_status_id' => 1));
       }
     }
