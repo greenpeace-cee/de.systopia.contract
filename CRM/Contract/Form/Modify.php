@@ -224,6 +224,14 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
       list($defaults['activity_date'], $defaults['activity_date_time']) = CRM_Utils_Date::setDateDefaults(date('Y-m-d 00:00:00', strtotime('+1 day')), 'activityDateTime');
     }
 
+    $this->assign("defaultToMinimumChangeDate", false);
+    $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
+    $defaultActivityDateTime = $defaults['activity_date'] . " " . $defaults['activity_date_time'];
+
+    if (!empty($minimumChangeDate) && strtotime($defaultActivityDateTime) < strtotime($minimumChangeDate)) {
+      $this->assign("defaultToMinimumChangeDate", true);
+      list($defaults['activity_date'], $defaults['activity_date_time']) = CRM_Utils_Date::setDateDefaults($minimumChangeDate, 'activityDateTime');
+    }
 
     parent::setDefaults($defaults);
   }

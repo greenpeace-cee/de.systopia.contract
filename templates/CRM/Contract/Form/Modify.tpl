@@ -112,6 +112,9 @@
     <div class="label">{$form.activity_date.label} {help id="scheduling" file="CRM/Contract/Form/Scheduling.hlp"}</div>
     <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=activity_date}</div>
     <div class="clear"></div>
+    {if $defaultToMinimumChangeDate}
+      <span class="content field-info">Default to minimum change date</span>
+    {/if}
   </div>
 
   <div class="crm-section">
