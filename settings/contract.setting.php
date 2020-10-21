@@ -62,5 +62,19 @@ return array(
     'description' => 'Some features like the Rapid Create form might work or
                       look different depending on the selected value.',
     'help_text' => NULL,
-  )
+  ),
+  'contract_minimum_change_date' => array(
+    'group_name' => 'Contract preferences',
+    'name' => 'contract_minimum_change_date',
+    'type' => 'string',
+    'default' => NULL,
+    'add' => '1.0',
+    'title' => 'Minimum Change Date',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => 'Contract changes cannot be scheduled up until this date. '
+                     . 'Already scheduled modifications before this date will '
+                     . 'be marked with "Needs Review"',
+    'help_text' => NULL,
+  ),
 );
