@@ -231,6 +231,16 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
   function validate() {
     $submitted = $this->exportValues();
     $activityDate = CRM_Utils_Date::processDate($submitted['activity_date'], $submitted['activity_date_time']);
+
+    $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
+
+    if (!empty($minimumChangeDate) && strtotime($activityDate) < strtotime($minimumChangeDate)) {
+      HTML_QuickForm::setElementError(
+        "activity_date",
+        "Activity date must be after the minimum change date " . date("j M Y h:i a", strtotime($minimumChangeDate))
+      );
+    }
+
     $midnightThisMorning = date('Ymd000000');
     if($activityDate < $midnightThisMorning){
       HTML_QuickForm::setElementError ( 'activity_date', 'Activity date must be either today (which will execute the change now) or in the future');
