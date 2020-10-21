@@ -450,4 +450,86 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     );
   }
 
+  /**
+   * It should not be possible to schedule contract modifications before an
+   * already specified minimum change date
+   */
+  public function testScheduleUpdateBeforeMinimumChangeDate () {
+    // Create a new contract
+    $contract = $this->createNewContract();
+
+    // Set the minimum change date for contracts to 2 days from now
+    $minimumChangeDate = date("Y-m-d H:i:s", strtotime("+2 days"));
+    Civi::settings()->set("contract_minimum_change_date", $minimumChangeDate);
+
+    // Expect the following API call to throw an exception
+    $this->expectException(Exception::class);
+
+    // Schedule a contract update for tomorrow
+    $updateResult = civicrm_api3("Contract", "modify", [
+      "id"                           => $contract["id"],
+      "modify_action"                => "update",
+      "date"                         => date('Y-m-d H:i:s', strtotime("+1 day")),
+      "medium_id"                    => 1,
+      "membership_payment.cycle_day" => 15,
+    ]);
+  }
+
+  /**
+   * When contract modifications are already scheduled before a minimum
+   * change date they should be marked for review and not be executed during
+   * processing
+   */
+  public function testSetMinimumChangeDateAfterScheduledUpdate () {
+    // Make sure contract_minimum_change_date is not set
+    Civi::settings()->set("contract_minimum_change_date", null);
+
+    // Create a new contract
+    $contract = $this->createNewContract([ "is_sepa" => true ]);
+    CRM_Contract_CustomData::labelCustomFields($contract);
+    $originalCycleDay = $contract["membership_payment.cycle_day"];
+
+    // Schedule a contract update for tomorrow
+    $updateResult = $this->modifyContract($contract["id"], "update", "+1 day", [
+      "membership_payment.cycle_day" => 15,
+    ]);
+
+    // Set the minimum change date for contracts to 2 days from now
+    $minimumChangeDate = date("Y-m-d H:i:s", strtotime("+2 days"));
+    Civi::settings()->set("contract_minimum_change_date", $minimumChangeDate);
+
+    // Process scheduled modifications
+    $this->runContractEngine($contract["id"], "+2 days");
+
+    // Get Update activity
+    $updateActivity = civicrm_api3("Activity", "getsingle", [
+      "activity_type_id" => CRM_Contract_Change::getActivityIdForClass("CRM_Contract_Change_Upgrade"),
+      "source_record_id" => $contract["id"],
+    ]);
+
+    $updateActivityStatus = civicrm_api3("OptionValue", "getsingle", [
+      "option_group_id" => "activity_status",
+      "return"          => [ "name" ],
+      "value"           => $updateActivity["status_id"],
+    ]);
+
+    // Assert that the modification has been labelled with "Needs Review"
+    // because it was scheduled before the minimum change date
+    $this->assertEquals(
+      "Needs Review",
+      $updateActivityStatus["name"],
+      "The contract modification should be labelled with \"Needs Review\""
+    );
+
+    // Assert that the contract remains unchanged
+    $contract = civicrm_api3("Contract", "getsingle", [ "id" => $contract["id"] ]);
+    CRM_Contract_CustomData::labelCustomFields($contract);
+    $newCycleDay = $contract["membership_payment.cycle_day"];
+
+    $this->assertEquals(
+      $originalCycleDay,
+      $newCycleDay,
+      "The contract's cycle day should remain unchanged"
+    );
+  }
 }
