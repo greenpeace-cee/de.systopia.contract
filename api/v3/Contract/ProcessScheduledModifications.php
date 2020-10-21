@@ -70,6 +70,7 @@ function civicrm_api3_Contract_process_scheduled_modifications($params) {
   // run query
   $result  = [];
   $counter = 0;
+  $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
   $scheduled_activities = civicrm_api3('Activity', 'get', $activityParams);
   foreach ($scheduled_activities['values'] as $scheduled_activity) {
     CRM_Contract_Utils::stripNonContractActivityCustomFields($scheduled_activity);
@@ -81,6 +82,18 @@ function civicrm_api3_Contract_process_scheduled_modifications($params) {
     // execute the changes
     $change = CRM_Contract_Change::getChangeForData($scheduled_activity);
     $result['order'][] = $change->getID();
+
+    $requestedExecutionTime = strtotime($scheduled_activity["activity_date_time"]);
+
+    // Verify that the requested execution time is after the minimum change date
+    if (!empty($minimumChangeDate) && $requestedExecutionTime < strtotime($minimumChangeDate)) {
+      $result["needs_review"][] = $change->getID();
+      $change->setStatus("Needs Review");
+      $change->setParameter("detais", "Modification scheduled before minimum change date");
+      $change->save();
+      continue;
+    }
+
     try {
       // verify the data before execution
       $change->populateData();
