@@ -61,6 +61,12 @@ function civicrm_api3_Contract_modify($params) {
 
   // check the requested execution time
   $requested_execution_time = strtotime($params['date']);
+  $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
+
+  if (!empty($minimumChangeDate) && $requested_execution_time < strtotime($minimumChangeDate)) {
+    throw new Exception("Parameter 'date' must be after the minimum change date for contracts.");
+  }
+
   if ($requested_execution_time < strtotime('today')) {
     throw new Exception("Parameter 'date' must either be in the future, or absent if you want to execute the modification immediately.");
   }

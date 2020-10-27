@@ -224,6 +224,14 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
       list($defaults['activity_date'], $defaults['activity_date_time']) = CRM_Utils_Date::setDateDefaults(date('Y-m-d 00:00:00', strtotime('+1 day')), 'activityDateTime');
     }
 
+    $this->assign("defaultToMinimumChangeDate", false);
+    $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
+    $defaultActivityDateTime = $defaults['activity_date'] . " " . $defaults['activity_date_time'];
+
+    if (!empty($minimumChangeDate) && strtotime($defaultActivityDateTime) < strtotime($minimumChangeDate)) {
+      $this->assign("defaultToMinimumChangeDate", true);
+      list($defaults['activity_date'], $defaults['activity_date_time']) = CRM_Utils_Date::setDateDefaults($minimumChangeDate, 'activityDateTime');
+    }
 
     parent::setDefaults($defaults);
   }
@@ -231,6 +239,16 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form{
   function validate() {
     $submitted = $this->exportValues();
     $activityDate = CRM_Utils_Date::processDate($submitted['activity_date'], $submitted['activity_date_time']);
+
+    $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
+
+    if (!empty($minimumChangeDate) && strtotime($activityDate) < strtotime($minimumChangeDate)) {
+      HTML_QuickForm::setElementError(
+        "activity_date",
+        "Activity date must be after the minimum change date " . date("j M Y h:i a", strtotime($minimumChangeDate))
+      );
+    }
+
     $midnightThisMorning = date('Ymd000000');
     if($activityDate < $midnightThisMorning){
       HTML_QuickForm::setElementError ( 'activity_date', 'Activity date must be either today (which will execute the change now) or in the future');

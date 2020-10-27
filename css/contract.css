@@ -17,3 +17,11 @@ table.dataTable.display tbody tr.failed td {
     overflow: unset;
     text-overflow: unset;
 }
+
+.crm-form-block .crm-section .content.field-info {
+  background-color: #eae99e;
+  border-radius: 2px;
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px;
+}
