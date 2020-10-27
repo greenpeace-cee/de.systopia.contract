@@ -89,7 +89,7 @@ function civicrm_api3_Contract_process_scheduled_modifications($params) {
     if (!empty($minimumChangeDate) && $requestedExecutionTime < strtotime($minimumChangeDate)) {
       $result["needs_review"][] = $change->getID();
       $change->setStatus("Needs Review");
-      $change->setParameter("detais", "Modification scheduled before minimum change date");
+      $change->setParameter("details", "Modification scheduled before minimum change date");
       $change->save();
       continue;
     }
