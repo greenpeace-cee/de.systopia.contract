@@ -53,11 +53,13 @@ function civicrm_api3_Contract_process_scheduled_modifications($params) {
     $params['limit'] = CE_ENGINE_PROCESSING_LIMIT;
   }
 
+  $now = strtotime(CRM_Utils_Array::value('now', $params, 'now'));
+
   // compile query
   $activityParams = [
       'activity_type_id'   => ['IN' => CRM_Contract_Change::getActivityTypeIds()],
       'status_id'          => 'scheduled',
-      'activity_date_time' => ['<=' => date('Y-m-d H:i:s', strtotime(CRM_Utils_Array::value('now', $params, 'now')))], // execute everything scheduled in the past
+      'activity_date_time' => ['<=' => date('Y-m-d H:i:s', $now)], // execute everything scheduled in the past
       'option.limit'       => $params['limit'],
       'sequential'         => 1, // in the scheduled order(!)
       'option.sort'        => 'activity_date_time ASC, id ASC',
@@ -83,7 +85,7 @@ function civicrm_api3_Contract_process_scheduled_modifications($params) {
     $change = CRM_Contract_Change::getChangeForData($scheduled_activity);
     $result['order'][] = $change->getID();
 
-    $requestedExecutionTime = strtotime($scheduled_activity["activity_date_time"]);
+    $requestedExecutionTime = max(strtotime($scheduled_activity["activity_date_time"]), $now);
 
     // Verify that the requested execution time is after the minimum change date
     if (!empty($minimumChangeDate) && $requestedExecutionTime < strtotime($minimumChangeDate)) {
