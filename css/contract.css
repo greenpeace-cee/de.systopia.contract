@@ -25,3 +25,7 @@ table.dataTable.display tbody tr.failed td {
   margin-top: 4px;
   padding: 3px;
 }
+
+.crm-form-block .crm-section + hr {
+  margin-bottom: 15px;
+}

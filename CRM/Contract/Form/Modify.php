@@ -10,344 +10,569 @@
 
 use CRM_Contract_ExtensionUtil as E;
 
-class CRM_Contract_Form_Modify extends CRM_Core_Form{
+class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
-  function preProcess(){
+    private static $payment_instruments = [
+        "sepa_mandate" => "CRM_Contract_PaymentInstrument_SepaMandate",
+    ];
 
-    // If we requested a contract file download
-    $download = CRM_Utils_Request::retrieve('ct_dl', 'String', CRM_Core_DAO::$_nullObject, FALSE, '', 'GET');
-    if (!empty($download)) {
-      // FIXME: Could use CRM_Utils_System::download but it still requires you to do all the work (load file to stream etc) before calling.
-      if (CRM_Contract_Utils::downloadContractFile($download)) {
-        CRM_Utils_System::civiExit();
-      }
-      // If the file didn't exist
-      echo "File does not exist";
-      CRM_Utils_System::civiExit();
-    }
+    private $change_class;
+    private $contact;
+    private $medium_ids;
+    private $membership;
+    private $membership_types;
+    private $modify_action;
+    private $payment_instrument;
+    private $payment_instrument_class;
+    private $recurring_contribution;
 
-    // Not sure why this isn't simpler but here is my way of ensuring that the
-    // id parameter is available throughout this forms life
-    $this->id = CRM_Utils_Request::retrieve('id', 'Integer');
-    if($this->id){
-      $this->set('id', $this->id);
-    }
-    if(!$this->get('id')){
-      CRM_Core_Error::fatal('Missing the contract ID');
-    }
+    function preProcess () {
 
-    // Set a message when updating a contract if scheduled updates already exist
-    $modifications = civicrm_api3('Contract', 'get_open_modification_counts', ['id' => $this->get('id')])['values'];
-    if($modifications['scheduled'] || $modifications['needs_review']){
-      CRM_Core_Session::setStatus('Some updates have already been scheduled for this contract. Please ensure that this new update will not conflict with existing updates', 'Scheduled updates exist!', 'alert', ['expires' => 0]);
-    }
+        // File download
+        $download = CRM_Utils_Request::retrieve(
+            "ct_dl",
+            "String",
+            CRM_Core_DAO::$_nullObject,
+            false,
+            "",
+            "GET"
+        );
 
-    // Load the the contract to populate default form values
-    try{
-      $this->membership = civicrm_api3('Membership', 'getsingle', ['id' => $this->get('id')]);
-    }catch(Exception $e){
-      CRM_Core_Error::fatal('Not a valid contract ID');
-    }
+        if (isset($download)) {
+            if (CRM_Contract_Utils::downloadContractFile($download)) {
+                CRM_Utils_System::civiExit();
+            }
 
-    // Process the requested action
-    $this->modify_action = strtolower(CRM_Utils_Request::retrieve('modify_action', 'String'));
-    $this->assign('modificationActivity', $this->modify_action);
-    $this->change_class = CRM_Contract_Change::getClassByAction($this->modify_action);
-    if (empty($this->change_class)) {
-      throw new Exception(E::ts("Unknown action '%1'.", [1 => $this->modify_action]));
-    }
-
-    // set title
-    CRM_Utils_System::setTitle($this->change_class::getChangeTitle());
-
-    // Set the destination for the form
-    $this->controller->_destination = CRM_Utils_System::url('civicrm/contact/view', "reset=1&cid={$this->membership['contact_id']}&selectedChild=member");
-
-    // Assign the contact id (necessary for the mandate popup)
-    $this->assign('cid', $this->membership['contact_id']);
-
-    // check if BIC lookup is possible
-    $this->assign('bic_lookup_accessible', CRM_Contract_SepaLogic::isLittleBicExtensionAccessible());
-    $this->assign('is_enable_bic', CRM_Contract_Utils::isDefaultCreditorUsesBic());
-
-    // assign current cycle day
-    $current_cycle_day = CRM_Contract_RecurringContribution::getCycleDay($this->membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')]);
-    $this->assign('current_cycle_day', $current_cycle_day);
-
-    // Validate that the contract has a valid start status
-    $membershipStatus =  CRM_Contract_Utils::getMembershipStatusName($this->membership['status_id']);
-    if(!in_array($membershipStatus, $this->change_class::getStartStatusList())){
-      throw new Exception(E::ts("Invalid modification for status '%1'.", [1 => $membershipStatus]));
-    }
-  }
-
-  function buildQuickForm(){
-
-    // Add fields that are present on all contact history forms
-
-    // Add the date that this update should take effect (leave blank for now)
-    $this->addDateTime('activity_date', ts('Schedule date'), TRUE);
-
-    // Add the interaction medium
-    foreach(civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id", 'options' => ['limit' => 0, 'sort' => 'weight']])['values'] as $key => $value){
-      $mediumOptions[$key] = $value;
-    }
-    $this->add('select', 'activity_medium', ts('Source media'), array('' => '- none -') + $mediumOptions, false, array('class' => 'crm-select2'));
-
-    // Add a note field
-    if (version_compare(CRM_Utils_System::version(), '4.7', '<')) {
-      $this->addWysiwyg('activity_details', ts('Notes'), []);
-    } else {
-      $this->add('wysiwyg', 'activity_details', ts('Notes'));
-    }
-
-    // Then add fields that are dependent on the action
-    if(in_array($this->modify_action, array('update', 'revive'))){
-      $this->addUpdateFields();
-    }elseif($this->modify_action == 'cancel'){
-      $this->addCancelFields();
-    }elseif($this->modify_action == 'pause'){
-      $this->addPauseFields();
-    }
-
-    $this->addButtons([
-      ['type' => 'cancel', 'name' => 'Discard changes', 'submitOnce' => TRUE], // since Cancel looks bad when viewed next to the Cancel action
-      ['type' => 'submit', 'name' => $this->change_class::getChangeTitle(), 'isDefault' => true, 'submitOnce' => TRUE],
-    ]);
-
-    $this->setDefaults();
-  }
-
-  // Note: also used for revive
-  function addUpdateFields(){
-
-    // load contact
-    if (empty($this->membership['contact_id'])) {
-      $this->contact = array('display_name' => 'Error');
-    } else {
-      $this->contact = civicrm_api3('Contact', 'getsingle', array(
-        'id'     => $this->membership['contact_id'],
-        'return' => 'display_name'));
-    }
-
-    // JS for the pop up
-    CRM_Core_Resources::singleton()->addVars('de.systopia.contract', array(
-      'cid'                     => $this->membership['contact_id'],
-      'current_recurring'       => $this->membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')],
-      'debitor_name'            => $this->contact['display_name'],
-      'creditor'                => CRM_Contract_SepaLogic::getCreditor(),
-      // 'next_collections'        => CRM_Contract_SepaLogic::getNextCollections(),
-      'frequencies'             => CRM_Contract_SepaLogic::getPaymentFrequencies(),
-      'grace_end'               => CRM_Contract_SepaLogic::getNextInstallmentDate($this->membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')]),
-      // 'graceful_collections'    => CRM_Contract_SepaLogic::getNextCollections(),
-      'action'                  => $this->modify_action,
-      'current_contract'        => CRM_Contract_RecurringContribution::getCurrentContract($this->membership['contact_id'], $this->membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')]),
-      'recurring_contributions' => CRM_Contract_RecurringContribution::getAllForContact($this->membership['contact_id'], TRUE)));
-    CRM_Contract_SepaLogic::addJsSepaTools();
-
-    // add a generic switch to clean up form
-    $payment_options = array(
-      'select'   => 'select other',
-      'modify'   => 'modify');
-
-    // update also has the option of no change to payment contract
-    if ($this->modify_action == 'update') {
-      $payment_options =  array('nochange' => 'no change') + $payment_options;
-    }
-    $this->add('select', 'payment_option', ts('Payment'), $payment_options);
-
-
-    $formUtils = new CRM_Contract_FormUtils($this, 'Membership');
-    $formUtils->addPaymentContractSelect2('recurring_contribution', $this->membership['contact_id'], FALSE);
-
-    // Membership type (membership)
-    foreach(civicrm_api3('MembershipType', 'get', ['options' => ['limit' => 0, 'sort' => 'weight']])['values'] as $MembershipType){
-      $MembershipTypeOptions[$MembershipType['id']] = $MembershipType['name'];
-    };
-    $this->add('select', 'membership_type_id', ts('Membership type'), array('' => '- none -') + $MembershipTypeOptions, true, array('class' => 'crm-select2'));
-
-    // Campaign
-    $this->add('select', 'campaign_id', ts('Campaign'), CRM_Contract_Configuration::getCampaignList(), FALSE, array('class' => 'crm-select2'));
-    // $this->addEntityRef('campaign_id', ts('Campaign'), [
-    //   'entity' => 'campaign',
-    //   'placeholder' => ts('- none -'),
-    // ]);
-
-    $this->add('select', 'cycle_day', ts('Cycle day'), CRM_Contract_SepaLogic::getCycleDays());
-    $this->add('text',   'iban', ts('IBAN'), array('class' => 'huge'));
-    $this->addCheckbox('use_previous_iban', ts('Use previous IBAN'), ['' => TRUE]);
-    if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
-      $this->add('text',   'bic', ts('BIC'));
-    }
-    $this->add('text',   'payment_amount', ts('Installment Amount'), array('size' => 6));
-    $this->add('select', 'payment_frequency', ts('Payment Frequency'), CRM_Contract_SepaLogic::getPaymentFrequencies());
-  }
-
-
-  function addCancelFields(){
-
-    // Cancel reason
-    foreach(civicrm_api3('OptionValue', 'get', [
-      'option_group_id' => 'contract_cancel_reason',
-      'filter'          => 0,
-      'is_active'       => 1,
-      'options'         => ['limit' => 0, 'sort' => 'weight']])['values'] as $cancelReason){
-      $cancelOptions[$cancelReason['value']] = $cancelReason['label'];
-    };
-    $this->addRule('activity_date', 'Scheduled date is required for a cancellation', 'required');
-    $this->add('select', 'cancel_reason', ts('Cancellation reason'), array('' => '- none -') + $cancelOptions, true, array('class' => 'crm-select2 huge'));
-
-  }
-
-  function addPauseFields() {
-    // Resume date
-    $this->addDate('resume_date', ts('Resume Date'), TRUE, array('formatType' => 'activityDate'));
-  }
-
-  function setDefaults($defaultValues = null, $filter = null){
-    if(isset($this->membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')])){
-      $defaults['recurring_contribution'] = $this->membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')];
-
-      $defaults['cycle_day'] = CRM_Contract_SepaLogic::nextCycleDay();
-      $defaults['payment_frequency'] = '12';
-      $defaults['activity_medium'] = '7'; // Back Office
-
-      // TODO: add more default values?
-    }
-
-    $defaults['membership_type_id'] = $this->membership['membership_type_id'];
-
-    if ($this->modify_action == 'cancel') {
-      list($defaults['activity_date'], $defaults['activity_date_time']) = CRM_Utils_Date::setDateDefaults(date('Y-m-d H:i:00'), 'activityDateTime');
-    } else {
-      // if it's not a cancellation, set the default change date to tomorrow 12am (see GP-1507)
-      list($defaults['activity_date'], $defaults['activity_date_time']) = CRM_Utils_Date::setDateDefaults(date('Y-m-d 00:00:00', strtotime('+1 day')), 'activityDateTime');
-    }
-
-    $this->assign("defaultToMinimumChangeDate", false);
-    $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
-    $defaultActivityDateTime = $defaults['activity_date'] . " " . $defaults['activity_date_time'];
-
-    if (!empty($minimumChangeDate) && strtotime($defaultActivityDateTime) < strtotime($minimumChangeDate)) {
-      $this->assign("defaultToMinimumChangeDate", true);
-      list($defaults['activity_date'], $defaults['activity_date_time']) = CRM_Utils_Date::setDateDefaults($minimumChangeDate, 'activityDateTime');
-    }
-
-    parent::setDefaults($defaults);
-  }
-
-  function validate() {
-    $submitted = $this->exportValues();
-    $activityDate = CRM_Utils_Date::processDate($submitted['activity_date'], $submitted['activity_date_time']);
-
-    $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
-
-    if (!empty($minimumChangeDate) && strtotime($activityDate) < strtotime($minimumChangeDate)) {
-      HTML_QuickForm::setElementError(
-        "activity_date",
-        "Activity date must be after the minimum change date " . date("j M Y h:i a", strtotime($minimumChangeDate))
-      );
-    }
-
-    $midnightThisMorning = date('Ymd000000');
-    if($activityDate < $midnightThisMorning){
-      HTML_QuickForm::setElementError ( 'activity_date', 'Activity date must be either today (which will execute the change now) or in the future');
-    }
-    if($this->modify_action == 'pause'){
-      $resumeDate = CRM_Utils_Date::processDate($submitted['resume_date']);
-
-      if($activityDate > $resumeDate){
-        HTML_QuickForm::setElementError ( 'resume_date', 'Resume date must be after the scheduled pause date');
-      }
-    }
-
-    if (isset($submitted['payment_option'])) {
-      if ($submitted['payment_option'] == 'modify') {
-        if($submitted['payment_amount'] && !$submitted['payment_frequency']){
-          HTML_QuickForm::setElementError ( 'payment_frequency', 'Please specify a frequency when specifying an amount');
-        }
-        if($submitted['payment_frequency'] && !$submitted['payment_amount']){
-          HTML_QuickForm::setElementError ( 'payment_amount', 'Please specify an amount when specifying a frequency');
+            CRM_Core_Error::fatal("File does not exist");
         }
 
-        // SEPA validation
-        if (!empty($submitted['iban']) && !CRM_Contract_SepaLogic::validateIBAN($submitted['iban'])) {
-          HTML_QuickForm::setElementError ( 'iban', 'Please enter a valid IBAN');
+        // Contract
+        $contract_id = CRM_Utils_Request::retrieve("id", "Integer");
+
+        if (empty($contract_id)) {
+            CRM_Core_Error::fatal("Missing the contract ID");
         }
-        if (!empty($submitted['iban']) && CRM_Contract_SepaLogic::isOrganisationIBAN($submitted['iban'])) {
-          HTML_QuickForm::setElementError ( 'iban', "Do not use any of the organisation's own IBANs");
+
+        $this->set("id", $contract_id);
+
+        $modifications = civicrm_api3("Contract", "get_open_modification_counts", [
+            "id" => $contract_id,
+        ])["values"];
+
+        if ($modifications["scheduled"] || $modifications["needs_review"]) {
+            CRM_Core_Session::setStatus(
+                "Some updates have already been scheduled for this contract.
+                Please ensure that this new update will not conflict with existing updates.",
+                "Scheduled updates exist!",
+                "alert",
+                [ "expires" => 0 ]
+            );
         }
-        if (empty($submitted['iban'])) {
-          HTML_QuickForm::setElementError ( 'iban', ts('%1 is a required field.', array(1 => 'IBAN')));
+
+        // Membership
+        try {
+            $this->membership = civicrm_api3("Membership", "getsingle", [ "id" => $contract_id ]);
+        } catch (Exception $e) {
+            CRM_Core_Error::fatal("Not a valid contract ID");
         }
-        if (!empty($submitted['bic']) && !CRM_Contract_SepaLogic::validateBIC($submitted['bic'])) {
-          HTML_QuickForm::setElementError ( 'bic', 'Please enter a valid BIC');
+
+        // Modify action
+        $this->modify_action = strtolower(CRM_Utils_Request::retrieve("modify_action", "String"));
+        $this->change_class = CRM_Contract_Change::getClassByAction($this->modify_action);
+
+        if (empty($this->change_class)) {
+            CRM_Core_Error::fatal(E::ts("Unknown action '%1'", [ 1 => $this->modify_action ]));
         }
-        if (empty($submitted['bic']) && CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
-          HTML_QuickForm::setElementError ( 'bic', ts('%1 is a required field.', array(1 => 'BIC')));
+
+        // Title
+        CRM_Utils_System::setTitle($this->change_class::getChangeTitle());
+
+        // Contact
+        $contact_id = $this->membership["contact_id"];
+        $this->assign("cid", $contact_id);
+        $this->contact = civicrm_api3("Contact", "getsingle", [ "id" => $contact_id ]);
+
+        // Destination
+        $this->controller->_destination = CRM_Utils_System::url(
+            "civicrm/contact/view",
+            "reset=1&cid=$contact_id&selectedChild=member"
+        );
+
+        // Current cycle day
+        $rc_custom_field_id = CRM_Contract_Utils::getCustomFieldId("membership_payment.membership_recurring_contribution");
+        $rc_id = $this->membership[$rc_custom_field_id];
+        $current_cycle_day = CRM_Contract_RecurringContribution::getCycleDay($rc_id);
+        $this->assign("current_cycle_day", $current_cycle_day);
+
+        // Validate membership status
+        $status_id = $this->membership["status_id"];
+        $membership_status =  CRM_Contract_Utils::getMembershipStatusName($status_id);
+        $status_list = $this->change_class::getStartStatusList();
+
+        if (!in_array($membership_status, $status_list)) {
+            CRM_Core_Error::fatal(
+                E::ts("Invalid modification for status '%1'", [ 1 => $membership_status ])
+            );
         }
-      } elseif ($submitted['payment_option'] == 'select') {
-        if (empty($submitted['recurring_contribution'])) {
-          HTML_QuickForm::setElementError('recurring_contribution', ts('%1 is a required field.', array(1 => ts('Mandate / Recurring Contribution'))));
+
+        // Medium IDs
+        $this->medium_ids = civicrm_api3("Activity", "getoptions", [
+            "field" => "activity_medium_id",
+            "options" => [
+            "limit" => 0,
+            "sort" => "weight",
+            ],
+        ])["values"];
+
+        // Membership types
+        $this->membership_types = [];
+
+        $membership_types_result = civicrm_api3(
+            "MembershipType",
+            "get",
+            [
+            "options" => [
+                "limit" => 0,
+                "sort" => "weight",
+            ],
+            ]
+        )["values"];
+
+        foreach ($membership_types_result as $mem_type) {
+            $this->membership_types[$mem_type["id"]] = $mem_type["name"];
         }
-      }
+
+        // Recurring contribution
+        $this->recurring_contribution = civicrm_api3("ContributionRecur", "getsingle", [ "id" => $rc_id ]);
+
+        // Payment instrumtent
+        foreach (self::$payment_instruments as $pi_name => $pi_class) {
+            if ($pi_class::isInstance($this->recurring_contribution["payment_instrument_id"])) {
+                $this->payment_instrument = $pi_class::loadByRecurringContributionId($rc_id);
+                $this->payment_instrument_class = $pi_class;
+                break;
+            }
+        }
+
+        // JS variables
+        $cycle_days =
+            isset($this->payment_instrument_class)
+            ? $this->payment_instrument_class::getCycleDays()
+            : range(1, 28);
+
+        $grace_end = CRM_Contract_RecurringContribution::getNextInstallmentDate($rc_id, $cycle_days);
+        $current_contract = CRM_Contract_RecurringContribution::getCurrentContract($contact_id, $rc_id);
+        $frequencies = CRM_Contract_RecurringContribution::getPaymentFrequencies();
+
+        $current_frequency = [
+            "interval" => $this->recurring_contribution["frequency_interval"],
+            "unit"     => $this->recurring_contribution["frequency_unit"],
+        ];
+
+        $recurring_contributions = CRM_Contract_RecurringContribution::getAllForContact($contact_id, true);
+
+        $resources = CRM_Core_Resources::singleton();
+
+        $resources->addVars("de.systopia.contract", [
+            "action"                  => $this->modify_action,
+            "cid"                     => $contact_id,
+            "current_amount"          => $this->recurring_contribution["amount"],
+            "current_contract"        => $current_contract,
+            "current_cycle_day"       => $this->recurring_contribution["cycle_day"],
+            "current_frequency"       => $current_frequency,
+            "current_recurring"       => $rc_id,
+            "debitor_name"            => $this->contact["display_name"],
+            "frequencies"             => $frequencies,
+            "grace_end"               => $grace_end,
+            "recurring_contributions" => $recurring_contributions,
+        ]);
+
+        foreach (self::$payment_instruments as $pi_name => $pi_class) {
+            $resources->addVars(
+                "de.systopia.contract/$pi_name",
+                $pi_class::formVars($this->payment_instrument)
+            );
+        }
+
     }
 
-    return parent::validate();
-  }
+    function buildQuickForm () {
 
-  function postProcess() {
+        // Currency
+        $this->assign("currency", CRM_Sepa_Logic_Settings::defaultCreditor()->currency);
 
-    // Construct a call to contract.modify
-    // The following fields to be submitted in all cases
-    $submitted = $this->exportValues();
-    $params['id'] = $this->get('id');
-    $params['action'] = $this->modify_action;
-    $params['medium_id'] = $submitted['activity_medium'];
-    $params['note'] = $submitted['activity_details'];
+        // Payment change (payment_change)
+        $this->add("select", "payment_change", ts("Payment change"), [
+            "no_change"       => ts("No change"),
+            "create"          => ts("New payment method"),
+            "modify"          => ts("Modify current payment method"),
+            "select_existing" => ts("Select existing contribution"),
+        ]);
 
-    //If the date was set, convert it to the necessary format
-    if($submitted['activity_date']){
-      $params['date'] = CRM_Utils_Date::processDate($submitted['activity_date'], $submitted['activity_date_time'], false, 'Y-m-d H:i:s');
+        // Payment method (payment_instrument)
+        $payment_instrument_options = [];
+
+        foreach (self::$payment_instruments as $pi_name => $pi_class) {
+            $payment_instrument_options[$pi_name] = $pi_class::displayName();
+        }
+
+        $this->add(
+            "select",
+            "payment_instrument",
+            ts("Payment method"),
+            $payment_instrument_options,
+            false
+        );
+
+        // Payment-instrument-specific fields
+        $pif_template_var = [];
+
+        foreach (self::$payment_instruments as $pi_name => $pi_class) {
+            $pif_template_var[$pi_name] = [];
+
+            foreach ($pi_class::formFields() as $field) {
+                if (!$field["enabled"]) continue;
+
+                $field_name = $field["name"];
+                $field_id = "pi-$pi_name-$field_name";
+                $field_settings = isset($field["settings"]) ? $field["settings"] : [];
+
+                array_push($pif_template_var[$pi_name], $field_id);
+
+                switch ($field["type"]) {
+                    case "select":
+                        $this->add(
+                            "select",
+                            $field_id,
+                            ts($field["display_name"]),
+                            $field["options"]
+                        );
+
+                        break;
+
+                    case "text":
+                        $this->add("text", $field_id, ts($field["display_name"]), $field_settings);
+                        break;
+                }
+            }
+
+            $this->add(
+                "select",
+                "pi-$pi_name-cycle_day",
+                ts("Cycle day"),
+                $pi_class::getCycleDays()
+            );
+        }
+
+        $this->assign("payment_instrument_fields", $pif_template_var);
+        $this->assign("payment_instrument_fields_json", json_encode($pif_template_var));
+
+        // Recurring contribution (recurring_contribution)
+        $formUtils = new CRM_Contract_FormUtils($this, "Membership");
+
+        $formUtils->addPaymentContractSelect2(
+            "recurring_contribution",
+            $this->contact["id"],
+            false
+        );
+
+        // Installment amount
+        $this->add("text", "amount", ts("Installment amount"), [ "size" => 6 ]);
+
+        // Payment frequency (frequency)
+        $this->add(
+            "select",
+            "frequency",
+            ts("Payment frequency"),
+            CRM_Contract_RecurringContribution::getPaymentFrequencies()
+        );
+
+        // Membership type (membership_type_id)
+        $membership_type_id_options = [ "" => ts("- none -") ] + $this->membership_types;
+
+        $this->add(
+            "select",
+            "membership_type_id",
+            ts("Membership type"),
+            $membership_type_id_options,
+            true,
+            [ "class" => "crm-select2" ]
+        );
+
+        // Campaign (campaign_id)
+        $this->add(
+            "select",
+            "campaign_id",
+            ts("Campaign"),
+            CRM_Contract_Configuration::getCampaignList(),
+            false,
+            [ "class" => "crm-select2" ]
+        );
+
+        // Schedule date (activity_date)
+        $this->add(
+            "datepicker",
+            "activity_date",
+            ts("Schedule date"),
+            [],
+            true,
+            [ "time" => true ]
+        );
+
+        // Source media (medium_id)
+        $medium_id_options = [ "" => ts("- none -") ] + $this->medium_ids;
+
+        $this->add(
+            "select",
+            "medium_id",
+            ts("Source media"),
+            $medium_id_options,
+            false,
+            [ "class" => "crm-select2" ]
+        );
+
+        // Notes (notes)
+        if (version_compare(CRM_Utils_System::version(), "4.7", "<")) {
+            $this->addWysiwyg("activity_details", ts("Notes"), []);
+        } else {
+            $this->add("wysiwyg", "activity_details", ts("Notes"));
+        }
+            // Form buttons
+        $this->addButtons([
+            [
+                "type" => "cancel",
+                "name" => ts("Cancel"),
+                "submitOnce" => true,
+            ],
+            [
+                "type" => "submit",
+                "name" => ts("Create"),
+                "submitOnce" => true,
+            ],
+        ]);
+
+        $this->setDefaults();
+
     }
 
-    // If this is an update or a revival
-    if(in_array($this->modify_action, array('update', 'revive'))){
-      switch ($submitted['payment_option']) {
-        case 'select': // select a new recurring contribution
-          $params['membership_payment.membership_recurring_contribution'] = (int) $submitted['recurring_contribution'];
-          break;
+    function setDefaults ($defaultValues = null, $filter = null) {
+        $defaults = [];
 
-        case 'modify': // manually modify the existing
-          $params['membership_payment.membership_annual'] = CRM_Contract_SepaLogic::formatMoney($submitted['payment_frequency'] * CRM_Contract_SepaLogic::formatMoney($submitted['payment_amount']));
-          $params['membership_payment.membership_frequency'] = $submitted['payment_frequency'];
-          $params['membership_payment.cycle_day'] = $submitted['cycle_day'];
-          $params['membership_payment.to_ba']   = CRM_Contract_BankingLogic::getCreditorBankAccount();
-          $submittedBic = (CRM_Contract_Utils::isDefaultCreditorUsesBic()) ? $submitted['bic'] : NULL;
-          $params['membership_payment.from_ba'] = CRM_Contract_BankingLogic::getOrCreateBankAccount($this->membership['contact_id'], $submitted['iban'], $submittedBic);
-          break;
+        // Recurring contribution (recurring_contribution)
+        $defaults["recurring_contribution"] = $this->recurring_contribution["id"];
 
-        default:
-        case 'nochange': // no changes to payment mode
-          break;
-      }
+        // Payment frequency (frequency)
+        $defaults["frequency"] = "12"; // monthly
 
-      // add other changes
-      $params['membership_type_id'] = $submitted['membership_type_id'];
-      $params['campaign_id'] = $submitted['campaign_id'];
+        // Source media (medium_id)
+        $defaults["medium_id"] = "7"; // Back Office
 
+        // Membership type (membership_type_id)
+        $defaults["membership_type_id"] = $this->membership["membership_type_id"];
 
-    // If this is a cancellation
-    }elseif($this->modify_action == 'cancel'){
-      $params['membership_cancellation.membership_cancel_reason'] = $submitted['cancel_reason'];
+        // Schedule date (activity_date)
+        $tomorrow = date("Y-m-d 00:00:00", strtotime("+1 day"));
+        $minimum_change_date = Civi::settings()->get("contract_minimum_change_date");
+        $default_change_date = null;
 
-    // If this is a pause
-    }elseif($this->modify_action == 'pause'){
-      $params['resume_date'] = CRM_Utils_Date::processDate($submitted['resume_date'], false, false, 'Y-m-d');
+        if (isset($minimum_change_date) && strtotime($tomorrow) < strtotime($minimum_change_date)) {
+            $default_change_date = $minimum_change_date;
+            $this->assign("default_to_minimum_change_date", true);
+        } else {
+            $default_change_date = $tomorrow;
+            $this->assign("default_to_minimum_change_date", false);
+        }
 
+        list($date, $time) = CRM_Utils_Date::setDateDefaults($default_change_date, "activityDateTime");
+        $defaults["activity_date"] = $date;
+        $defaults["activity_date_time"] = $time;
+
+        // Payment-instrument-specific defaults
+        foreach (self::$payment_instruments as $pi_name => $pi_class) {
+            foreach ($pi_class::formFields() as $field_name => $field) {
+                if (!$field["enabled"] || empty($field["default"])) continue;
+
+                $defaults["pi-$pi_name-$field_name"] = $field["default"];
+            }
+
+            $defaults["pi-$pi_name-cycle_day"] = $pi_class::nextCycleDay();
+        }
+
+        parent::setDefaults($defaults);
     }
-    civicrm_api3('Contract', 'modify', $params);
-    civicrm_api3('Contract', 'process_scheduled_modifications', ['id' => $params['id']]);
-  }
+
+    function validate() {
+        $submitted = $this->exportValues();
+
+        // Schedule date (activity_date)
+        $activity_date = CRM_Utils_Date::processDate(
+            $submitted["activity_date"],
+            $submitted["activity_date_time"]
+        );
+
+        $minimum_change_date = Civi::settings()->get("contract_minimum_change_date");
+
+        if (isset($minimum_change_date) && strtotime($activity_date) < strtotime($minimum_change_date)) {
+            $formatted_date = date("j M Y h:i a", strtotime($minimum_change_date));
+
+            HTML_QuickForm::setElementError(
+                "activity_date",
+                "Activity date must be after the minimum change date $formatted_date"
+            );
+        }
+
+        $midnight_this_morning = date("Ymd000000");
+
+        if(strtotime($activity_date) < strtotime($midnight_this_morning)){
+            HTML_QuickForm::setElementError(
+                "activity_date",
+                "Activity date must be either today (which will execute the change now) or in the future"
+            );
+        }
+
+        switch ($submitted["payment_change"]) {
+            case "no_change":
+                break;
+
+            case "create":
+            case "modify":
+                if (empty($submitted["amount"])) {
+                    HTML_QuickForm::setElementError("amount", "Please specify a payment amount");
+                }
+
+                if (empty($submitted["frequency"])) {
+                    HTML_QuickForm::setElementError("frequency", "Please specify a payment frequency");
+                }
+
+                $pi_name = $submitted["payment_instrument"];
+                $pi_class = self::$payment_instruments[$pi_name];
+
+                foreach ($pi_class::formFields() as $field_name => $field) {
+                    if (!$field["enabled"] || empty($field["validate"])) continue;
+
+                    $field_id = "pi-$pi_name-$field_name";
+
+                    try {
+                        call_user_func($field["validate"], $submitted[$field_id], $field["required"]);
+                    } catch (Exception $exception) {
+                        HTML_QuickForm::setElementError($field_id, $exception->getMessage());
+                    }
+                }
+
+                break;
+
+            case "select_existing":
+                if (empty($submitted["recurring_contribution"])) {
+                    HTML_QuickForm::setElementError(
+                        "recurring_contribution",
+                        ts("%1 is a required field", [ 1 => ts("Recurring Contribution") ])
+                    );
+                }
+
+                break;
+        }
+
+        return parent::validate();
+    }
+
+    function postProcess() {
+        $submitted = $this->exportValues();
+
+        $contract_modify_params = [
+            "action"    => $this->modify_action,
+            "id"        => $this->get("id"),
+            "medium_id" => $submitted["activity_medium"],
+            "note"      => $submitted["activity_details"],
+        ];
+
+        if ($submitted["activity_date"]) {
+            $contract_modify_params["date"] = CRM_Utils_Date::processDate(
+                $submitted["activity_date"],
+                $submitted["activity_date_time"],
+                false,
+                "Y-m-d H:i:s"
+            );
+        }
+
+        switch ($submitted["payment_change"]) {
+            case "no_change":
+                break;
+
+            case "create":
+                $payment_instrument = $submitted["payment_instrument"];
+                $pi_class = self::$payment_instruments[$payment_instrument];
+
+                $submitted["contact_id"] = $this->contact["id"];
+                $submitted["start_date"] = $submitted["activity_date"];
+
+                $payment_params = $pi_class::mapSubmittedValues($submitted);
+                $new_payment = $pi_class::create($payment_params);
+
+                $entity_id = $new_payment->getParameters()["entity_id"];
+                $contract_params["membership_payment.membership_recurring_contribution"] = $entity_id;
+
+                $frequency = (int) $submitted["frequency"];
+                $contract_modify_params["membership_payment.membership_frequency"] = $frequency;
+
+                $amount = (float) CRM_Contract_Utils::formatMoney($submitted["amount"]);
+                $annual_amount = $frequency * $amount;
+                $contract_modify_params["membership_payment.membership_annual"] = CRM_Contract_Utils::formatMoney($annual_amount);
+
+                $contract_modify_params["membership_payment.cycle_day"] = $submitted["pi-$payment_instrument-cycle_day"];
+
+                if ($submitted["payment_instrument"] === "sepa_mandate") {
+                    $contract_modify_params["membership_payment.to_ba"]   = CRM_Contract_BankingLogic::getCreditorBankAccount();
+
+                    $bic = isset($submitted["pi-sepa_mandate-bic"]) ? $submitted["pi-sepa_mandate-bic"] : null;
+
+                    $contract_modify_params["membership_payment.from_ba"] = CRM_Contract_BankingLogic::getOrCreateBankAccount(
+                        $this->membership["contact_id"],
+                        $submitted["pi-sepa_mandate-iban"],
+                        $bic
+                    );
+                }
+
+                break;
+
+            case "modify":
+                $frequency = (int) $submitted["frequency"];
+                $contract_modify_params["membership_payment.membership_frequency"] = $frequency;
+
+                $amount = (float) CRM_Contract_Utils::formatMoney($submitted["amount"]);
+                $annual_amount = $frequency * $amount;
+                $contract_modify_params["membership_payment.membership_annual"] = CRM_Contract_Utils::formatMoney($annual_amount);
+
+                $payment_instrument = $submitted["payment_instrument"];
+                $contract_modify_params["membership_payment.cycle_day"] = $submitted["pi-$payment_instrument-cycle_day"];
+
+                if ($submitted["payment_instrument"] === "sepa_mandate") {
+                    $contract_modify_params["membership_payment.to_ba"]   = CRM_Contract_BankingLogic::getCreditorBankAccount();
+
+                    $bic = isset($submitted["pi-sepa_mandate-bic"]) ? $submitted["pi-sepa_mandate-bic"] : null;
+
+                    $contract_modify_params["membership_payment.from_ba"] = CRM_Contract_BankingLogic::getOrCreateBankAccount(
+                        $this->membership["contact_id"],
+                        $submitted["pi-sepa_mandate-iban"],
+                        $bic
+                    );
+                }
+
+                break;
+
+            case "select_existing":
+                $contract_modify_params["membership_payment.membership_recurring_contribution"] =
+                    $submitted["recurring_contribution"];
+
+                break;
+        }
+
+        $contract_modify_params["membership_type_id"] = $submitted["membership_type_id"];
+        $contract_modify_params["campaign_id"] = $submitted["campaign_id"];
+
+        civicrm_api3("Contract", "modify", $contract_modify_params);
+        civicrm_api3("Contract", "process_scheduled_modifications", [ "id" => $this->get("id") ]);
+    }
 
 }
+
+?>
