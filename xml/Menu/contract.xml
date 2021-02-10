@@ -53,4 +53,16 @@
     <title>Contract Download</title>
     <access_arguments>access CiviCRM</access_arguments>
   </item>
+  <item>
+    <path>civicrm/contract/pause</path>
+    <title>Pause contract</title>
+    <page_callback>CRM_Contract_Form_Pause</page_callback>
+    <access_arguments>edit memberships</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/contract/cancel</path>
+    <title>Cancel contract</title>
+    <page_callback>CRM_Contract_Form_Cancel</page_callback>
+    <access_arguments>cancel memberships</access_arguments>
+  </item>
 </menu>
