@@ -36,9 +36,21 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change_Upgrade {
 
     if (empty($contract_update['membership_payment.membership_recurring_contribution'])) {
       // recurring contribution is unchanged - resume it
-      CRM_Contract_SepaLogic::resumeSepaMandate(
-        CRM_Utils_Array::value('membership_payment.membership_recurring_contribution', $contract_before)
+      $recurring_contribution_id = CRM_Utils_Array::value(
+        "membership_payment.membership_recurring_contribution",
+        $contract_before
       );
+
+      $pi_class = CRM_Contract_RecurringContribution::getPaymentInstrumentClass(
+        $recurring_contribution_id
+      );
+
+      $payment =
+        isset($pi_class)
+        ? $pi_class::loadByRecurringContributionId($recurring_contribution_id)
+        : null;
+
+      if (isset($payment)) $payment->resume();
     }
 
     // perform the update

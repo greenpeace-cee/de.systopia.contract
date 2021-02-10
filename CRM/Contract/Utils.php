@@ -346,4 +346,34 @@ class CRM_Contract_Utils
     return self::$isDefaultCreditorUsesBic;
   }
 
+  /**
+   * formats a value to the CiviCRM failsafe format: 0.00 (e.g. 999999.90)
+   * even if there are ',' in there, which are used in some countries
+   * (e.g. Germany, Austria,) as a decimal point.
+   */
+  public static function formatMoney($raw_value) {
+    // strip whitespaces
+    $stripped_value = preg_replace('#\s#', '', $raw_value);
+
+    // find out if there's a problem with ','
+    if (strpos($stripped_value, ',') !== FALSE) {
+      // if there are at least three digits after the ','
+      //  it's a thousands separator
+      if (preg_match('#,\d{3}#', $stripped_value)) {
+        // it's a thousands separator -> just strip
+        $stripped_value = preg_replace('#,#', '', $stripped_value);
+      } else {
+        // it has to be interpreted as a decimal
+        // first remove all other decimals
+        $stripped_value = preg_replace('#[.]#', '', $stripped_value);
+        // then replace with decimal
+        $stripped_value = preg_replace('#,#', '.', $stripped_value);
+      }
+    }
+
+    // finally format properly
+    $clean_value = number_format($stripped_value, 2, '.', '');
+    return $clean_value;
+  }
+
 }

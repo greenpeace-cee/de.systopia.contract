@@ -220,8 +220,8 @@ class CRM_Contract_RecurringContribution {
       'display_name' => $contact['display_name'],
       'payment_instrument' => $paymentInstruments[$cr['payment_instrument_id']],
       'frequency' => $this->writeFrequency($cr),
-      'amount' => CRM_Contract_SepaLogic::formatMoney($cr['amount']),
-      'annual_amount' => CRM_Contract_SepaLogic::formatMoney($this->calcAnnualAmount($cr)),
+      'amount' => CRM_Contract_Utils::formatMoney($cr['amount']),
+      'annual_amount' => CRM_Contract_Utils::formatMoney($this->calcAnnualAmount($cr)),
       'next_debit' => '?',
     ];
 
@@ -387,6 +387,150 @@ class CRM_Contract_RecurringContribution {
         return $sepa;
       }
     }
+  }
+
+  /**
+   * Return the date of the last successfully collected contribution
+   *  of the give recurring contribution
+   * If no such contribution is found, the current date is returned
+   *
+   * @return string date ('Y-m-d H:i:s')
+   */
+  public static function getNextInstallmentDate($contribution_recur_id, $cycle_days) {
+    $now = date('Y-m-d H:i:s');
+
+    if (!$contribution_recur_id) {
+      return $now;
+    }
+
+    // load last successull collection for the recurring contribution
+    $last_collection_search = civicrm_api3('Contribution', 'get', array(
+      'contribution_recur_id'  => $contribution_recur_id,
+      'contribution_status_id' => array('IN' => array(1,5)), // status Completed or In Progres
+      'options'                => array('sort'  => 'receive_date desc',
+                                        'limit' => 1),
+      'return'                 => 'id,receive_date',
+      ));
+
+    if ($last_collection_search['count'] > 0) {
+      $last_collection = reset($last_collection_search['values']);
+
+      // load recurring contribution
+      $contribution_recur = civicrm_api3('ContributionRecur', 'getsingle', array(
+        'id'     => $contribution_recur_id,
+        'return' => 'frequency_unit,frequency_interval'));
+
+      // GP-1094: go back to last cycle day
+      $safety_counter = 35;
+      $last_collection_date = strtotime($last_collection['receive_date']);
+      while (!in_array(date('j', $last_collection_date), array_keys($cycle_days)) && $safety_counter > 0) {
+        $last_collection_date = strtotime("-1 day", $last_collection_date);
+        $safety_counter -= 1;
+      }
+      if ($safety_counter == 0) {
+        // something went wrong, reset:
+        $last_collection_date = strtotime($last_collection['receive_date']);
+      }
+
+      // now calculate the next collection date
+      $next_collection = date('Y-m-d H:i:s', strtotime("+{$contribution_recur['frequency_interval']} {$contribution_recur['frequency_unit']}", $last_collection_date));
+      if ($next_collection > $now) {
+        // only makes sense if in the future
+        return $next_collection;
+      }
+    }
+
+    // check recurring contribution start date
+    $contribution_recur = civicrm_api3('ContributionRecur', 'getsingle', array(
+      'id'     => $contribution_recur_id,
+      'return' => 'start_date,contribution_status_id'));
+    if (!empty($contribution_recur['start_date']) && !empty($contribution_recur['contribution_status_id'])) {
+      $status_id = (int) $contribution_recur['contribution_status_id'];
+      // only consider active recurring contributions (2=Pending, 5=in Progress)
+      if ($status_id == 2 || $status_id == 5) {
+        $start_date = date('Y-m-d H:i:s', strtotime($contribution_recur['start_date']));
+        if ($start_date > $now) {
+          return $start_date;
+        }
+      }
+    }
+
+    return $now;
+  }
+
+  /**
+   * Calculate the new contributions's start date.
+   * In most cases this is simply 'now', but in the case of a update
+   * the membership period already paid by the donor should be respected
+   *
+   * @see https://redmine.greenpeace.at/issues/771
+   */
+  public static function getUpdateStartDate($current_state, $desired_state, $activity, $cycle_days) {
+    $now = date('YmdHis');
+    $update_activity_type  = CRM_Core_PseudoConstant::getKey(
+      'CRM_Activity_BAO_Activity',
+      'activity_type_id',
+      'Contract_Updated'
+    );
+    $contribution_recur_id = CRM_Utils_Array::value('membership_payment.membership_recurring_contribution', $current_state);
+
+    // check if it is a proper update and if we should defer the start date to respect already paid periods
+    if ($contribution_recur_id && $activity['activity_type_id'] == $update_activity_type && $desired_state['contract_updates.ch_defer_payment_start'] == '1') {
+      // load last successull collection for the recurring contribution
+      $calculated_date = CRM_Contract_RecurringContribution::getNextInstallmentDate(
+        $contribution_recur_id,
+        $cycle_days
+      );
+      // re-format date (returned as 'Y-m-d H:i:s') and return
+      return date('YmdHis', strtotime($calculated_date));
+    }
+
+    return $now;
+  }
+
+  /**
+   * Get a list of (accepted) payment frequencies
+   *
+   * @return array list of payment frequencies
+   */
+  public static function getPaymentFrequencies() {
+    // this is a hand-picked list of options
+    $optionValues = civicrm_api3('OptionValue', 'get', array(
+      'value'           => array('IN' => array(1, 2, 4, 12)),
+      'return'          => 'label,value',
+      'option_group_id' => 'payment_frequency',
+    ));
+
+    $options = array();
+    foreach ($optionValues['values'] as $value) {
+      $options[$value['value']] = $value['label'];
+    }
+    return $options;
+  }
+
+  /**
+   * Get the associated payment instrument class for a recurring contribution
+   *
+   * @param string $recurring_contribution_id
+   *
+   * @return string|null
+   */
+  public static function getPaymentInstrumentClass ($recurring_contribution_id) {
+    $payment_instrument_classes = [
+      "sepa_mandate" => "CRM_Contract_PaymentInstrument_SepaMandate",
+    ];
+
+    $recurring_contribution = civicrm_api3("ContributionRecur", "getsingle", [
+      "id" => $recurring_contribution_id,
+    ]);
+
+    foreach ($payment_instrument_classes as $pi_class) {
+      if ($pi_class::isInstance($recurring_contribution["payment_instrument_id"])) {
+        return $pi_class;
+      }
+    }
+
+    return null;
   }
 
 }

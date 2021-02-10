@@ -74,8 +74,8 @@ class CRM_Contract_Page_Review extends CRM_Core_Page {
         $activities[$key]['recurring_contribution_contact_id'] = $rc['contact_id'];
       }
       if(isset($activities[$key]['contract_updates_ch_annual']) && isset($activities[$key]['contract_updates_ch_frequency']) && $activities[$key]['contract_updates_ch_annual'] && $activities[$key]['contract_updates_ch_frequency']){
-        $activities[$key]['contract_updates_ch_amount'] = CRM_Contract_SepaLogic::formatMoney($activities[$key]['contract_updates_ch_annual']) / $activities[$key]['contract_updates_ch_frequency'];
-        $activities[$key]['contract_updates_ch_amount'] = CRM_Contract_SepaLogic::formatMoney($activities[$key]['contract_updates_ch_amount']);
+        $activities[$key]['contract_updates_ch_amount'] = CRM_Contract_Utils::formatMoney($activities[$key]['contract_updates_ch_annual']) / $activities[$key]['contract_updates_ch_frequency'];
+        $activities[$key]['contract_updates_ch_amount'] = CRM_Contract_Utils::formatMoney($activities[$key]['contract_updates_ch_amount']);
       }
       if(isset($activities[$key]['campaign_id'])){
         $campaigns[] = $activities[$key]['campaign_id'];
