@@ -7,205 +7,271 @@
 | http://www.systopia.de/                                      |
 +-------------------------------------------------------------*}
 
+{foreach from=$payment_instrument_fields key=pi_name item=_}
+    {include file="CRM/Contract/Form/PaymentInstrumentUtils/$pi_name.tpl"}
+{/foreach}
+
 <div class="crm-block crm-form-block">
+    <div class="crm-section form-field" id="payment_preview" data-payment-option="create">
+        <div class="label">
+            <label>Payment preview</label>
+        </div>
 
-  <h3>Create a new contract for {$contact.display_name}</h3>
+        <div class="content">
+            {foreach from=$payment_instrument_fields key=pi_name item=_}
+                {include file="CRM/Contract/Form/PaymentPreview/$pi_name.tpl"}
+            {/foreach}
+        </div>
 
-  <hr/>
-
-  <div class="crm-section">
-    <div class="label">Payment Preview</div>
-    <div class="content recurring-contribution-summary-text">None</div>
-    <div class="clear"></div>
-  </div>
-
-  <div class="crm-section">
-    <div class="label">{$form.payment_option.label}</div>
-    <div class="content">{$form.payment_option.html}</div>
-    <div class="clear"></div>
-  </div>
-
-  <div class="crm-section payment-select">
-    <div class="label">{$form.recurring_contribution.label} <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span></div>
-    <div class="content">{$form.recurring_contribution.html}</div>
-    <div class="clear"></div>
-    <div class="label"></div>
-    <div class="clear"></div>
-  </div>
-
-  <div class="crm-section payment-create">
-    <div class="label">{$form.cycle_day.label}</div>
-    <div class="content">{$form.cycle_day.html}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section payment-create">
-    <div class="label">{$form.iban.label} <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span></div>
-    <div class="content">{$form.iban.html}</div>
-    <div class="clear"></div>
-  </div>
-
-  {if $is_enable_bic}
-    <div class="crm-section payment-create">
-      <div class="label">{$form.bic.label} <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span></div>
-      <div class="content">{$form.bic.html}</div>
-      <div class="clear"></div>
+        <div class="clear"></div>
     </div>
-  {/if}
 
-  <div class="crm-section payment-create">
-    <div class="label">{$form.payment_amount.label}</div>
-    <div class="content">{$form.payment_amount.html}&nbsp;<span id="payment_amount_currency"></span></div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section payment-create">
-    <div class="label">{$form.payment_frequency.label}</div>
-    <div class="content">{$form.payment_frequency.html}</div>
-    <div class="clear"></div>
-  </div>
+    <div class="crm-section form-field" id="payment_option">
+        <div class="label">{$form.payment_option.label}</div>
+        <div class="content">{$form.payment_option.html}</div>
+        <div class="clear"></div>
+    </div>
 
-  <hr />
-  <div class="crm-section">
-    <div class="label">{$form.join_date.label}</div>
-    <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=join_date}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section">
-    <div class="label">{$form.start_date.label}</div>
-    <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=start_date}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section">
-    <div class="label">{$form.end_date.label}</div>
-    <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=end_date}</div>
-    <div class="clear"></div>
-  </div>
-  <hr />
-  <div class="crm-section">
-    <div class="label">{$form.campaign_id.label}</div>
-    <div class="content">{$form.campaign_id.html}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section">
-    <div class="label">{$form.membership_type_id.label}</div>
-    <div class="content">{$form.membership_type_id.html}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section">
-    <div class="label">{$form.activity_medium.label}</div>
-    <div class="content">{$form.activity_medium.html}</div>
-    <div class="clear"></div>
-  </div>
-  <hr />
-  <div class="crm-section">
-    <div class="label">{$form.membership_reference.label}</div>
-    <div class="content">{$form.membership_reference.html}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section">
-    <div class="label">{$form.membership_contract.label}</div>
-    <div class="content">{$form.membership_contract.html}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section">
-    <div class="label">{$form.membership_dialoger.label}</div>
-    <div class="content">{$form.membership_dialoger.html}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section">
-    <div class="label">{$form.membership_channel.label}</div>
-    <div class="content">{$form.membership_channel.html}</div>
-    <div class="clear"></div>
-  </div>
-  <hr />
-  <div class="crm-section">
-    <div class="label">{$form.activity_details.label}</div>
-    <div class="content">{$form.activity_details.html}</div>
-    <div class="clear"></div>
-  </div>
+    <div class="crm-section form-field" id="payment_instrument" data-payment-option="create">
+        <div class="label">{$form.payment_instrument.label}</div>
+        <div class="content">{$form.payment_instrument.html}</div>
+        <div class="clear"></div>
+    </div>
 
-  <div class="crm-submit-buttons">
-    {include file="CRM/common/formButtons.tpl" location="bottom"}
-  </div>
+    <hr />
+
+    <div class="crm-section form-field" id="existing_recurring_contribution" data-payment-option="select">
+        <div class="label">
+            {$form.existing_recurring_contribution.label}
+            <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span>
+        </div>
+
+        <div class="content">{$form.existing_recurring_contribution.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    {foreach from=$payment_instrument_fields key=pi_name item=field_ids}
+        {foreach from=$field_ids item=field_id}
+            <div
+                class="crm-section form-field"
+                id="{$field_id}"
+                data-payment-option="create"
+                data-payment-instrument="{$pi_name}"
+            >
+                <div class="label">{$form[$field_id].label}</div>
+                <div class="content">{$form[$field_id].html}</div>
+                <div class="clear"></div>
+            </div>
+        {/foreach}
+    {/foreach}
+
+    <hr />
+
+    {foreach from=$payment_instrument_fields key=pi_name item=_}
+        {assign var="field_id" value="pi-$pi_name-cycle_day"}
+
+        <div
+            class="crm-section form-field"
+            id="{$field_id}"
+            data-payment-option="create"
+            data-payment-instrument="{$pi_name}"
+        >
+            <div class="label">{$form[$field_id].label}</div>
+            <div class="content">{$form[$field_id].html}</div>
+            <div class="clear"></div>
+        </div>
+    {/foreach}
+
+    <div class="crm-section form-field" id="amount" data-payment-option="create">
+        <div class="label">{$form.amount.label}</div>
+        <div class="content">{$form.amount.html} {$currency}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="frequency" data-payment-option="create">
+        <div class="label">{$form.frequency.label}</div>
+        <div class="content">{$form.frequency.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <hr data-payment-option="create" />
+
+    <div class="crm-section form-field" id="join_date">
+        <div class="label">{$form.join_date.label}</div>
+        <div class="content">{$form.join_date.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="start_date">
+        <div class="label">{$form.start_date.label}</div>
+        <div class="content">{$form.start_date.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="end_date">
+        <div class="label">{$form.end_date.label}</div>
+        <div class="content">{$form.end_date.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <hr />
+
+    <div class="crm-section form-field" id="campaign_id">
+        <div class="label">{$form.campaign_id.label}</div>
+        <div class="content">{$form.campaign_id.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="membership_type_id">
+        <div class="label">{$form.membership_type_id.label}</div>
+        <div class="content">{$form.membership_type_id.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="activity_medium">
+        <div class="label">{$form.activity_medium.label}</div>
+        <div class="content">{$form.activity_medium.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <hr />
+
+    <div class="crm-section form-field" id="membership_reference">
+        <div class="label">{$form.membership_reference.label}</div>
+        <div class="content">{$form.membership_reference.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="membership_contract">
+        <div class="label">{$form.membership_contract.label}</div>
+        <div class="content">{$form.membership_contract.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="membership_dialoger">
+        <div class="label">{$form.membership_dialoger.label}</div>
+        <div class="content">{$form.membership_dialoger.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="membership_channel">
+        <div class="label">{$form.membership_channel.label}</div>
+        <div class="content">{$form.membership_channel.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <hr />
+
+    <div class="crm-section form-field" id="activity_details">
+        <div class="label">{$form.activity_details.label}</div>
+        <div class="content">{$form.activity_details.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-submit-buttons">
+        {include file="CRM/common/formButtons.tpl" location="bottom"}
+    </div>
 </div>
 
-
-{if $bic_lookup_accessible && $is_enable_bic}
-  {include file="CRM/Contract/Form/bic_lookup.tpl" location="bottom"}
-{/if}
-
 {literal}
+
 <script type="text/javascript">
-// add listener to exsting selector
-cj('[name=recurring_contribution]').change(updatePaymentSummaryText);
 
-// add listener to payment_option selector
-cj("#payment_option").change(function() {
-  updatePaymentSummaryText();
-  var new_mode = cj("#payment_option").val();
-  if (new_mode == "select") {
-    cj("div.payment-select").show(300);
-    cj("div.payment-create").hide(300);
-  } else if (new_mode == "create") {
-    cj("div.payment-select").hide(300);
-    cj("div.payment-create").show(300);
-  }
-});
+    const formFields = {};
+    let PaymentInstrument = {};
 
-/**
- * update the payment info shown
- */
-function updatePaymentSummaryText() {
-  var mode = cj("#payment_option").val();
-  if (mode == "select") {
-    // display the selected recurring contribution
-    var recurring_contributions = CRM.vars['de.systopia.contract'].recurring_contributions;
-    var key = cj('[name=recurring_contribution]').val();
-    if (key) {
-      cj('.recurring-contribution-summary-text').html(recurring_contributions[key].text_summary);
-    } else {
-      cj('.recurring-contribution-summary-text').html('None');
+    function initForm () {
+        const paymentInstrumentFields = {/literal}{$payment_instrument_fields_json}{literal};
+
+        const piFieldIds = Object.entries(paymentInstrumentFields).reduce(
+            (result, [pi, ids]) => [ ...result, ...ids, `pi-${pi}-cycle_day` ],
+            []
+        );
+
+        const formFieldIds = [
+            "activity_date",
+            "activity_details",
+            "activity_medium",
+            "amount",
+            "campaign_id",
+            "end_date",
+            "existing_recurring_contribution",
+            "frequency",
+            "join_date",
+            "membership_channel",
+            "membership_contract",
+            "membership_dialoger",
+            "membership_reference",
+            "membership_type_id",
+            "payment_option",
+            "payment_instrument",
+            "start_date",
+            ...piFieldIds,
+        ];
+
+        for (const fieldId of formFieldIds) {
+            formFields[fieldId] = cj(`div.form-field div.content *[name=${fieldId}]`);
+
+            formFields[fieldId].change(() => {
+                setPaymentInstrument();
+                showHideFormFields();
+                updatePaymentPreview();
+            });
+        }
+
+        setPaymentInstrument();
+        showHideFormFields();
+        updatePaymentPreview();
     }
-  } else if (mode == "create") {
-    // render the current SEPA values
-    var creditor        = CRM.vars['de.systopia.contract'].creditor;
-    var debitor_name    = CRM.vars['de.systopia.contract'].debitor_name;
-    var cycle_day       = cj('[name=cycle_day]').val();
-    var iban            = cj('[name=iban]').val();
-    var installment     = parseMoney(cj('[name=payment_amount]').val());
-    var freqency        = cj('[name=payment_frequency]').val();
-    var freqency_label  = CRM.vars['de.systopia.contract'].frequencies[freqency];
-    var start_date      = cj('[name=start_date]').val();
-    var annual          = 0.0;
-    var first_collection = nextCollectionDate(cycle_day, start_date);
 
-    // caculcate the installment
-    if (!isNaN(installment)) {
-      annual = (installment.toFixed(2) * parseFloat(freqency)).toFixed(2);
+    function setPaymentInstrument () {
+        const selectedPaymentInstrument = formFields["payment_instrument"].val();
+
+        if (
+            window._PAYMENT_INSTRUMENTS_
+            && window._PAYMENT_INSTRUMENTS_[selectedPaymentInstrument]
+        ) {
+            PaymentInstrument = window._PAYMENT_INSTRUMENTS_[selectedPaymentInstrument];
+        }
     }
 
-    // TODO: use template
-    cj('.recurring-contribution-summary-text').html(
-      "Debitor name: " + debitor_name + "<br/>" +
-      "Debitor account: " + iban + "<br/>" +
-      "Creditor name: " + creditor.name + "<br/>" +
-      "Creditor account: " + creditor.iban + "<br/>" +
-      "Payment method: SEPA Direct Debit<br/>" +
-      "Frequency: " + freqency_label + "<br/>" +
-      "Annual amount: " + annual + " " + creditor.currency + "<br/>" +
-      "Installment amount: " + installment.toFixed(2) + " " + creditor.currency + "<br/>" +
-      "Next debit: " + first_collection + "<br/>"
-      );
+    function showHideFormFields () {
+        // Show only fields relevant to the currently selected payment option / instrument
+        const selectedPaymentOption = formFields["payment_option"].val();
+        const selectedPaymentInstrument = formFields["payment_instrument"].val();
 
-    cj('#payment_amount_currency').text(creditor.currency);
-  }
-}
+        cj("*[data-payment-option], *[data-payment-instrument]").each((_, element) => {
+            const option =
+                element.hasAttribute("data-payment-option")
+                ? element.getAttribute("data-payment-option")
+                : undefined;
 
-// call once for the UI to adjust
-cj(document).ready(function() {
-  cj("#payment_option").trigger('change');
-  cj("div.payment-create").change(updatePaymentSummaryText);
-  cj("#start_date").parent().parent().change(updatePaymentSummaryText);
-});
+            const instrument =
+                element.hasAttribute("data-payment-instrument")
+                ? element.getAttribute("data-payment-instrument")
+                : undefined;
 
+            if (option !== undefined && option !== selectedPaymentOption) {
+                cj(element).hide(300);
+                return;
+            }
+
+            if (instrument !== undefined && instrument !== selectedPaymentInstrument) {
+                cj(element).hide(300);
+                return;
+            }
+
+            cj(element).show(300);
+        });
+    }
+
+    function updatePaymentPreview () {
+        if (PaymentInstrument.updatePaymentPreview) {
+            PaymentInstrument.updatePaymentPreview(formFields);
+        }
+    }
+
+    cj(document).ready(initForm);
 </script>
+
 {/literal}
