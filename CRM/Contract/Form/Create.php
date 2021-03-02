@@ -206,7 +206,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         );
 
         // End date (end_date)
-        $this->add("datepicker", "end_date", ts("End date"), [], true, [ "time" => false ]);
+        $this->add("datepicker", "end_date", ts("End date"), [], false, [ "time" => false ]);
 
         // Campaign (campaign_id)
         $this->add(
