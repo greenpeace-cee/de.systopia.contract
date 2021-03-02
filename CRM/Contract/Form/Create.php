@@ -360,7 +360,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     function setDefaults ($defaultValues = null, $filter = null) {
         $defaults = [];
 
-        list($date, $time) = CRM_Utils_Date::setDateDefaults(null, "activityDateTime");
+        $date = CRM_Contract_Utils::getDefaultContractChangeDate();
 
         // Payment (payment_option)
         $defaults["payment_option"] = "create";

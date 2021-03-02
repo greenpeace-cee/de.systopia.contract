@@ -181,8 +181,9 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
 
   function setDefaults($defaultValues = NULL, $filter = NULL) {
 
-    list($defaults['join_date'], $null) = CRM_Utils_Date::setDateDefaults(NULL, 'activityDateTime');
-    list($defaults['start_date'], $null) = CRM_Utils_Date::setDateDefaults(NULL, 'activityDateTime');
+    $date = CRM_Contract_Utils::getDefaultContractChangeDate();
+    $defaults['join_date'] = $date;
+    $defaults['start_date'] = $date;
 
     // sepa defaults
     $defaults['payment_frequency'] = '12'; // monthly

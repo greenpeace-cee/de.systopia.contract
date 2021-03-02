@@ -376,4 +376,23 @@ class CRM_Contract_Utils
     return $clean_value;
   }
 
+  /**
+   * Get a default schedule date for contract creation/updates respecting the
+   * configured `contract_minimum_change_date`
+   * 
+   * @param string $preferred_date
+   * 
+   * @return string
+   */
+  public static function getDefaultContractChangeDate ($preferred_date = "now") {
+    $preferred_timestamp = strtotime($preferred_date);
+
+    $min_change_date = Civi::settings()->get("contract_minimum_change_date");
+    $min_change_timestamp = isset($min_change_date) ? strtotime($min_change_date) : 0;
+
+    $actual_timestamp = max($preferred_timestamp, $min_change_timestamp);
+
+    return date("Y-m-d H:i:s", $actual_timestamp);
+  }
+
 }

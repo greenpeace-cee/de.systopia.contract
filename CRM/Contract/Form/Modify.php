@@ -372,20 +372,13 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Schedule date (activity_date)
         $tomorrow = date("Y-m-d 00:00:00", strtotime("+1 day"));
-        $minimum_change_date = Civi::settings()->get("contract_minimum_change_date");
-        $default_change_date = null;
-
-        if (isset($minimum_change_date) && strtotime($tomorrow) < strtotime($minimum_change_date)) {
-            $default_change_date = $minimum_change_date;
-            $this->assign("default_to_minimum_change_date", true);
-        } else {
-            $default_change_date = $tomorrow;
-            $this->assign("default_to_minimum_change_date", false);
-        }
-
-        list($date, $time) = CRM_Utils_Date::setDateDefaults($default_change_date, "activityDateTime");
+        $default_change_date = CRM_Contract_Utils::getDefaultContractChangeDate($tomorrow);
+        list($date, $time) = explode(" ", $default_change_date);
         $defaults["activity_date"] = $date;
         $defaults["activity_date_time"] = $time;
+
+        $min_change_date = Civi::settings()->get("contract_minimum_change_date");
+        $this->assign("default_to_minimum_change_date", $default_change_date === $min_change_date);
 
         // Payment-instrument-specific defaults
         foreach (self::$payment_instruments as $pi_name => $pi_class) {
