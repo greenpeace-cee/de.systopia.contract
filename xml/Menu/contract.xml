@@ -63,6 +63,6 @@
     <path>civicrm/contract/cancel</path>
     <title>Cancel contract</title>
     <page_callback>CRM_Contract_Form_Cancel</page_callback>
-    <access_arguments>cancel memberships</access_arguments>
+    <access_arguments>edit memberships</access_arguments>
   </item>
 </menu>
