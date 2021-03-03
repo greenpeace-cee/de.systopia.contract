@@ -260,14 +260,14 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
 
       if (isset($mandate)) {
         $mandate->terminate();
-      } else {
-        civicrm_api3("ContributionRecur", "create", [
-          "id"                     => $recurring_contribution_id,
-          "end_date"               => date("YmdHis"),
-          "cancel_date"            => date("YmdHis"),
-          "contribution_status_id" => 1,
-        ]);
       }
+
+      civicrm_api3("ContributionRecur", "create", [
+        "id"                     => $recurring_contribution_id,
+        "end_date"               => date("YmdHis"),
+        "cancel_date"            => date("YmdHis"),
+        "contribution_status_id" => 1,
+      ]);
 
       $recurring_contribution = new CRM_Contribute_DAO_ContributionRecur();
       $recurring_contribution->get("id", $recurring_contribution_id);

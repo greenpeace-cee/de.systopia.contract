@@ -412,7 +412,8 @@ class CRM_Contract_PaymentInstrument_SepaMandate implements CRM_Contract_Payment
             throw new Exception("SEPA mandate cannot be terminated: No mandate ID");
         }
 
-        CRM_Sepa_BAO_SEPAMandate::terminateMandate($this->id, "today", $reason);
+        $termination_date = date("Y-m-d H:i:s", strtotime("today"));
+        CRM_Sepa_BAO_SEPAMandate::terminateMandate($this->id, $termination_date, $reason);
     }
 
     /**

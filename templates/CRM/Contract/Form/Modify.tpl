@@ -14,7 +14,7 @@
 
     {* --- Payment fields --- *}
 
-    <div class="crm-section form-field" id="payment_preview" data-payment-change="create modify">
+    <div class="crm-section form-field" id="payment_preview" data-payment-change="modify">
         <div class="label">
             <label>Payment preview</label>
         </div>
@@ -34,7 +34,7 @@
         <div class="clear"></div>
     </div>
 
-    <div class="crm-section form-field" id="payment_instrument" data-payment-change="create">
+    <div class="crm-section form-field" id="payment_instrument" data-payment-change="modify">
         <div class="label">{$form.payment_instrument.label}</div>
         <div class="content">{$form.payment_instrument.html}</div>
         <div class="clear"></div>
@@ -47,7 +47,7 @@
             <div
                 class="crm-section form-field"
                 id="{$field_id}"
-                data-payment-change="create modify"
+                data-payment-change="modify"
                 data-payment-instrument="{$pi_name}"
             >
                 <div class="label">{$form[$field_id].label}</div>
@@ -57,7 +57,7 @@
         {/foreach}
     {/foreach}
 
-    <hr data-payment-change="create modify"/>
+    <hr data-payment-change="modify"/>
 
     {foreach from=$payment_instrument_fields key=pi_name item=_}
         {assign var="field_id" value="pi-$pi_name-cycle_day"}
@@ -65,7 +65,7 @@
         <div
             class="crm-section form-field"
             id="{$field_id}"
-            data-payment-change="create modify"
+            data-payment-change="modify"
             data-payment-instrument="{$pi_name}"
         >
             <div class="label">{$form[$field_id].label}</div>
@@ -84,19 +84,19 @@
         <div class="clear"></div>
     </div>
 
-    <div class="crm-section form-field" id="amount" data-payment-change="create modify">
+    <div class="crm-section form-field" id="amount" data-payment-change="modify">
         <div class="label">{$form.amount.label}</div>
         <div class="content">{$form.amount.html} {$currency}</div>
         <div class="clear"></div>
     </div>
 
-    <div class="crm-section form-field" id="frequency" data-payment-change="create modify">
+    <div class="crm-section form-field" id="frequency" data-payment-change="modify">
         <div class="label">{$form.frequency.label}</div>
         <div class="content">{$form.frequency.html}</div>
         <div class="clear"></div>
     </div>
 
-    <hr data-payment-change="create modify"/>
+    <hr data-payment-change="modify"/>
 
     {* --- Membership/campaign fields --- *}
 
@@ -174,7 +174,7 @@
             for (const fieldId of formFieldIds) {
                 formFields[fieldId] = cj(`div.form-field div.content *[name=${fieldId}]`);
 
-                if (fieldId === "payment_change") {
+                if (fieldId === "payment_change" || fieldId === "payment_instrument") {
                     // Fill / clear payment fields when the value of payment_change changes
                     formFields["payment_change"].change(() => {
                         setPaymentInstrument();
@@ -198,15 +198,20 @@
 
         function resetPaymentFields () {
             const selectedPaymentChange = formFields["payment_change"].val();
+            const selectedPaymentInstrument = formFields["payment_instrument"].val();
+            const currentPaymentInstrument = CRM.vars["de.systopia.contract"].current_payment_instrument;
 
-            // Clear payment parameters in case of new payment creation
-            if (selectedPaymentChange === "create" && PaymentInstrument.clearPaymentParameters) {
-                PaymentInstrument.clearPaymentParameters(formFields);
-            }
-
-            // Fill in current payment parameters in case of modification
-            if (selectedPaymentChange === "modify" &&  PaymentInstrument.fillPaymentParameters) {
-                PaymentInstrument.fillPaymentParameters(formFields);
+            if (selectedPaymentChange === "modify") {
+                if (
+                    selectedPaymentInstrument === currentPaymentInstrument
+                    && PaymentInstrument.fillPaymentParameters
+                ) {
+                    // Fill in current payment parameters in case of same payment method
+                    PaymentInstrument.fillPaymentParameters(formFields);
+                } else if (PaymentInstrument.clearPaymentParameters) {
+                    // Clear payment parameters in case of new payment method
+                    PaymentInstrument.clearPaymentParameters(formFields);
+                }
             }
         }
 
@@ -227,9 +232,9 @@
             const selectedPaymentInstrument = formFields["payment_instrument"].val();
 
             cj("*[data-payment-change], *[data-payment-instrument]").each((_, element) => {
-                const changes =
+                const change =
                     element.hasAttribute("data-payment-change")
-                    ? element.getAttribute("data-payment-change").split(" ")
+                    ? element.getAttribute("data-payment-change")
                     : undefined;
 
                 const instrument =
@@ -237,7 +242,7 @@
                     ? element.getAttribute("data-payment-instrument")
                     : undefined;
 
-                if (changes !== undefined && !changes.includes(selectedPaymentChange)) {
+                if (change !== undefined && change !== selectedPaymentChange) {
                     cj(element).hide(300);
                     return;
                 }

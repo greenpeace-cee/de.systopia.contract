@@ -24,6 +24,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
     private $modify_action;
     private $payment_instrument;
     private $payment_instrument_class;
+    private $payment_instrument_name;
     private $recurring_contribution;
 
     function preProcess () {
@@ -150,6 +151,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             if ($pi_class::isInstance($this->recurring_contribution["payment_instrument_id"])) {
                 $this->payment_instrument = $pi_class::loadByRecurringContributionId($rc_id);
                 $this->payment_instrument_class = $pi_class;
+                $this->payment_instrument_name = $pi_name;
                 break;
             }
         }
@@ -174,17 +176,18 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $resources = CRM_Core_Resources::singleton();
 
         $resources->addVars("de.systopia.contract", [
-            "action"                  => $this->modify_action,
-            "cid"                     => $contact_id,
-            "current_amount"          => $this->recurring_contribution["amount"],
-            "current_contract"        => $current_contract,
-            "current_cycle_day"       => $this->recurring_contribution["cycle_day"],
-            "current_frequency"       => $current_frequency,
-            "current_recurring"       => $rc_id,
-            "debitor_name"            => $this->contact["display_name"],
-            "frequencies"             => $frequencies,
-            "grace_end"               => $grace_end,
-            "recurring_contributions" => $recurring_contributions,
+            "action"                     => $this->modify_action,
+            "cid"                        => $contact_id,
+            "current_amount"             => $this->recurring_contribution["amount"],
+            "current_contract"           => $current_contract,
+            "current_cycle_day"          => $this->recurring_contribution["cycle_day"],
+            "current_frequency"          => $current_frequency,
+            "current_recurring"          => $rc_id,
+            "current_payment_instrument" => $this->payment_instrument_name,
+            "debitor_name"               => $this->contact["display_name"],
+            "frequencies"                => $frequencies,
+            "grace_end"                  => $grace_end,
+            "recurring_contributions"    => $recurring_contributions,
         ]);
 
         foreach (self::$payment_instruments as $pi_name => $pi_class) {
@@ -204,8 +207,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         // Payment change (payment_change)
         $this->add("select", "payment_change", ts("Payment change"), [
             "no_change"       => ts("No change"),
-            "create"          => ts("New payment method"),
-            "modify"          => ts("Modify current payment method"),
+            "modify"          => ts("Modify payment"),
             "select_existing" => ts("Select existing contribution"),
         ]);
 
@@ -427,7 +429,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             case "no_change":
                 break;
 
-            case "create":
             case "modify":
                 if (empty($submitted["amount"])) {
                     HTML_QuickForm::setElementError("amount", "Please specify a payment amount");
@@ -491,42 +492,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             case "no_change":
                 break;
 
-            case "create":
-                $payment_instrument = $submitted["payment_instrument"];
-                $pi_class = self::$payment_instruments[$payment_instrument];
-
-                $submitted["contact_id"] = $this->contact["id"];
-                $submitted["start_date"] = $submitted["activity_date"];
-
-                $payment_params = $pi_class::mapSubmittedValues($submitted);
-                $new_payment = $pi_class::create($payment_params);
-
-                $entity_id = $new_payment->getParameters()["entity_id"];
-                $contract_params["membership_payment.membership_recurring_contribution"] = $entity_id;
-
-                $frequency = (int) $submitted["frequency"];
-                $contract_modify_params["membership_payment.membership_frequency"] = $frequency;
-
-                $amount = (float) CRM_Contract_Utils::formatMoney($submitted["amount"]);
-                $annual_amount = $frequency * $amount;
-                $contract_modify_params["membership_payment.membership_annual"] = CRM_Contract_Utils::formatMoney($annual_amount);
-
-                $contract_modify_params["membership_payment.cycle_day"] = $submitted["pi-$payment_instrument-cycle_day"];
-
-                if ($submitted["payment_instrument"] === "sepa_mandate") {
-                    $contract_modify_params["membership_payment.to_ba"]   = CRM_Contract_BankingLogic::getCreditorBankAccount();
-
-                    $bic = isset($submitted["pi-sepa_mandate-bic"]) ? $submitted["pi-sepa_mandate-bic"] : null;
-
-                    $contract_modify_params["membership_payment.from_ba"] = CRM_Contract_BankingLogic::getOrCreateBankAccount(
-                        $this->membership["contact_id"],
-                        $submitted["pi-sepa_mandate-iban"],
-                        $bic
-                    );
-                }
-
-                break;
-
             case "modify":
                 $frequency = (int) $submitted["frequency"];
                 $contract_modify_params["membership_payment.membership_frequency"] = $frequency;
@@ -539,7 +504,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                 $contract_modify_params["membership_payment.cycle_day"] = $submitted["pi-$payment_instrument-cycle_day"];
 
                 if ($submitted["payment_instrument"] === "sepa_mandate") {
-                    $contract_modify_params["membership_payment.to_ba"]   = CRM_Contract_BankingLogic::getCreditorBankAccount();
+                    $contract_modify_params["membership_payment.to_ba"] = CRM_Contract_BankingLogic::getCreditorBankAccount();
 
                     $bic = isset($submitted["pi-sepa_mandate-bic"]) ? $submitted["pi-sepa_mandate-bic"] : null;
 

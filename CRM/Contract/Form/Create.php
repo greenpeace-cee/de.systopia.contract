@@ -360,8 +360,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     function setDefaults ($defaultValues = null, $filter = null) {
         $defaults = [];
 
-        $date = CRM_Contract_Utils::getDefaultContractChangeDate();
-
         // Payment (payment_option)
         $defaults["payment_option"] = "create";
 
@@ -369,10 +367,10 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $defaults["frequency"] = "12"; // monthly
 
         // Member since (join_date)
-        $defaults["join_date"] = $date;
+        $defaults["join_date"] = date("Y-m-d H:i:s");
 
         // Membership start date (start_date)
-        $defaults["start_date"] = $date;
+        $defaults["start_date"] = CRM_Contract_Utils::getDefaultContractChangeDate();
 
         // Payment-instrument-specific defaults
         foreach (self::$payment_instruments as $pi_name => $pi_class) {
