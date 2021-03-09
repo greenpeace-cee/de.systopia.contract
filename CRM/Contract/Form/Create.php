@@ -343,12 +343,8 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             }
         }
 
-        $join_date =
-            isset($submitted["join_date"])
-            ? CRM_Utils_Date::processDate($submitted["join_date"])
-            : null;
-
-        $now = CRM_Utils_Date::processDate(date("Ymd"));
+        $join_date = isset($submitted["join_date"]) ? strtotime($submitted["join_date"]) : null;
+        $now = time();
 
         if (isset($join_date) && $join_date > $now) {
             HTML_QuickForm::setElementError("join_date", ts("Join date cannot be in the future"));
