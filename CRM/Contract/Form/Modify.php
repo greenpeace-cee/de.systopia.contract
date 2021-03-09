@@ -205,11 +205,16 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->assign("currency", CRM_Sepa_Logic_Settings::defaultCreditor()->currency);
 
         // Payment change (payment_change)
-        $this->add("select", "payment_change", ts("Payment change"), [
-            "no_change"       => ts("No change"),
+        $payment_change_options = [
             "modify"          => ts("Modify payment"),
             "select_existing" => ts("Select existing contribution"),
-        ]);
+        ];
+
+        if ($this->modify_action !== "revive") {
+            $payment_change_options = [ "no_change" => ts("No change") ] + $payment_change_options;
+        }
+
+        $this->add("select", "payment_change", ts("Payment change"), $payment_change_options);
 
         // Payment method (payment_instrument)
         $payment_instrument_options = [];
