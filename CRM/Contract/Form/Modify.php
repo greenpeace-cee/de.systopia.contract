@@ -329,7 +329,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "medium_id",
             ts("Source media"),
             $medium_id_options,
-            false,
+            true,
             [ "class" => "crm-select2" ]
         );
 
@@ -365,9 +365,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Payment frequency (frequency)
         $defaults["frequency"] = "12"; // monthly
-
-        // Source media (medium_id)
-        $defaults["medium_id"] = "7"; // Back Office
 
         // Membership type (membership_type_id)
         $defaults["membership_type_id"] = $this->membership["membership_type_id"];
@@ -475,7 +472,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $contract_modify_params = [
             "action"    => $this->modify_action,
             "id"        => $this->get("id"),
-            "medium_id" => $submitted["activity_medium"],
+            "medium_id" => $submitted["medium_id"],
             "note"      => $submitted["activity_details"],
         ];
 

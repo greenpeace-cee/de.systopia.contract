@@ -49,7 +49,7 @@ class CRM_Contract_Form_Pause extends CRM_Core_Form {
       "medium_id",
       ts("Source media"),
       $medium_id_options,
-      false,
+      true,
       [ "class" => "crm-select2" ]
     );
 

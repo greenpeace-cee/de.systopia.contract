@@ -88,7 +88,7 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     foreach (civicrm_api3('Activity', 'getoptions', ['field' => "activity_medium_id", 'options' => ['limit' => 0]])['values'] as $key => $value) {
       $mediumOptions[$key] = $value;
     }
-    $this->add('select', 'activity_medium', ts('Source media'), ['' => '- none -'] + $mediumOptions, FALSE, ['class' => 'crm-select2']);
+    $this->add('select', 'activity_medium', ts('Source media'), ['' => '- none -'] + $mediumOptions, true, ['class' => 'crm-select2']);
     $this->add('text', 'membership_reference', ts('Reference number'));
     $membershipVenueOptions = [];
     foreach (civicrm_api3('OptionValue', 'get', [

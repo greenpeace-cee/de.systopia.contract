@@ -242,7 +242,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             "activity_medium",
             ts("Source media"),
             $activity_medium_options,
-            false,
+            true,
             [ "class" => "crm-select2" ]
         );
 
