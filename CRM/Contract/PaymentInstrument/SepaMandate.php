@@ -167,6 +167,7 @@ class CRM_Contract_PaymentInstrument_SepaMandate implements CRM_Contract_Payment
             "current_iban"            => $current_iban,
             "default_creditor_grace"  => $default_creditor_grace,
             "default_creditor_notice" => $default_creditor_notice,
+            "next_cycle_day"          => self::nextCycleDay(),
         ];
     }
 

@@ -69,7 +69,12 @@
             data-payment-instrument="{$pi_name}"
         >
             <div class="label">{$form[$field_id].label}</div>
-            <div class="content">{$form[$field_id].html}</div>
+
+            <div class="content">
+                {$form[$field_id].html}
+                <span>currently: <b>{$current_cycle_day}</b></span>
+            </div>
+
             <div class="clear"></div>
         </div>
     {/foreach}

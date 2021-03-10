@@ -60,7 +60,11 @@
         formFields["amount"].val(amount);
 
         // Cycle day (pi-sepa_mandate-cycle_day)
-        const cycle_day = CRM.vars["de.systopia.contract"].current_cycle_day;
+        const cycle_day =
+            CRM.vars["de.systopia.contract"].action === "revive"
+            ? CRM.vars["de.systopia.contract/sepa_mandate"].next_cycle_day
+            : CRM.vars["de.systopia.contract"].current_cycle_day;
+
         formFields["pi-sepa_mandate-cycle_day"].val(cycle_day);
 
         // Payment frequency (frequency)
