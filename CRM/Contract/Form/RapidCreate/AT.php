@@ -30,7 +30,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     $country = array('' => ts('- select -')) + CRM_Core_PseudoConstant::country();
     $this->add('select', 'country_id', ts('Country'), $country, TRUE, array('class' => 'crm-select2'));
 
-    $this->addDate('birth_date', 'Date of Birth', true, array('formatType' => 'birth'));
+    $this->add('datepicker', 'birth_date', ts('Date of Birth'), [], true, [ 'time' => false ]);
 
     $this->addCheckbox('community_newsletter', 'Add to Community newsletter', ['' => true]);
 
@@ -90,8 +90,8 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     $this->assign('is_enable_bic', CRM_Contract_Utils::isDefaultCreditorUsesBic());
 
     // ### Contract information ###
-    $this->addDate('join_date', ts('Member since'), TRUE, array('formatType' => 'activityDate'));
-    $this->addDate('start_date', ts('Membership start date'), TRUE, array('formatType' => 'activityDate'));
+    $this->add('datepicker', 'join_date', ts('Member since'), [], true, [ 'time' => true ]);
+    $this->add('datepicker', 'start_date', ts('Membership start date'), [], true, [ 'time' => true ]);
     $this->add('select', 'campaign_id', ts('Campaign'), CRM_Contract_Configuration::getCampaignList(), TRUE, array('class' => 'crm-select2'));
     // $this->addEntityRef('campaign_id', ts('Campaign'), [
     //   'entity' => 'campaign',
