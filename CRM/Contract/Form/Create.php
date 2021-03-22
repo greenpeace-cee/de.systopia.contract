@@ -335,9 +335,9 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         }
 
         if ($submitted["payment_option"] === "select") {
-            if (empty($submitted["recurring_contribution"])) {
+            if (empty($submitted["existing_recurring_contribution"])) {
                 HTML_QuickForm::setElementError(
-                    "recurring_contribution",
+                    "existing_recurring_contribution",
                     ts("%1 is a required field", [ 1 => ts("Recurring Contribution") ])
                 );
             }
