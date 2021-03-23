@@ -400,7 +400,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             $contract_params["membership_payment.membership_recurring_contribution"] = $entity_id;
         }
 
-        if ($submitted["payment_option" === "select"]) {
+        if ($submitted["payment_option"] === "select") {
             $contract_params["membership_payment.membership_recurring_contribution"] = $submitted["existing_recurring_contribution"];
         }
 
