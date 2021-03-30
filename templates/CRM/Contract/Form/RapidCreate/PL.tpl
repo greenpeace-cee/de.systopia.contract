@@ -81,7 +81,7 @@
 
   <div class="crm-section">
     <div class="label">{$form.birth_date.label}</div>
-    <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=birth_date}</div>
+    <div class="content">{$form.birth_date.html}</div>
     <div class="clear"></div>
   </div>
   <hr/>
@@ -125,12 +125,12 @@
   <hr />
   <div class="crm-section">
     <div class="label">{$form.join_date.label}</div>
-    <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=join_date}</div>
+    <div class="content">{$form.join_date.html}</div>
     <div class="clear"></div>
   </div>
   <div class="crm-section">
     <div class="label">{$form.start_date.label}</div>
-    <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=start_date}</div>
+    <div class="content">{$form.start_date.html}</div>
     <div class="clear"></div>
   </div>
   <hr />

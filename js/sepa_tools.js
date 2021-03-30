@@ -12,7 +12,7 @@ var sepa_creditor_parameters = SEPA_CREDITOR_PARAMETERS;
  * formats a value to the CiviCRM failsafe format: 0.00 (e.g. 999999.90)
  * even if there are ',' in there, which are used in some countries
  * (e.g. Germany, Austria,) as a decimal point.
- * @see CRM_Contract_SepaLogic::formatMoney
+ * @see CRM_Contract_Utils::formatMoney
  */
  function parseMoney(raw_value) {
   if (raw_value.length == 0) {

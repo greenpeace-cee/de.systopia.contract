@@ -24,7 +24,7 @@ class CRM_Contract_FormUtils {
     foreach ($this->recurringContribution->getAll($contactId, TRUE, $contractId) as $key => $rc) {
       $recurringContributionOptions[$key] = $rc['label'];
     }
-    $this->form->add('select', $elementName, ts('Mandate / Recurring Contribution'), $recurringContributionOptions, $required, ['class' => 'crm-select2 huge']);
+    $this->form->add('select', $elementName, ts('Recurring Contribution'), $recurringContributionOptions, $required, ['class' => 'crm-select2 huge']);
   }
 
   public function replaceIdWithLabel($name, $entity) {

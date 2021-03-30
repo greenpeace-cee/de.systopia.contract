@@ -237,4 +237,48 @@ class CRM_Contract_BAO_ContractPaymentLink extends CRM_Contract_DAO_ContractPaym
     }
 
   }
+
+  /**
+   * Link the given contribution to the contract,
+   * ending any previously existing links
+   *
+   * @param $contract_id            int     contract (membership) ID
+   * @param $contribution_recur_id  int     paymenyt ID
+   * @param $date                   string  timestamp of change, default: 'now'
+   */
+  public static function setContractPaymentLink($contract_id, $contribution_recur_id, $date = 'now') {
+    if (empty($contract_id) || empty($contribution_recur_id)) {
+      // nothing to link here
+      return;
+    }
+
+    try {
+      // first: check if link already there
+      $current_links = self::getActiveLinks($contract_id);
+      foreach ($current_links as $current_link) {
+        if ($current_link['contribution_recur_id'] == $contribution_recur_id) {
+          // link already there and active
+          return;
+        }
+      }
+
+      // then: end any old links
+      foreach ($current_links as $current_link) {
+        self::endPaymentLink($current_link['id'], $date);
+      }
+
+      // then: create a new link
+      self::createPaymentLink(
+          $contract_id,
+          $contribution_recur_id,
+          TRUE,
+          $date
+      );
+
+    } catch(Exception $ex) {
+      // link couldn't be generated
+      CRM_Core_Error::debug_log_message("Contract: Couldn't create payment link: " . $ex->getMessage());
+    }
+  }
+
 }

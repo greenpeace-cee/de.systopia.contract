@@ -72,11 +72,48 @@ class CRM_Contract_Change_Pause extends CRM_Contract_Change {
   public function execute() {
     $contract = $this->getContract(TRUE);
 
-    // pause the mandate
-    $payment_contract_id = CRM_Utils_Array::value('membership_payment.membership_recurring_contribution', $contract);
-    if ($payment_contract_id) {
-      CRM_Contract_SepaLogic::pauseSepaMandate($payment_contract_id);
-      $this->updateContract(['status_id' => 'Paused']);
+    // Pause the payment
+    $recurring_contribution_id = CRM_Utils_Array::value(
+      "membership_payment.membership_recurring_contribution",
+      $contract
+    );
+
+    $payment = null;
+
+    if (isset($recurring_contribution_id)) {
+      $pi_class = CRM_Contract_RecurringContribution::getPaymentInstrumentClass(
+        $recurring_contribution_id
+      );
+
+      $payment =
+        isset($pi_class)
+        ? $pi_class::loadByRecurringContributionId($recurring_contribution_id)
+        : null;
+    }
+
+    if (isset($payment)) {
+      $payment->pause();
+      $payment_params = $payment->getParameters();
+
+      // delete any scheduled (pending) contributions
+      $contribution_status_id = (int) CRM_Core_PseudoConstant::getKey(
+        "CRM_Contribute_BAO_Contribution",
+        "contribution_status_id",
+        "Pending"
+      );
+
+      $pending_contributions = civicrm_api3("Contribution", "get", [
+        "return"                 => "id",
+        "contribution_recur_id"  => $payment_params["entity_id"],
+        "contribution_status_id" => $contribution_status_id,
+        'receive_date'           => [ ">=" => date("YmdHis") ],
+      ]);
+
+      foreach ($pending_contributions["values"] as $pending_contribution) {
+        civicrm_api3("Contribution", "delete",[ "id" => $pending_contribution["id"] ]);
+      }
+
+      $this->updateContract([ "status_id" => "Paused" ]);
     }
 
     // update change activity
@@ -167,9 +204,9 @@ class CRM_Contract_Change_Pause extends CRM_Contract_Change {
       $links[] = [
           'name'  => E::ts("Pause"),
           'title' => self::getChangeTitle(),
-          'url'   => "civicrm/contract/modify",
+          'url'   => "civicrm/contract/pause",
           'bit'   => CRM_Core_Action::UPDATE,
-          'qs'    => "modify_action=pause&id=%%id%%",
+          'qs'    => "id=%%id%%",
       ];
     }
   }

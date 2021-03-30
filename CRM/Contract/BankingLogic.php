@@ -115,7 +115,7 @@ class CRM_Contract_BankingLogic {
    */
   public static function getCreditorBankAccount() {
     if (self::$_creditorBankAccount === NULL) {
-      $creditor = CRM_Contract_SepaLogic::getCreditor();
+      $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
       self::$_creditorBankAccount = self::getOrCreateBankAccount($creditor->creditor_id, $creditor->iban, $creditor->bic);
     }
     return self::$_creditorBankAccount;
@@ -167,7 +167,7 @@ class CRM_Contract_BankingLogic {
         $most_recent_contribution = CRM_Core_DAO::executeQuery("
           SELECT from_ba, to_ba
           FROM civicrm_contribution c
-            LEFT JOIN civicrm_value_contribution_information i ON i.entity_id = c.id 
+            LEFT JOIN civicrm_value_contribution_information i ON i.entity_id = c.id
           WHERE c.contribution_recur_id = {$contribution_recur_id}
           ORDER BY receive_date DESC
           LIMIT 1;");

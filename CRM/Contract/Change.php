@@ -355,7 +355,7 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
   protected function calcAnnualAmount($contributionRecur){
     // only 'month' and 'year' should be in use
     $frequencyUnitTranslate = ['month' => 12, 'year'  => 1];
-    return CRM_Contract_SepaLogic::formatMoney(CRM_Contract_SepaLogic::formatMoney($contributionRecur['amount']) * $frequencyUnitTranslate[$contributionRecur['frequency_unit']] / $contributionRecur['frequency_interval']);
+    return CRM_Contract_Utils::formatMoney(CRM_Contract_Utils::formatMoney($contributionRecur['amount']) * $frequencyUnitTranslate[$contributionRecur['frequency_unit']] / $contributionRecur['frequency_interval']);
   }
 
 

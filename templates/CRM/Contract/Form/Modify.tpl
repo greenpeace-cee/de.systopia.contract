@@ -6,258 +6,267 @@
 | http://www.systopia.de/                                      |
 +-------------------------------------------------------------*}
 
+{foreach from=$payment_instrument_fields key=pi_name item=_}
+    {include file="CRM/Contract/Form/PaymentInstrumentUtils/$pi_name.tpl"}
+{/foreach}
+
 <div class="crm-block crm-form-block">
 
-  <!-- <h3>
-  {if $historyAction eq 'cancel'}
-    Please choose a reason for cancelling this contract and click on '{$historyAction|ucfirst}' below.
-  {elseif $isUpdate}
-    Please make the required changes to the contract and click on '{$historyAction|ucfirst}' below.
-  {else}
-    Please confirm that you want to {$historyAction} this contract by clicking on '{$historyAction|ucfirst}' below.
-  {/if}
-</h3> -->
-  {if $modificationActivity eq 'update' OR $modificationActivity eq 'revive' }
+    {* --- Payment fields --- *}
 
-    <div class="crm-section">
-      <div class="label">Payment Preview</div>
-      <div class="content recurring-contribution-summary-text">None</div>
-      <div class="clear"></div>
-    </div>
+    <div class="crm-section form-field" id="payment_preview" data-payment-change="modify">
+        <div class="label">
+            <label>Payment preview</label>
+        </div>
 
-    <div class="crm-section">
-      <div class="label">{$form.payment_option.label}</div>
-      <div class="content">{$form.payment_option.html}</div>
-      <div class="clear"></div>
-    </div>
+        <div class="content">
+            {foreach from=$payment_instrument_fields key=pi_name item=_}
+                {include file="CRM/Contract/Form/PaymentPreview/$pi_name.tpl"}
+            {/foreach}
+        </div>
 
-    <div class="crm-section payment-select">
-      <div class="label">{$form.recurring_contribution.label} <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span></div>
-      <div class="content">{$form.recurring_contribution.html}</div>
-      <div class="clear"></div>
-      <div class="label"></div>
-      <div class="clear"></div>
-    </div>
-
-    <div class="crm-section payment-modify">
-      <div class="label">{$form.cycle_day.label}</div>
-      <div class="content">{$form.cycle_day.html}&nbsp;&nbsp;{if $current_cycle_day}{ts 1=$current_cycle_day}(currently: %1){/ts}{/if}</div>
-      <div class="clear"></div>
-    </div>
-    <div class="crm-section payment-modify">
-      <div class="label">{$form.iban.label} <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span></div>
-      <div class="content">{$form.iban.html}</div>
-      <div class="clear"></div>
-    </div>
-    <div class="crm-section payment-modify">
-      <div class="label">{$form.use_previous_iban.label}</div>
-      <div class="content">{$form.use_previous_iban.html}</div>
-      <div class="clear"></div>
-    </div>
-
-    {if $is_enable_bic}
-      <div class="crm-section payment-modify">
-        <div class="label">{$form.bic.label} <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span></div>
-        <div class="content">{$form.bic.html}</div>
         <div class="clear"></div>
-      </div>
-    {/if}
-
-    <div class="crm-section payment-modify">
-      <div class="label">{$form.payment_amount.label}</div>
-      <div class="content">{$form.payment_amount.html}&nbsp;<span id="payment_amount_currency"></span></div>
-      <div class="clear"></div>
-    </div>
-    <div class="crm-section payment-modify">
-      <div class="label">{$form.payment_frequency.label}</div>
-      <div class="content">{$form.payment_frequency.html}</div>
-      <div class="clear"></div>
     </div>
 
+    <div class="crm-section form-field" id="payment_change">
+        <div class="label">{$form.payment_change.label}</div>
+        <div class="content">{$form.payment_change.html}</div>
+        <div class="clear"></div>
+    </div>
 
-    <div class="crm-section">
-      <div class="label">{$form.membership_type_id.label}</div>
-      <div class="content">{$form.membership_type_id.html}</div>
-      <div class="clear"></div>
+    <div class="crm-section form-field" id="payment_instrument" data-payment-change="modify">
+        <div class="label">{$form.payment_instrument.label}</div>
+        <div class="content">{$form.payment_instrument.html}</div>
+        <div class="clear"></div>
     </div>
-    <div class="crm-section">
-      <div class="label">{$form.campaign_id.label}</div>
-      <div class="content">{$form.campaign_id.html}</div>
-      <div class="clear"></div>
-    </div>
-  {/if}
-  {if $form.cancel_date.html}
-    <div class="crm-section">
-      <div class="label">{$form.cancel_date.label}</div>
-      <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=cancel_date}</div>
-      <div class="clear"></div>
-    </div>
-  {/if}
-  {if $form.resume_date.html}
-    <div class="crm-section">
-      <div class="label">{$form.resume_date.label}</div>
-      <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=resume_date}</div>
-      <div class="clear"></div>
-    </div>
-  {/if}
-  {if $form.cancel_reason.html}
-    <div class="crm-section">
-      <div class="label">{$form.cancel_reason.label}</div>
-      <div class="content">{$form.cancel_reason.html}</div>
-      <div class="clear"></div>
-    </div>
-  {/if}
-  <hr />
-  <div class="crm-section">
-    <div class="label">{$form.activity_date.label} {help id="scheduling" file="CRM/Contract/Form/Scheduling.hlp"}</div>
-    <div class="content">{include file="CRM/common/jcalendar.tpl" elementName=activity_date}</div>
-    <div class="clear"></div>
-    {if $defaultToMinimumChangeDate}
-      <span class="content field-info">Default to minimum change date</span>
-    {/if}
-  </div>
 
-  <div class="crm-section">
-    <div class="label">{$form.activity_medium.label}</div>
-    <div class="content">{$form.activity_medium.html}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-section">
-    <div class="label">{$form.activity_details.label}</div>
-    <div class="content">{$form.activity_details.html}</div>
-    <div class="clear"></div>
-  </div>
-  <div class="crm-submit-buttons">
-    {include file="CRM/common/formButtons.tpl" location="bottom"}
-  </div>
+    <hr />
+
+    {foreach from=$payment_instrument_fields key=pi_name item=field_ids}
+        {foreach from=$field_ids item=field_id}
+            <div
+                class="crm-section form-field"
+                id="{$field_id}"
+                data-payment-change="modify"
+                data-payment-instrument="{$pi_name}"
+            >
+                <div class="label">{$form[$field_id].label}</div>
+                <div class="content">{$form[$field_id].html}</div>
+                <div class="clear"></div>
+            </div>
+        {/foreach}
+    {/foreach}
+
+    <hr data-payment-change="modify"/>
+
+    {foreach from=$payment_instrument_fields key=pi_name item=_}
+        {assign var="field_id" value="pi-$pi_name-cycle_day"}
+
+        <div
+            class="crm-section form-field"
+            id="{$field_id}"
+            data-payment-change="modify"
+            data-payment-instrument="{$pi_name}"
+        >
+            <div class="label">{$form[$field_id].label}</div>
+
+            <div class="content">
+                {$form[$field_id].html}
+                <span>currently: <b>{$current_cycle_day}</b></span>
+            </div>
+
+            <div class="clear"></div>
+        </div>
+    {/foreach}
+
+    <div class="crm-section form-field" id="recurring_contribution" data-payment-change="select_existing">
+        <div class="label">
+            {$form.recurring_contribution.label}
+            <span class="crm-marker" title="{ts}This field is required.{/ts}">*</span>
+        </div>
+
+        <div class="content">{$form.recurring_contribution.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="amount" data-payment-change="modify">
+        <div class="label">{$form.amount.label}</div>
+        <div class="content">{$form.amount.html} {$currency}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="frequency" data-payment-change="modify">
+        <div class="label">{$form.frequency.label}</div>
+        <div class="content">{$form.frequency.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <hr data-payment-change="modify"/>
+
+    {* --- Membership/campaign fields --- *}
+
+    <div class="crm-section form-field" id="membership_type_id">
+        <div class="label">{$form.membership_type_id.label}</div>
+        <div class="content">{$form.membership_type_id.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="campaign_id">
+        <div class="label">{$form.campaign_id.label}</div>
+        <div class="content">{$form.campaign_id.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <hr />
+
+    {* --- Activity fields --- *}
+
+    <div class="crm-section form-field" id="activity_date">
+        <div class="label">
+            {$form.activity_date.label}
+            {help id="scheduling" file="CRM/Contract/Form/Scheduling.hlp"}
+        </div>
+
+        <div class="content">{$form.activity_date.html}</div>
+        <div class="clear"></div>
+
+        {if $default_to_minimum_change_date}
+            <span class="content field-info">Default to minimum change date</span>
+        {/if}
+    </div>
+
+    <div class="crm-section form-field" id="medium_id">
+        <div class="label">{$form.medium_id.label}</div>
+        <div class="content">{$form.medium_id.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="activity_details">
+        <div class="label">{$form.activity_details.label}</div>
+        <div class="content">{$form.activity_details.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-submit-buttons">
+        {include file="CRM/common/formButtons.tpl" location="bottom"}
+    </div>
 </div>
 
-{if $modificationActivity eq 'update' OR $modificationActivity eq 'revive'}
-
-{if $bic_lookup_accessible && $is_enable_bic}
-  {include file="CRM/Contract/Form/bic_lookup.tpl" location="bottom"}
-{/if}
-
 {literal}
-<script type="text/javascript">
-// add listener to payment_option selector
-cj("#payment_option").change(function() {
-  updatePaymentSummaryText();
-  showHidePaymentElements();
-});
+    <script>
+        const formFields = {};
+        let PaymentInstrument = {};
 
-cj('#use_previous_iban_1').change(function() {
-  usePreviousIban();
-});
+        function initForm () {
+            const paymentInstrumentFields = {/literal}{$payment_instrument_fields_json}{literal};
 
-function showHidePaymentElements(){
-  var new_mode = cj("#payment_option").val();
-  if (new_mode == "select") {
-    cj("div.payment-select").show(300);
-    cj("div.payment-modify").hide(300);
-  } else if (new_mode == "modify") {
-    cj("div.payment-select").hide(300);
-    cj("div.payment-modify").show(300);
-  } else {
-    cj("div.payment-select").hide(300);
-    cj("div.payment-modify").hide(300);
-  }
-}
+            const piFieldIds = Object.entries(paymentInstrumentFields).reduce(
+                (result, [pi, ids]) => [ ...result, ...ids, `pi-${pi}-cycle_day` ],
+                []
+            );
 
-function usePreviousIban() {
-  if (cj('#use_previous_iban_1').is(':checked')) {
-    cj('[name=iban]').val(CRM.vars['de.systopia.contract'].current_contract.fields.iban);
-    cj('[name=iban]').prop('readonly', true);
-  }
-  else {
-    cj('[name=iban]').val('');
-    cj('[name=iban]').prop('readonly', false);
-  }
-}
+            const formFieldIds = [
+                "activity_date",
+                "amount",
+                "campaign_id",
+                "frequency",
+                "membership_type_id",
+                "payment_change",
+                "payment_instrument",
+                ...piFieldIds,
+            ];
 
-/**
- * update the payment info shown
- */
-function updatePaymentSummaryText() {
-  let mode = cj("#payment_option").val();
-  if (mode == "select") {
-    // display the selected recurring contribution
-    let recurring_contributions = CRM.vars['de.systopia.contract'].recurring_contributions;
-    let key = cj('[name=recurring_contribution]').val();
-    if (key) {
-      cj('.recurring-contribution-summary-text').html(recurring_contributions[key].text_summary);
-    } else {
-      cj('.recurring-contribution-summary-text').html('None');
-    }
-  } else if (mode == "nochange") {
-    let recurring_contributions = CRM.vars['de.systopia.contract'].recurring_contributions;
-    let key = CRM.vars['de.systopia.contract'].current_recurring;
-    if (key in recurring_contributions) {
-      cj('.recurring-contribution-summary-text').html(recurring_contributions[key].text_summary);
-    } else {
-      cj('.recurring-contribution-summary-text').html('None');
-    }
-  } else if (mode == "modify") {
-    // render the current SEPA values
-    var current_values  = CRM.vars['de.systopia.contract'].current_contract;
-    var creditor        = CRM.vars['de.systopia.contract'].creditor;
-    var debitor_name    = CRM.vars['de.systopia.contract'].debitor_name;
-    var cycle_day       = cj('[name=cycle_day]').val();
-    var iban            = cj('[name=iban]').val();
-    var installment     = parseMoney(cj('[name=payment_amount]').val());
-    var freqency        = cj('[name=payment_frequency]').val();
-    var freqency_label  = CRM.vars['de.systopia.contract'].frequencies[freqency];
-    // var next_collection = CRM.vars['de.systopia.contract'].next_collections[cycle_day];
-    var start_date      = cj('[name=activity_date]').val();
-    var annual          = 0.0;
+            for (const fieldId of formFieldIds) {
+                formFields[fieldId] = cj(`div.form-field div.content *[name=${fieldId}]`);
 
-    // In case of an update (not revive), we need to respect the already paid period, see #771
-    var next_collection = '';
-    if (CRM.vars['de.systopia.contract'].action == 'update') {
-      next_collection = nextCollectionDate(cycle_day, start_date, CRM.vars['de.systopia.contract'].grace_end);
-    } else {
-      next_collection = nextCollectionDate(cycle_day, start_date, null);
-    }
+                if (fieldId === "payment_change" || fieldId === "payment_instrument") {
+                    // Fill / clear payment fields when the value of payment_change changes
+                    formFields["payment_change"].change(() => {
+                        setPaymentInstrument();
+                        showHideFormFields();
+                        resetPaymentFields();
+                        updatePaymentPreview();
+                    });
+                } else {
+                    formFields[fieldId].change(() => {
+                        setPaymentInstrument();
+                        showHideFormFields();
+                        updatePaymentPreview();
+                    });
+                }
+            }
 
-    // fill with old fields
-    if (!iban.length && cj('#use_previous_iban_1').is(':checked')) {
-      iban = current_values.fields.iban;
-    }
-    if (installment == '0.00') {
-      installment = parseMoney(current_values.fields.amount);
-    }
+            setPaymentInstrument();
+            showHideFormFields();
+            updatePaymentPreview();
+        }
 
-    // caculcate the installment
-    if (!isNaN(installment)) {
-      annual = (installment.toFixed(2) * parseFloat(freqency)).toFixed(2);
-    }
+        function resetPaymentFields () {
+            const selectedPaymentChange = formFields["payment_change"].val();
+            const selectedPaymentInstrument = formFields["payment_instrument"].val();
+            const currentPaymentInstrument = CRM.vars["de.systopia.contract"].current_payment_instrument;
 
-    // TODO: use template
-    cj('.recurring-contribution-summary-text').html(
-      "Debitor name: " + debitor_name + "<br/>" +
-      "Debitor account: " + iban + "<br/>" +
-      "Creditor name: " + creditor.name + "<br/>" +
-      "Creditor account: " + creditor.iban + "<br/>" +
-      "Payment method: SEPA Direct Debit<br/>" +
-      "Frequency: " + freqency_label + "<br/>" +
-      "Annual amount: " + annual + " " + creditor.currency + "<br/>" +
-      "Installment amount: " + installment.toFixed(2) + " " + creditor.currency + "<br/>" +
-      "Next debit: " + next_collection + "<br/>"
-      );
+            if (selectedPaymentChange === "modify") {
+                if (
+                    selectedPaymentInstrument === currentPaymentInstrument
+                    && PaymentInstrument.fillPaymentParameters
+                ) {
+                    // Fill in current payment parameters in case of same payment method
+                    PaymentInstrument.fillPaymentParameters(formFields);
+                } else if (PaymentInstrument.clearPaymentParameters) {
+                    // Clear payment parameters in case of new payment method
+                    PaymentInstrument.clearPaymentParameters(formFields);
+                }
+            }
+        }
 
-    cj('#payment_amount_currency').text(creditor.currency);
-  }
-}
+        function setPaymentInstrument () {
+            const selectedPaymentInstrument = formFields["payment_instrument"].val();
 
-// call once for the UI to adjust
-cj(document).ready(function() {
-  showHidePaymentElements();
-  usePreviousIban();
-  cj('[name=recurring_contribution]').change(updatePaymentSummaryText);
-  cj("div.payment-modify").change(updatePaymentSummaryText);
-  cj("#activity_date").parent().parent().change(updatePaymentSummaryText);
-});
+            if (
+                window._PAYMENT_INSTRUMENTS_
+                && window._PAYMENT_INSTRUMENTS_[selectedPaymentInstrument]
+            ) {
+                PaymentInstrument = window._PAYMENT_INSTRUMENTS_[selectedPaymentInstrument];
+            }
+        }
 
-</script>
+        function showHideFormFields () {
+            // Show only fields relevant to the currently selected payment change mode / instrument
+            const selectedPaymentChange = formFields["payment_change"].val();
+            const selectedPaymentInstrument = formFields["payment_instrument"].val();
+
+            cj("*[data-payment-change], *[data-payment-instrument]").each((_, element) => {
+                const change =
+                    element.hasAttribute("data-payment-change")
+                    ? element.getAttribute("data-payment-change")
+                    : undefined;
+
+                const instrument =
+                    element.hasAttribute("data-payment-instrument")
+                    ? element.getAttribute("data-payment-instrument")
+                    : undefined;
+
+                if (change !== undefined && change !== selectedPaymentChange) {
+                    cj(element).hide(300);
+                    return;
+                }
+
+                if (instrument !== undefined && instrument !== selectedPaymentInstrument) {
+                    cj(element).hide(300);
+                    return;
+                }
+
+                cj(element).show(300);
+            });
+        }
+
+        function updatePaymentPreview () {
+            if (PaymentInstrument.updatePaymentPreview) {
+                PaymentInstrument.updatePaymentPreview(formFields);
+            }
+        }
+
+        cj(document).ready(initForm);
+    </script>
 {/literal}
-{/if}

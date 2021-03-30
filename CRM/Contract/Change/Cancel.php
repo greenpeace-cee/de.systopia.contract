@@ -57,10 +57,37 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
     // perform the update
     $this->updateContract($contract_update);
 
-    // also: cancel the mandate/recurring contribution
-    CRM_Contract_SepaLogic::terminateSepaMandate(
-        $contract['membership_payment.membership_recurring_contribution'],
-        $this->data['membership_cancellation.membership_cancel_reason']);
+    // also: cancel the payment/recurring contribution
+    $recurring_contribution_id = $contract['membership_payment.membership_recurring_contribution'];
+
+    if (isset($recurring_contribution_id)) {
+      $cancel_reason = $this->data['membership_cancellation.membership_cancel_reason'];
+
+      $pi_class = CRM_Contract_RecurringContribution::getPaymentInstrumentClass(
+        $recurring_contribution_id
+      );
+
+      $payment =
+        isset($pi_class)
+        ? $pi_class::loadByRecurringContributionId($recurring_contribution_id)
+        : null;
+
+      if (isset($payment)) {
+        $payment->terminate($cancel_reason);
+      } else {
+        civicrm_api3("ContributionRecur", "create", [
+          "id"                     => $recurring_contribution_id,
+          "end_date"               => date("YmdHis"),
+          "cancel_date"            => date("YmdHis"),
+          "contribution_status_id" => 1,
+        ]);
+      }
+
+      $recurring_contribution = new CRM_Contribute_DAO_ContributionRecur();
+      $recurring_contribution->get("id", $recurring_contribution_id);
+      $recurring_contribution->cancel_reason = $cancel_reason;
+      $recurring_contribution->save();
+    }
 
     // update change activity
     $contract_after = $this->getContract();
@@ -172,9 +199,9 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
       $links[] = [
           'name'  => E::ts("Cancel"),
           'title' => self::getChangeTitle(),
-          'url'   => "civicrm/contract/modify",
+          'url'   => "civicrm/contract/cancel",
           'bit'   => CRM_Core_Action::UPDATE,
-          'qs'    => "modify_action=cancel&id=%%id%%",
+          'qs'    => "id=%%id%%",
       ];
     }
   }
