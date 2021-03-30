@@ -209,6 +209,7 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     ]);
 
     $defaults['membership_channel'] = 'F2F';
+    $defaults['activity_medium'] = '1'; // In Person
 
     parent::setDefaults($defaults);
   }
