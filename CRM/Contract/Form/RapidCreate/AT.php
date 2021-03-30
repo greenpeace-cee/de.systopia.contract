@@ -90,8 +90,8 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     $this->assign('is_enable_bic', CRM_Contract_Utils::isDefaultCreditorUsesBic());
 
     // ### Contract information ###
-    $this->add('datepicker', 'join_date', ts('Member since'), [], true, [ 'time' => true ]);
-    $this->add('datepicker', 'start_date', ts('Membership start date'), [], true, [ 'time' => true ]);
+    $this->add('datepicker', 'join_date', ts('Member since'), [], true, [ 'time' => false ]);
+    $this->add('datepicker', 'start_date', ts('Membership start date'), [], true, [ 'time' => false ]);
     $this->add('select', 'campaign_id', ts('Campaign'), CRM_Contract_Configuration::getCampaignList(), TRUE, array('class' => 'crm-select2'));
     // $this->addEntityRef('campaign_id', ts('Campaign'), [
     //   'entity' => 'campaign',
