@@ -45,6 +45,10 @@ function civicrm_api3_Contract_create($params){
     );
   }
 
+  if (!empty($params['note'])) {
+    $params['details'] = $params['note'];
+  }
+
   // create 'sign' activity
   $params['activity_type_id'] = 'sign';
   $change = CRM_Contract_Change::getChangeForData($params);
