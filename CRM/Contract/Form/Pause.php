@@ -97,8 +97,8 @@ class CRM_Contract_Form_Pause extends CRM_Core_Form {
       $this->assign("default_to_minimum_change_date", true);
 
       $defaults = [
-        "activity_date" => date("Y-m-d", $minimum_change_date),
-        "activity_date_time" => date("H:i:00", $minimum_change_date),
+        "activity_date" => date("Y-m-d", strtotime($minimum_change_date)),
+        "activity_date_time" => date("H:i:00", strtotime($minimum_change_date)),
       ];
     }
 
