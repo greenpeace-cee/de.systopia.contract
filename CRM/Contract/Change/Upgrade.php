@@ -167,7 +167,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
             $mandate = CRM_Contract_PaymentInstrument_SepaMandate::loadByRecurringContributionId($recurring_contribution_id);
             if (isset($mandate)) {
               $mandate_params = $mandate->getParameters();
-              $from_ba = CRM_Contract_BankingLogic::getOrCreateBankAccount($current_state['contact_id'], $mandate_params['iban'], $mandate_params['bic']);
+              $from_ba = CRM_Contract_BankingLogic::getOrCreateBankAccount($current_state['contact_id'], $mandate_params['iban'], $mandate_params['bic'] ?? NULL);
             }
           }
         }
@@ -216,7 +216,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
         'date'               => date('YmdHis', strtotime($activity['activity_date_time'])),
         'validation_date'    => date('YmdHis'), // NOW
         'iban'               => $donor_account['iban'],
-        'bic'                => $donor_account['bic'],
+        'bic'                => $donor_account['bic'] ?? NULL,
         // 'source'             => ??
         'campaign_id'        => $campaign_id,
         'financial_type_id'  => 2, // Membership Dues
