@@ -32,9 +32,24 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
 
       // copy submitted changes to change activity
       foreach (CRM_Contract_Change::$field_mapping_change_contract as $contract_attribute => $change_attribute) {
-        if (!empty($this->data[$contract_attribute])) {
+        // this is necessary because membership_payment.defer_payment_start = 0
+        // asserts to true with empty(), but should be treated as a change below
+        $isDeferPaymentStartSet = $contract_attribute == 'membership_payment.defer_payment_start' &&
+          array_key_exists($contract_attribute, $this->data) &&
+          $this->data[$contract_attribute] == '0';
+
+        if (!empty($this->data[$contract_attribute]) || $isDeferPaymentStartSet) {
           $this->data[$change_attribute] = $this->data[$contract_attribute];
           $contract_after_execution[$contract_attribute] = $this->data[$contract_attribute];
+        }
+        // we may receive change attributes that assert true with empty(), but
+        // are in fact intended as updates. it would be cleaner to use a stricter
+        // emptiness test (i.e. only skip if the key is not set or is NULL),
+        // but that might break existing code, so we'll only deprecate it for now.
+        if (!$isDeferPaymentStartSet && empty($this->data[$contract_attribute]) &&
+          array_key_exists($contract_attribute, $this->data) && $this->data[$contract_attribute] !== NULL
+        ) {
+          CRM_Core_Error::deprecatedFunctionWarning('de.systopia.contract: Empty values for contract update parameters that are not NULL are deprecated. Affected parameter: ' . $contract_attribute);
         }
       }
 
