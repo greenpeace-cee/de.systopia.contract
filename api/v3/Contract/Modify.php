@@ -96,5 +96,6 @@ function civicrm_api3_Contract_modify($params) {
 
   // return contract (legacy behaviour)
   $contract = $change->getContract();
+  $contract['change_activity_id'] = $change->getID();
   return civicrm_api3_create_success([$contract['id'] => $contract]);
 }
