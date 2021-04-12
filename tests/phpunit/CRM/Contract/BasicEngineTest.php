@@ -591,4 +591,62 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     );
 
   }
+
+  /**
+   * Test that defer_payment_start is handled correctly
+   */
+  public function testDeferPaymentStart() {
+    $nowPlusOneYear = new DateTime();
+    $nowPlusOneYear->add(new Dateinterval('P1Y'));
+
+    // create a contract starting in one year; this forces the ContributionRecur's
+    // next_sched_contribution_date to also be in one year
+    $contract = $this->createNewContract([
+      'is_sepa'            => 1,
+      'amount'             => '10.00',
+      'frequency_unit'     => 'year',
+      'frequency_interval' => '1',
+      'start_date'         => $nowPlusOneYear->format('Y-m-d'),
+    ]);
+
+    $nextScheduleDate = new DateTime(civicrm_api3('ContributionRecur', 'getvalue', [
+      'return' => 'next_sched_contribution_date',
+      'id'     => $contract['membership_payment.membership_recurring_contribution'],
+    ]));
+    $this->assertTrue($nextScheduleDate >= $nowPlusOneYear);
+
+    // update to a monthly membership with defer_payment_start's default value of 1
+    $this->modifyContract($contract['id'], 'update', 'now', [
+      'membership_payment.membership_frequency' => '12',
+    ]);
+    $this->runContractEngine($contract['id']);
+
+    $contract = $this->getContract($contract['id']);
+    $nextScheduleDateAfterChange = new DateTime(civicrm_api3('ContributionRecur', 'getvalue', [
+      'return' => 'next_sched_contribution_date',
+      'id' => $contract['membership_payment.membership_recurring_contribution'],
+    ]));
+    $this->assertEquals(
+      $nextScheduleDate,
+      $nextScheduleDateAfterChange,
+      'next_sched_contribution_date of previous recurring contribution should be respected'
+    );
+
+    // update again, but use defer_payment_start = 0
+    $this->modifyContract($contract['id'], 'update', 'now', [
+      'membership_payment.membership_frequency' => '12',
+      'membership_payment.defer_payment_start'  => 0,
+    ]);
+    $this->runContractEngine($contract['id']);
+
+    $contract = $this->getContract($contract['id']);
+    $nextScheduleDateAfterChange = new DateTime(civicrm_api3('ContributionRecur', 'getvalue', [
+      'return' => 'next_sched_contribution_date',
+      'id' => $contract['membership_payment.membership_recurring_contribution'],
+    ]));
+    $this->assertTrue(
+      $nextScheduleDate > $nextScheduleDateAfterChange,
+      'next_sched_contribution_date should be as soon as possible'
+    );
+  }
 }

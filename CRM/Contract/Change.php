@@ -71,6 +71,7 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
       'membership_payment.from_ba'                           => 'contract_updates.ch_from_ba',
       'membership_payment.to_ba'                             => 'contract_updates.ch_to_ba',
       'membership_payment.cycle_day'                         => 'contract_updates.ch_cycle_day',
+      'membership_payment.defer_payment_start'               => 'contract_updates.ch_defer_payment_start',
   ];
 
 
