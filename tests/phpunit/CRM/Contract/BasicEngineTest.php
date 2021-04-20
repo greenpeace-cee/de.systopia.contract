@@ -219,6 +219,10 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       // make sure status is cancelled
       $this->assertEquals($this->getMembershipStatusID('Current'), $contract_revived['status_id'], "The contract wasn't revived");
       $this->assertEquals(240.00, $contract_revived['membership_payment.membership_annual'], "The contract has the wrong amount");
+
+      // make sure membership_cancellation was cleared GP-12430
+      $this->assertEmpty($contract_revived['membership_cancellation.membership_cancel_reason']);
+      $this->assertEmpty($contract_revived['membership_cancellation.membership_cancel_date'] ?? NULL);
     }
   }
 
