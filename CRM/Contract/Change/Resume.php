@@ -41,16 +41,22 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change_Upgrade {
         $contract_before
       );
 
-      $pi_class = CRM_Contract_RecurringContribution::getPaymentInstrumentClass(
-        $recurring_contribution_id
-      );
+      $payment_adapter_id = null;
+      $payment_adapter = null;
 
-      $payment =
-        isset($pi_class)
-        ? $pi_class::loadByRecurringContributionId($recurring_contribution_id)
-        : null;
+      if (isset($recurring_contribution_id)) {
+        $payment_adapter_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution(
+          $recurring_contribution_id
+        );
+      }
 
-      if (isset($payment)) $payment->resume();
+      if (isset($payment_adapter_id)) {
+        $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_adapter_id);
+      }
+
+      if (isset($payment_adapter)) {
+        $payment_adapter::resume($recurring_contribution_id);
+      }
     }
 
     // perform the update
