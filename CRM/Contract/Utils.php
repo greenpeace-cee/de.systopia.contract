@@ -379,9 +379,9 @@ class CRM_Contract_Utils
   /**
    * Get a default schedule date for contract creation/updates respecting the
    * configured `contract_minimum_change_date`
-   * 
+   *
    * @param string $preferred_date
-   * 
+   *
    * @return string
    */
   public static function getDefaultContractChangeDate ($preferred_date = "now") {
@@ -395,4 +395,75 @@ class CRM_Contract_Utils
     return date("Y-m-d H:i:s", $actual_timestamp);
   }
 
+  public static function getPaymentAdapterClass ($adapter_id) {
+    if ($adapter_id === null) return null;
+
+    return [
+      "eft"          => "CRM_Contract_PaymentAdapter_EFT",
+      "psp_sepa"     => "CRM_Contract_PaymentAdapter_PSPSEPA",
+      "sepa_mandate" => "CRM_Contract_PaymentAdapter_SEPAMandate",
+    ][$adapter_id];
+  }
+
+  public static function getPaymentAdapterForRecurringContribution ($recurring_contribution_id) {
+    if ($recurring_contribution_id === null) return null;
+
+    $payment_instrument_id = civicrm_api3("ContributionRecur", "getvalue", [
+      "id"     => $recurring_contribution_id,
+      "return" => "payment_instrument_id",
+    ]);
+
+    $payment_instrument_name = civicrm_api3("OptionValue", "getvalue", [
+      "option_group_id" => "payment_instrument",
+      "value"           => $payment_instrument_id,
+      "return"          => "name",
+    ]);
+
+    if ($payment_instrument_name === "EFT") return "eft";
+
+    // Get the payment method by looking at the SEPA creditor
+    $mandates_result = civicrm_api3("SepaMandate", "get", [
+      "entity_table" => "civicrm_contribution_recur",
+      "entity_id"    => $recurring_contribution_id,
+      "status"       => [ "IN" => ["FRST", "RCUR"] ],
+      "sequential"   => 1,
+      "return"       => ["creditor_id"],
+    ]);
+
+    if ($mandates_result["count"] === 0) return null;
+
+    $creditor_id = $mandates_result["values"][0]["creditor_id"];
+
+    $creditor_type = civicrm_api3("SepaCreditor", "getvalue", [
+      "id"     => $creditor_id,
+      "return" => "creditor_type",
+    ]);
+
+    if ($creditor_type === "SEPA") return "sepa_mandate";
+    if ($creditor_type === "PSP") return "psp_sepa";
+
+    return null;
+  }
+
+  public static function calcAnnualAmount(float $amount, int $frequency_interval, string $frequency_unit) {
+    $annual = $frequency_unit === "year" ? $amount : (12 / $frequency_interval) * $amount;
+    $frequency = $frequency_unit === "year" ? 1 : 12 / $frequency_interval;
+
+    return [
+      "annual"    => $annual,
+      "frequency" => $frequency,
+    ];
+  }
+
+  public static function calcRecurringAmount(float $annual, int $frequency) {
+    $amount = $annual / $frequency;
+    $frequency_interval = $frequency === 1 ? 1 : 12 / $frequency;
+    $frequency_unit = $frequency === 1 ? "year" : "month";
+
+    return [
+      "amount"             => $amount,
+      "frequency_interval" => $frequency_interval,
+      "frequency_unit"     => $frequency_unit,
+    ];
+  }
 }

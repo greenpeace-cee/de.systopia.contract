@@ -314,7 +314,7 @@ class CRM_Contract_PaymentInstrument_SepaMandate implements CRM_Contract_Payment
         }
 
         return $new_mandate_params;
-}
+    }
 
     /**
      * @see CRM_Contract_PaymentInstrument::nextCycleDay
