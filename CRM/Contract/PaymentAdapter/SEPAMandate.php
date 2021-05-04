@@ -240,6 +240,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $termination_date = date("Y-m-d H:i:s", strtotime("today"));
 
         CRM_Sepa_BAO_SEPAMandate::terminateMandate($mandate_id, $termination_date, $reason);
+
+        // Set the cancel_reason explicitly again since
+        // CRM_Sepa_BAO_SEPAMandate::terminateMandate seems to ignore this parameter,
+        civicrm_api3("ContributionRecur", "create", [
+            "id"            => $recurring_contribution_id,
+            "cancel_reason" => $reason,
+        ]);
     }
 
     /**

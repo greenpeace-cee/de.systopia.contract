@@ -87,8 +87,8 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       ])["value"];
 
       $this->assertEquals(
-        $recurringContribution->cancel_reason,
         $cancelReasonOptionValue,
+        $recurringContribution->cancel_reason,
         "'cancel_reason' of the recurring contribution should be ${cancelReasonOptionValue} (='Unknown')"
       );
 
