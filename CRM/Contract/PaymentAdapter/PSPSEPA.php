@@ -58,9 +58,70 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
      * @return array - List of form field specifications
      */
     public static function formFields () {
-        // ...
+        $psp_creditors = civicrm_api3("SepaCreditor", "get", [
+            "creditor_type" => "PSP",
+            "sequential"    => 1,
+            "return"        => ["id", "label"],
+        ])["values"];
 
-        return [];
+        $creditor_options = [];
+
+        foreach ($psp_creditors as $pc) {
+            $creditor_options[$pc["id"]] = $pc["label"];
+        }
+
+        $pi_option_values = civicrm_api3("OptionValue", "get", [
+            "option_group_id" => "payment_instrument",
+            "sequential"      => 1,
+            "return"          => ["value", "label"],
+        ])["values"];
+
+        $payment_instrument_options = [];
+
+        foreach ($pi_option_values as $pi) {
+            $payment_instrument_options[$pi["value"]] = $pi["label"];
+        }
+
+        return [
+            "creditor" => [
+                "display_name" => "Creditor",
+                "enabled"      => true,
+                "name"         => "creditor",
+                "options"      => $creditor_options,
+                "required"     => true,
+                "type"         => "select",
+            ],
+            "label" => [
+                "display_name" => "Label",
+                "enabled"      => true,
+                "name"         => "label",
+                "required"     => true,
+                "type"         => "text",
+            ],
+            "payment_instrument" => [
+                "display_name" => "Payment instrument",
+                "enabled"      => true,
+                "name"         => "payment_instrument",
+                "options"      => $payment_instrument_options,
+                "required"     => true,
+                "type"         => "select",
+            ],
+            "account_reference" => [
+                "display_name" => "Account reference",
+                "enabled"      => true,
+                "name"         => "account_reference",
+                "required"     => true,
+                "settings"     => [ "class" => "huge" ],
+                "type"         => "text",
+            ],
+            "account_name" => [
+                "display_name" => "Account name",
+                "enabled"      => true,
+                "name"         => "account_name",
+                "required"     => true,
+                "type"         => "text",
+            ],
+        ];
     }
 
     /**
@@ -115,17 +176,57 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     /**
      * Map submitted form values to paramters for a specific API call
      *
-     * @param array $submitted
      * @param string $apiEndpoint
+     * @param array $submitted
      *
      * @throws Exception
      *
      * @return array - API parameters
      */
-    public static function mapToApiParameters ($submitted, $apiEndpoint) {
-        // ...
+    public static function mapSubmittedFormValues ($apiEndpoint, $submitted) {
+        switch ($apiEndpoint) {
+            case "Contract.create": {
+                $now = date("Y-m-d H:i:s");
 
-        return [];
+                $currency = civicrm_api3("SepaCreditor", "getvalue", [
+                    "return" => "currency",
+                    "id"     => $submitted["pa-psp_sepa-creditor"],
+                ]);
+
+                $start_date = CRM_Utils_Date::processDate(
+                    $submitted["start_date"],
+                    null,
+                    null,
+                    "Y-m-d H:i:s"
+                );
+
+                $result = [
+                    "payment_method.account_name"          => $submitted["pa-psp_sepa-account_name"],
+                    "payment_method.account_reference"     => $submitted["pa-psp_sepa-account_reference"],
+                    "payment_method.amount"                => CRM_Contract_Utils::formatMoney($submitted["amount"]),
+                    "payment_method.campaign_id"           => $submitted["campaign_id"],
+                    "payment_method.creation_date"         => $now,
+                    "payment_method.creditor_id"           => $submitted["pa-psp_sepa-creditor"],
+                    "payment_method.currency"              => $currency,
+                    "payment_method.date"                  => $start_date,
+                    "payment_method.financial_type_id"     => 2, // = Member dues
+                    "payment_method.frequency_interval"    => 12 / (int) $submitted["frequency"],
+                    "payment_method.frequency_unit"        => "month",
+                    "payment_method.payment_instrument_id" => $submitted["pa-psp_sepa-payment_instrument"],
+                    "payment_method.start_date"            => $start_date,
+                    "payment_method.type"                  => "RCUR",
+                    "payment_method.validation_date"       => $now,
+                ];
+
+                file_put_contents("/home/mflandor/Tasks/gp-15906/logs/map-submitted.json", json_encode($result, JSON_PRETTY_PRINT));
+
+                return $result;
+            }
+
+            default: {
+                return [];
+            }
+        }
     }
 
     /**
@@ -157,6 +258,15 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         }
 
         return $result;
+    }
+
+    /**
+     * Get the next possible cycle day
+     *
+     * @return int - the next cycle day
+     */
+    public static function nextCycleDay () {
+        return date("d");
     }
 
     /**

@@ -108,6 +108,15 @@ class CRM_Contract_PaymentInstrument_SepaMandate implements CRM_Contract_Payment
     }
 
     /**
+     * Get a list of possible cycle days
+     *
+     * @return array - list of cycle days as integers
+     */
+    public static function cycleDays () {
+        return [];
+    }
+
+    /**
      * @see CRM_Contract_PaymentInstrument::displayName
      */
     public static function displayName () {

@@ -196,4 +196,15 @@ class CRM_Contract_FormUtils {
     }
   }
 
+  /**
+   * Get a list of available payment adapters
+   */
+  public static function getPaymentAdapters () {
+    return [
+      "eft"          => "CRM_Contract_PaymentAdapter_EFT",
+      "psp_sepa"     => "CRM_Contract_PaymentAdapter_PSPSEPA",
+      "sepa_mandate" => "CRM_Contract_PaymentAdapter_SEPAMandate",
+    ];
+  }
+
 }

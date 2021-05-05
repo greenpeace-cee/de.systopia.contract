@@ -24,6 +24,13 @@ interface CRM_Contract_PaymentAdapter {
     public static function create ($params);
 
     /**
+     * Get a list of possible cycle days
+     *
+     * @return array - list of cycle days as integers
+     */
+    public static function cycleDays ();
+
+    /**
      * Get payment specific form field specifications
      *
      * @return array - List of form field specifications
@@ -66,14 +73,14 @@ interface CRM_Contract_PaymentAdapter {
     /**
      * Map submitted form values to paramters for a specific API call
      *
-     * @param array $submitted
      * @param string $apiEndpoint
+     * @param array $submitted
      *
      * @throws Exception
      *
      * @return array - API parameters
      */
-    public static function mapToApiParameters ($submitted, $apiEndpoint);
+    public static function mapSubmittedFormValues ($apiEndpoint, $submitted);
 
     /**
      * Map update parameters to payment adapter parameters
@@ -83,6 +90,13 @@ interface CRM_Contract_PaymentAdapter {
      * @return array - Payment adapter parameters
      */
     public static function mapUpdateParameters ($update_params);
+
+    /**
+     * Get the next possible cycle day
+     *
+     * @return int - the next cycle day
+     */
+    public static function nextCycleDay ();
 
     /**
      * Pause payment

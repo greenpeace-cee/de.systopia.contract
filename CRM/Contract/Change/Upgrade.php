@@ -102,7 +102,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
   protected function buildContractUpdate($contract_before) {
     $contract_update = [];
 
-    $new_membership_type = $this->data["contract_updates.ch_membership_type"];
+    $new_membership_type = CRM_Utils_Array::value("contract_updates.ch_membership_type", $this->data);
 
     if (
       isset($new_membership_type)

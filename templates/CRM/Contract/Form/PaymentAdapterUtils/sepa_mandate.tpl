@@ -11,15 +11,15 @@
         return "1";
     };
 
-    if (window._PAYMENT_INSTRUMENTS_ === undefined) {
-        window._PAYMENT_INSTRUMENTS_ = {};
+    if (window._PAYMENT_ADAPTERS_ === undefined) {
+        window._PAYMENT_ADAPTERS_ = {};
     }
 
-    if (!Object.keys(window._PAYMENT_INSTRUMENTS_).includes("sepa_mandate")) {
-        window._PAYMENT_INSTRUMENTS_["sepa_mandate"] = {};
+    if (!Object.keys(window._PAYMENT_ADAPTERS_).includes("sepa_mandate")) {
+        window._PAYMENT_ADAPTERS_["sepa_mandate"] = {};
     }
 
-    const SEPAMandate = window._PAYMENT_INSTRUMENTS_["sepa_mandate"];
+    const SEPAMandate = window._PAYMENT_ADAPTERS_["sepa_mandate"];
 
     SEPAMandate.parseMoney = (raw_value) => {
         if (raw_value.length == 0) {
@@ -49,9 +49,9 @@
 
     SEPAMandate.clearPaymentParameters = (formFields) => {
         formFields["amount"].val("");
-        formFields["pi-sepa_mandate-cycle_day"].val("1");
+        formFields["pa-sepa_mandate-cycle_day"].val("1");
         formFields["frequency"].val("12");
-        formFields["pi-sepa_mandate-iban"].val("");
+        formFields["pa-sepa_mandate-iban"].val("");
     };
 
     SEPAMandate.fillPaymentParameters = (formFields) => {
@@ -65,7 +65,7 @@
             ? CRM.vars["de.systopia.contract/sepa_mandate"].next_cycle_day
             : CRM.vars["de.systopia.contract"].current_cycle_day;
 
-        formFields["pi-sepa_mandate-cycle_day"].val(cycle_day);
+        formFields["pa-sepa_mandate-cycle_day"].val(cycle_day);
 
         // Payment frequency (frequency)
         const frequency = mapFrequency(CRM.vars["de.systopia.contract"].current_frequency);
@@ -73,7 +73,7 @@
 
         // IBAN (payment-sepa_mandate-iban)
         const iban = CRM.vars["de.systopia.contract/sepa_mandate"].current_iban;
-        formFields["pi-sepa_mandate-iban"].val(iban);
+        formFields["pa-sepa_mandate-iban"].val(iban);
     };
 </script>
 

@@ -58,9 +58,26 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      * @return array - List of form field specifications
      */
     public static function formFields () {
-        // ...
+        return [
+            "iban" => [
+                "display_name" => "IBAN",
+                "enabled"      => true,
+                "name"         => "iban",
+                "required"     => true,
+                "settings"     => [ "class" => "huge" ],
+                "type"         => "text",
+                "validate"     => "CRM_Contract_PaymentInstrument_SepaMandate::validateIBAN",
+            ],
 
-        return [];
+            "bic" => [
+                "display_name" => "BIC",
+                "enabled"      => CRM_Contract_Utils::isDefaultCreditorUsesBic(),
+                "name"         => "bic",
+                "required"     => CRM_Contract_Utils::isDefaultCreditorUsesBic(),
+                "type"         => "text",
+                "validate"     => "CRM_Contract_PaymentInstrument_SepaMandate::validateBIC",
+            ],
+        ];
     }
 
     /**
@@ -115,17 +132,52 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     /**
      * Map submitted form values to paramters for a specific API call
      *
-     * @param array $submitted
      * @param string $apiEndpoint
+     * @param array $submitted
      *
      * @throws Exception
      *
      * @return array - API parameters
      */
-    public static function mapToApiParameters ($submitted, $apiEndpoint) {
-        // ...
+    public static function mapSubmittedFormValues ($apiEndpoint, $submitted) {
+        switch ($apiEndpoint) {
+            case "Contract.create": {
+                $now = date("Y-m-d H:i:s");
 
-        return [];
+                $start_date = CRM_Utils_Date::processDate(
+                    $submitted["start_date"],
+                    null,
+                    null,
+                    "Y-m-d H:i:s"
+                );
+
+                $result = [
+                    "payment_method.amount"             => CRM_Contract_Utils::formatMoney($submitted["amount"]),
+                    "payment_method.campaign_id"        => $submitted["campaign_id"],
+                    "payment_method.creation_date"      => $now,
+                    "payment_method.currency"           => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
+                    "payment_method.cycle_day"          => $submitted["pa-sepa_mandate-cycle_day"],
+                    "payment_method.date"               => $start_date,
+                    "payment_method.financial_type_id"  => 2, // = Member dues
+                    "payment_method.frequency_interval" => 12 / (int) $submitted["frequency"],
+                    "payment_method.frequency_unit"     => "month",
+                    "payment_method.iban"               => $submitted["pa-sepa_mandate-iban"],
+                    "payment_method.start_date"         => $start_date,
+                    "payment_method.type"               => "RCUR",
+                    "payment_method.validation_date"    => $now,
+                ];
+
+                if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
+                    $result["payment_method.bic"] = $submitted["pa-sepa_mandate-bic"];
+                }
+
+                return $result;
+            }
+
+            default: {
+                return [];
+            }
+        }
     }
 
     /**
@@ -156,6 +208,15 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         }
 
         return $result;
+    }
+
+    /**
+     * Get the next possible cycle day
+     *
+     * @return int - the next cycle day
+     */
+    public static function nextCycleDay () {
+        return date("d");
     }
 
     /**

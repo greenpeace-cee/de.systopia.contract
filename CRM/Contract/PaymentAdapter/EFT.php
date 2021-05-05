@@ -40,13 +40,20 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     }
 
     /**
+     * Get a list of possible cycle days
+     *
+     * @return array - list of cycle days as integers
+     */
+    public static function cycleDays () {
+        return range(1, 31);
+    }
+
+    /**
      * Get payment specific form field specifications
      *
      * @return array - List of form field specifications
      */
     public static function formFields () {
-        // ...
-
         return [];
     }
 
@@ -67,8 +74,6 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      * @return array - Paths to the templates
      */
     public static function formTemplates () {
-        // ...
-
         return [];
     }
 
@@ -80,7 +85,9 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     public static function formVars () {
         // ...
 
-        return [];
+        return [
+            "next_cycle_day" => date("d"), // Today
+        ];
     }
 
     /**
@@ -102,17 +109,37 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     /**
      * Map submitted form values to paramters for a specific API call
      *
-     * @param array $submitted
      * @param string $apiEndpoint
+     * @param array $submitted
      *
      * @throws Exception
      *
      * @return array - API parameters
      */
-    public static function mapToApiParameters ($submitted, $apiEndpoint) {
-        // ...
+    public static function mapSubmittedFormValues ($apiEndpoint, $submitted) {
+        switch ($apiEndpoint) {
+            case "Contract.create": {
+                $now = date("Y-m-d H:i:s");
 
-        return [];
+                $result = [
+                    "payment_method.amount"             => CRM_Contract_Utils::formatMoney($submitted["amount"]),
+                    "payment_method.campaign_id"        => $submitted["campaign_id"],
+                    "payment_method.create_date"        => $now,
+                    "payment_method.currency"           => $submitted["currency"],
+                    "payment_method.cycle_day"          => $submitted["pa-eft-cycle_day"],
+                    "payment_method.financial_type_id"  => 2, // = Member dues
+                    "payment_method.frequency_interval" => 12 / (int) $submitted["frequency"],
+                    "payment_method.frequency_unit"     => "month",
+                    "payment_method.validation_date"    => $now,
+                ];
+
+                return $result;
+            }
+
+            default: {
+                return [];
+            }
+        }
     }
 
     /**
@@ -137,6 +164,15 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         }
 
         return $result;
+    }
+
+    /**
+     * Get the next possible cycle day
+     *
+     * @return int - the next cycle day
+     */
+    public static function nextCycleDay () {
+        return date("d");
     }
 
     /**
