@@ -45,11 +45,20 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     }
 
     /**
-     * Get a list of allowed cycle days
+     * Get a list of possible cycle days
+     *
+     * @param array $params - array containing a creditor_id
+     *
+     * @return array - list of cycle days as integers
      */
-    public static function cycleDays () {
-        // TODO: Get correct cycle days from creditor
-        return range(1, 31);
+    public static function cycleDays ($params = []) {
+        if (empty($params["creditor_id"])) return [];
+
+        return CRM_Sepa_Logic_Settings::getListSetting(
+            "cycledays",
+            range(1, 28),
+            $params["creditor_id"]
+        );
     }
 
     /**

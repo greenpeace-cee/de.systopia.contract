@@ -45,9 +45,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     }
 
     /**
-     * Get a list of allowed cycle days
+     * Get a list of possible cycle days
+     *
+     * @param array $params - not used
+     *
+     * @return array - list of cycle days as integers
      */
-    public static function cycleDays () {
+    public static function cycleDays ($params = []) {
         $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
         return CRM_Sepa_Logic_Settings::getListSetting("cycledays", range(1, 28), $creditor->id);
     }

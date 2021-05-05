@@ -26,9 +26,11 @@ interface CRM_Contract_PaymentAdapter {
     /**
      * Get a list of possible cycle days
      *
+     * @param array $params - Optional parameters, depending on the implementation
+     *
      * @return array - list of cycle days as integers
      */
-    public static function cycleDays ();
+    public static function cycleDays ($params = []);
 
     /**
      * Get payment specific form field specifications

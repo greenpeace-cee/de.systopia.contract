@@ -42,9 +42,11 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     /**
      * Get a list of possible cycle days
      *
+     * @param array $params - not used
+     *
      * @return array - list of cycle days as integers
      */
-    public static function cycleDays () {
+    public static function cycleDays ($params = []) {
         return range(1, 31);
     }
 
