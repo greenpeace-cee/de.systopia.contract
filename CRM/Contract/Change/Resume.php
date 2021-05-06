@@ -11,7 +11,7 @@ use CRM_Contract_ExtensionUtil as E;
 /**
  * "Resume Membership" change
  */
-class CRM_Contract_Change_Resume extends CRM_Contract_Change_Upgrade {
+class CRM_Contract_Change_Resume extends CRM_Contract_Change {
 
   /**
    * Get a list of required fields for this type
@@ -29,40 +29,15 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change_Upgrade {
    */
   public function execute() {
     $contract_before = $this->getContract(TRUE);
+    $contract_update = [ "status_id" => "Current" ];
 
-    // get any changes stored in the resume activity
-    $contract_update = $this->buildContractUpdate($contract_before);
-    $contract_update['status_id'] = 'Current';
+    $recurring_contribution_id = $contract_before["membership_payment.membership_recurring_contribution"];
+    $payment_adapter_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($recurring_contribution_id);
+    $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_adapter_id);
+    $payment_adapter::resume($recurring_contribution_id);
 
-    if (empty($contract_update['membership_payment.membership_recurring_contribution'])) {
-      // recurring contribution is unchanged - resume it
-      $recurring_contribution_id = CRM_Utils_Array::value(
-        "membership_payment.membership_recurring_contribution",
-        $contract_before
-      );
-
-      $payment_adapter_id = null;
-      $payment_adapter = null;
-
-      if (isset($recurring_contribution_id)) {
-        $payment_adapter_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution(
-          $recurring_contribution_id
-        );
-      }
-
-      if (isset($payment_adapter_id)) {
-        $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_adapter_id);
-      }
-
-      if (isset($payment_adapter)) {
-        $payment_adapter::resume($recurring_contribution_id);
-      }
-    }
-
-    // perform the update
     $this->updateContract($contract_update);
     $this->updateChangeActivity($this->getContract(), $contract_before);
-
   }
 
   /**
@@ -94,4 +69,36 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change_Upgrade {
     // no-op
   }
 
+  public function renderDefaultSubject($contract_after, $contract_before = null) {
+    $contract_id = $this->getContractID();
+    $old_status = CRM_Utils_Array::value("status_id", $contract_before, "(null)");
+    $new_status = $contract_after["status_id"];
+    $subject = "id{$contract_id}: status_id $old_status to $new_status";
+
+    return $subject;
+  }
+
+    /**
+   * Update contract change activity based on contract diff after execution
+   *
+   * @param $contract_after
+   * @param $contract_before
+   */
+  protected function updateChangeActivity($contract_after, $contract_before) {
+    foreach (CRM_Contract_Change::$field_mapping_change_contract as $membership_field => $change_field) {
+      if (isset($contract_after[$membership_field])) {
+        $this->setParameter($change_field, $contract_after[$membership_field]);
+      }
+    }
+
+    $annual_before = $contract_before["membership_payment.membership_annual"];
+    $annual_after = $contract_after["membership_payment.membership_annual"];
+    $this->setParameter("contract_updates.ch_annual_diff", $annual_after - $annual_before);
+
+    $this->setParameter("subject", $this->getSubject($contract_after, $contract_before));
+    $this->setParameter("activity_date_time", date("Y-m-d H:i:s"));
+    $this->setStatus("Completed");
+
+    $this->save();
+  }
 }

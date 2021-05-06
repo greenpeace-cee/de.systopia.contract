@@ -425,7 +425,7 @@ class CRM_Contract_Utils
     $mandates_result = civicrm_api3("SepaMandate", "get", [
       "entity_table" => "civicrm_contribution_recur",
       "entity_id"    => $recurring_contribution_id,
-      "status"       => [ "IN" => ["FRST", "RCUR"] ],
+      "status"       => [ "IN" => ["FRST", "ONHOLD", "RCUR"] ],
       "sequential"   => 1,
       "return"       => ["creditor_id"],
     ]);
