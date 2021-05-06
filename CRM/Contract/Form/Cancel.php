@@ -70,11 +70,11 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
       [ "class" => "crm-select2" ]
     );
 
-    // Notes (notes)
+    // Notes (note)
     if (version_compare(CRM_Utils_System::version(), "4.7", "<")) {
-      $this->addWysiwyg("notes", ts("Notes"), []);
+      $this->addWysiwyg("note", ts("Notes"), []);
     } else {
-      $this->add("wysiwyg", "notes", ts("Notes"));
+      $this->add("wysiwyg", "note", ts("Notes"));
     }
 
     // Cancel / Submit buttons

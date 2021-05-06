@@ -26,8 +26,8 @@
     </div>
 
     <div class="crm-section" id="note">
-        <div class="label">{$form.notes.label}</div>
-        <div class="content">{$form.notes.html}</div>
+        <div class="label">{$form.note.label}</div>
+        <div class="content">{$form.note.html}</div>
         <div class="clear"></div>
     </div>
 
