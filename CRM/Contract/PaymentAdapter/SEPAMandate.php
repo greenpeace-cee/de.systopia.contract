@@ -70,7 +70,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
                 "required"     => true,
                 "settings"     => [ "class" => "huge" ],
                 "type"         => "text",
-                "validate"     => "CRM_Contract_PaymentInstrument_SepaMandate::validateIBAN",
+                "validate"     => "CRM_Contract_PaymentAdapter_SEPAMandate::validateIBAN",
             ],
 
             "bic" => [
@@ -79,7 +79,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
                 "name"         => "bic",
                 "required"     => CRM_Contract_Utils::isDefaultCreditorUsesBic(),
                 "type"         => "text",
-                "validate"     => "CRM_Contract_PaymentInstrument_SepaMandate::validateBIC",
+                "validate"     => "CRM_Contract_PaymentAdapter_SEPAMandate::validateBIC",
             ],
         ];
     }
@@ -391,6 +391,53 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         return $create_result["recurring_contribution_id"];
     }
 
+    /**
+     * Validate BIC
+     *
+     * @param mixed $value
+     * @param boolean $required
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    public static function validateBIC ($value, $required = false) {
+        if (empty($value)) {
+            if ($required) {
+                throw new Exception(ts("%1 is a required field", [ 1 => "BIC" ]));
+            } else return;
+        }
+
+        if (CRM_Sepa_Logic_Verification::verifyBIC($value) !== null) {
+            throw new Exception("Please enter a valid BIC");
+        }
+    }
+
+    /**
+     * Validate IBAN
+     *
+     * @param mixed $value
+     * @param boolean $required = false
+     *
+     * @throws Exception
+     *
+     * @return void
+     */
+    public static function validateIBAN ($value, $required = false) {
+        if (empty($value)) {
+            if ($required) {
+                throw new Exception(ts("%1 is a required field", [ 1 => "IBAN" ]));
+            } else return;
+        }
+
+        if (CRM_Sepa_Logic_Verification::verifyIBAN($value) !== null) {
+            throw new Exception("Please enter a valid IBAN");
+        }
+
+        if (self::isOrganisationIBAN($value)) {
+            throw new Exception("Do not use any of the organisation's own IBANs");
+        }
+    }
 }
 
 ?>
