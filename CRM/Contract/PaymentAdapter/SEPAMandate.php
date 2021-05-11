@@ -330,11 +330,16 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "id" => $recurring_contribution_id,
         ]);
 
-        $current_mandate_data = civicrm_api3("SepaMandate", "getsingle", [
-            "entity_id"    => $recurring_contribution_id,
+        $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
+
+        $mandates_result = civicrm_api3("SepaMandate", "get", [
             "entity_table" => "civicrm_contribution_recur",
-            "status"       => [ "IN" => ["FRST", "RCUR"] ],
-          ]);
+            "entity_id"    => $recurring_contribution_id,
+            "options"      => [ "sort" => "creation_date" ],
+            "sequential"   => 1,
+        ]);
+
+        $current_mandate_data = end($mandates_result["values"]);
 
         // Calculate the current annual contribution amount & frequency
         $current_annual_amount = CRM_Contract_Utils::calcAnnualAmount(
@@ -363,6 +368,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         // Get bank account by ID
         $bank_account_id = CRM_Utils_Array::value("from_ba", $params);
         $bank_account = CRM_Contract_BankingLogic::getBankAccount($bank_account_id);
+        $current_bic = CRM_Utils_Array::value("bic", $current_mandate_data);
 
         // Terminate the current mandate
         self::terminate($recurring_contribution_id, "CHNG");
@@ -370,8 +376,8 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         // Create a new mandate
         $create_params = [
             "amount"             => $new_recurring_amount["amount"],
-            "bic"                => CRM_Utils_Array::value("bic", $bank_account, $current_mandate_data["bic"]),
-            "campaign_id"        => CRM_Utils_Array::value("campaign_id", $params, $current_rc_data["campaign_id"]),
+            "bic"                => CRM_Utils_Array::value("bic", $bank_account, $current_bic),
+            "campaign_id"        => CRM_Utils_Array::value("campaign_id", $params, $current_campaign_id),
             "contact_id"         => $current_rc_data["contact_id"],
             "creation_date"      => date("Y-m-d H:i:s"),
             "creditor_id"        => CRM_Utils_Array::value("creditor_id", $params, $current_mandate_data["creditor_id"]),

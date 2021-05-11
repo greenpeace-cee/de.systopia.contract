@@ -425,14 +425,14 @@ class CRM_Contract_Utils
     $mandates_result = civicrm_api3("SepaMandate", "get", [
       "entity_table" => "civicrm_contribution_recur",
       "entity_id"    => $recurring_contribution_id,
-      "status"       => [ "IN" => ["FRST", "ONHOLD", "RCUR"] ],
+      "options"      => [ "sort" => "creation_date" ],
       "sequential"   => 1,
       "return"       => ["creditor_id"],
     ]);
 
     if ($mandates_result["count"] === 0) return null;
 
-    $creditor_id = $mandates_result["values"][0]["creditor_id"];
+    $creditor_id = end($mandates_result["values"])["creditor_id"];
 
     $creditor_type = civicrm_api3("SepaCreditor", "getvalue", [
       "id"     => $creditor_id,

@@ -226,6 +226,8 @@ class CRM_Contract_ContractTestBase extends \PHPUnit_Framework_TestCase implemen
         $params['type'] = 'RCUR';
       }
 
+      $params["reference"] = "SEPA-" . $params["contact_id"] . "-" . date("Ymd") . bin2hex(random_bytes(4));
+
       $mandate = $this->callAPISuccess('SepaMandate', 'createfull', $params);
       $mandate = $this->callAPISuccess('SepaMandate', 'getsingle', ['id' => $mandate['id']]);
       return $this->callAPISuccess('ContributionRecur', 'getsingle', ['id' => $mandate['entity_id']]);
