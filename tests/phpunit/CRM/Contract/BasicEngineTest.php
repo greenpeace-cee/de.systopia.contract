@@ -376,6 +376,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->modifyContract($contract['id'], 'revive', 'now', [
       'membership_payment.membership_annual'             => '240.00',
       'campaign_id'                                      => $revive_campaign_id,
+      'payment_method.reference' => "SEPA-" . $contract['id'] . "-" . date("Ymd") . bin2hex(random_bytes(4)),
     ]);
     $this->runContractEngine($contract['id']);
 

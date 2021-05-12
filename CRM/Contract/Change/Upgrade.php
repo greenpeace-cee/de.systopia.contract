@@ -67,6 +67,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
       if (isset($this->data["payment_method.adapter"])) {
         $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($this->data["payment_method.adapter"]);
         $payment_changes = $payment_adapter::mapUpdateParameters($this->data);
+        $payment_changes["adapter"] = $this->data["payment_method.adapter"];
       }
 
       $this->data["contract_updates.ch_payment_changes"] = json_encode($payment_changes);
@@ -285,6 +286,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
     $payment_changes = json_decode($change_data["contract_updates.ch_payment_changes"], true);
 
     $new_pa_id = CRM_Utils_Array::value("adapter", $payment_changes, $current_pa_id);
+    unset($payment_changes["adapter"]);
 
     // If a different payment adapter is set,
     // create a new contribution/payment and terminate the old one

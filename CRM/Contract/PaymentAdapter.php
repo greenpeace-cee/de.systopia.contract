@@ -139,12 +139,13 @@ interface CRM_Contract_PaymentAdapter {
      *
      * @param int $recurring_contribution_id
      * @param array $params - Parameters depend on the implementation
+     * @param boolean $terminate_current - Terminate the current contribution/payment
      *
      * @throws Exception
      *
      * @return int - Recurring contribution ID
      */
-    public static function update ($recurring_contribution_id, $params);
+    public static function update ($recurring_contribution_id, $params, $terminate_current = true);
 
 }
 

@@ -194,6 +194,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     public static function mapUpdateParameters ($update_params) {
         $mapping = [
             "activity_type_id"                        => "activity_type_id",
+            "campaign_id"                             => "campaign_id",
             "contract_updates.ch_annual"              => "annual",
             "contract_updates.ch_cycle_day"           => "cycle_day",
             "contract_updates.ch_defer_payment_start" => "defer_payment_start",
@@ -203,6 +204,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "payment_method.creditor_id"              => "creditor_id",
             "payment_method.currency"                 => "currency",
             "payment_method.financial_type_id"        => "financial_type_id",
+            "payment_method.reference"                => "reference",
         ];
 
         foreach ($mapping as $update_key => $result_key) {
@@ -318,13 +320,14 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      * Update payment data
      *
      * @param int $recurring_contribution_id
-     * @param array $params - Parameters depend on the implementation
+     * @param array $params
+     * @param boolean $terminate_current - Terminate the current contribution/payment
      *
      * @throws Exception
      *
-     * @return void
+     * @return int - Recurring contribution ID
      */
-    public static function update ($recurring_contribution_id, $params) {
+    public static function update ($recurring_contribution_id, $params, $terminate_current = true) {
         // Load current recurring contribution / SEPA mandate data
         $current_rc_data = civicrm_api3("ContributionRecur", "getsingle", [
             "id" => $recurring_contribution_id,
@@ -371,7 +374,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $current_bic = CRM_Utils_Array::value("bic", $current_mandate_data);
 
         // Terminate the current mandate
-        self::terminate($recurring_contribution_id, "CHNG");
+        if ($terminate_current) self::terminate($recurring_contribution_id, "CHNG");
 
         // Create a new mandate
         $create_params = [
@@ -387,6 +390,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "frequency_interval" => $new_recurring_amount["frequency_interval"],
             "frequency_unit"     => $new_recurring_amount["frequency_unit"],
             "iban"               => CRM_Utils_Array::value("iban", $bank_account, $current_mandate_data["iban"]),
+            "reference"          => CRM_Utils_Array::value("reference", $params),
             "start_date"         => $new_start_date,
             "type"               => "RCUR",
             "validation_date"    => date("Y-m-d H:i:s"),

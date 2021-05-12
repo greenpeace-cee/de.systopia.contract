@@ -234,13 +234,14 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      * Update payment data
      *
      * @param int $recurring_contribution_id
-     * @param array $params - Parameters depend on the implementation
+     * @param array $params
+     * @param boolean $terminate_current - Not used
      *
      * @throws Exception
      *
      * @return int - Recurring contribution ID
      */
-    public static function update ($recurring_contribution_id, $params) {
+    public static function update ($recurring_contribution_id, $params, $terminate_current = true) {
         // Load current recurring contribution data
         $current_rc_data = civicrm_api3("ContributionRecur", "getsingle", [
             "id" => $recurring_contribution_id,
