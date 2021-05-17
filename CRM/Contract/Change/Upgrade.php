@@ -14,6 +14,48 @@ use CRM_Contract_ExtensionUtil as E;
 class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
 
   /**
+   * Map update (API) parameters to payment changes
+   *
+   * @param array $current_contract
+   *
+   * @return array - Payment changes
+   */
+  public function mapParametersToPaymentChanges ($current_contract) {
+    // Derive the new payment adapter
+    $payment_adapter_id = CRM_Utils_Array::value("payment_method.adapter", $this->data);
+
+    if (empty($payment_adapter_id)) {
+      $current_rc_id = $current_contract["membership_payment.membership_recurring_contribution"];
+      $payment_adapter_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($current_rc_id);
+    }
+
+    // Map paramters
+    $param_mapping = [
+      "campaign_id"                             => "campaign_id",
+      "contract_updates.ch_cycle_day"           => "cycle_day",
+      "membership_payment.defer_payment_start"  => "defer_payment_start",
+      "membership_payment.from_ba"              => "from_ba",
+      "membership_payment.membership_annual"    => "annual",
+      "membership_payment.membership_frequency" => "frequency",
+      "payment_method.reference"                => "reference",
+    ];
+
+    $payment_changes = [];
+
+    foreach ($param_mapping as $original_key => $result_key) {
+      if (array_key_exists($original_key, $this->data)) {
+        $payment_changes[$result_key] = $this->data[$original_key];
+      }
+    }
+
+    return [
+      "activity_type_id" => CRM_Utils_Array::value("activity_type_id", $this->data),
+      "adapter"          => $payment_adapter_id,
+      "parameters"       => $payment_changes,
+    ];
+  }
+
+  /**
    * Get a list of required fields for this type
    *
    * @return array list of required fields
@@ -26,63 +68,47 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
    * Derive/populate additional data
    */
   public function populateData() {
-    if ($this->isNew()) {
-      $contract = $this->getContract(TRUE);
-      $contract_after_execution = $contract;
+    if (!$this->isNew()) return;
 
-      // copy submitted changes to change activity
-      foreach (CRM_Contract_Change::$field_mapping_change_contract as $contract_attribute => $change_attribute) {
-        // this is necessary because membership_payment.defer_payment_start = 0
-        // asserts to true with empty(), but should be treated as a change below
-        $isDeferPaymentStartSet = $contract_attribute == 'membership_payment.defer_payment_start' &&
-          array_key_exists($contract_attribute, $this->data) &&
-          $this->data[$contract_attribute] == '0';
+    $contract = $this->getContract(TRUE);
+    $contract_after_execution = $contract;
 
-        if (!empty($this->data[$contract_attribute]) || $isDeferPaymentStartSet) {
-          $this->data[$change_attribute] = $this->data[$contract_attribute];
-          $contract_after_execution[$contract_attribute] = $this->data[$contract_attribute];
-        }
-        // we may receive change attributes that assert true with empty(), but
-        // are in fact intended as updates. it would be cleaner to use a stricter
-        // emptiness test (i.e. only skip if the key is not set or is NULL),
-        // but that might break existing code, so we'll only deprecate it for now.
-        if (!$isDeferPaymentStartSet && empty($this->data[$contract_attribute]) &&
-          array_key_exists($contract_attribute, $this->data) && $this->data[$contract_attribute] !== NULL
-        ) {
-          CRM_Core_Error::deprecatedFunctionWarning('de.systopia.contract: Empty values for contract update parameters that are not NULL are deprecated. Affected parameter: ' . $contract_attribute);
-        }
+    // copy submitted changes to change activity
+    foreach (CRM_Contract_Change::$field_mapping_change_contract as $contract_attribute => $change_attribute) {
+      // this is necessary because membership_payment.defer_payment_start = 0
+      // asserts to true with empty(), but should be treated as a change below
+      $isDeferPaymentStartSet = $contract_attribute == 'membership_payment.defer_payment_start' &&
+        array_key_exists($contract_attribute, $this->data) &&
+        $this->data[$contract_attribute] == '0';
+
+      if (!empty($this->data[$contract_attribute]) || $isDeferPaymentStartSet) {
+        $this->data[$change_attribute] = $this->data[$contract_attribute];
+        $contract_after_execution[$contract_attribute] = $this->data[$contract_attribute];
       }
-
-      // Try to derive the payment adapter if it is not explicitly set
-      if (empty($this->data["payment_method.adapter"])) {
-        $active_links = CRM_Contract_BAO_ContractPaymentLink::getActiveLinks($contract["id"]);
-        $recurring_contribution_id = $active_links[0]["contribution_recur_id"];
-
-        $this->data["payment_method.adapter"] =
-          CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($recurring_contribution_id);
+      // we may receive change attributes that assert true with empty(), but
+      // are in fact intended as updates. it would be cleaner to use a stricter
+      // emptiness test (i.e. only skip if the key is not set or is NULL),
+      // but that might break existing code, so we'll only deprecate it for now.
+      if (!$isDeferPaymentStartSet && empty($this->data[$contract_attribute]) &&
+        array_key_exists($contract_attribute, $this->data) && $this->data[$contract_attribute] !== NULL
+      ) {
+        CRM_Core_Error::deprecatedFunctionWarning('de.systopia.contract: Empty values for contract update parameters that are not NULL are deprecated. Affected parameter: ' . $contract_attribute);
       }
-
-      $payment_changes = [];
-
-      if (isset($this->data["payment_method.adapter"])) {
-        $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($this->data["payment_method.adapter"]);
-        $payment_changes = $payment_adapter::mapUpdateParameters($this->data);
-        $payment_changes["adapter"] = $this->data["payment_method.adapter"];
-      }
-
-      $this->data["contract_updates.ch_payment_changes"] = json_encode($payment_changes);
-
-      foreach ($this->data as $key => $value) {
-        if (preg_match('/^payment_method\./', $key)) {
-          unset($this->data[$key]);
-        }
-      }
-
-      // Get activity subject
-      $this->data['subject'] = $this->getSubject($contract_after_execution, $contract);
     }
-  }
 
+    $payment_changes = $this->mapParametersToPaymentChanges($contract);
+    $this->data["contract_updates.ch_payment_changes"] = json_encode($payment_changes);
+
+    // Delete all update parameters prefixed with payment_method.*
+    foreach ($this->data as $key => $value) {
+      if (preg_match('/^payment_method\./', $key)) {
+        unset($this->data[$key]);
+      }
+    }
+
+    // Get activity subject
+    $this->data['subject'] = $this->getSubject($contract_after_execution, $contract);
+  }
 
   /**
    * Apply the given change to the contract
@@ -250,10 +276,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
     }
   }
 
-  /**
-   *
-   */
-  public function updatePayment ($contract) {
+  public function updatePayment ($current_contract) {
     $change_data = $this->data;
 
     // Resolve custom field IDs
@@ -267,7 +290,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
 
     $membership_id = $this->getContractID();
 
-    $current_rc_id = $contract["membership_payment.membership_recurring_contribution"];
+    $current_rc_id = $current_contract["membership_payment.membership_recurring_contribution"];
     $current_pa_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($current_rc_id);
     $current_payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($current_pa_id);
 
@@ -285,20 +308,35 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
 
     $payment_changes = json_decode($change_data["contract_updates.ch_payment_changes"], true);
 
-    $new_pa_id = CRM_Utils_Array::value("adapter", $payment_changes, $current_pa_id);
-    unset($payment_changes["adapter"]);
+    // Skip the update if nothing changes
+    if (count($payment_changes["parameters"]) === 0) return $current_rc_id;
 
     // If a different payment adapter is set,
     // create a new contribution/payment and terminate the old one
-    if ($new_pa_id !== $current_pa_id) {
-      $new_payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($new_pa_id);
+    if ($payment_changes["adapter"] !== $current_pa_id) {
+      $current_payment_adapter::terminate($current_rc_id);
 
-      // ...
+      $new_payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_changes["adapter"]);
+      $new_payment_adapter::create($payment_changes["parameters"]);
 
       return $current_rc_id;
     }
 
-    $new_rc_id = $current_payment_adapter::update($current_rc_id, $payment_changes);
+    if (isset($current_payment_adapter)) {
+      $new_rc_id = $current_payment_adapter::update(
+        $current_rc_id,
+        $payment_changes["parameters"],
+        $payment_changes["activity_type_id"]
+      );
+    } else {
+      CRM_Contract_PaymentAdapter_EFT::update(
+        $current_rc_id,
+        $payment_changes["parameters"],
+        $payment_changes["activity_type_id"]
+      );
+
+      $new_rc_id = $current_rc_id;
+    }
 
     CRM_Contract_BAO_ContractPaymentLink::setContractPaymentLink($membership_id, $new_rc_id);
 

@@ -159,6 +159,8 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             "contract_updates.ch_frequency" => "frequency",
         ];
 
+        $result = [];
+
         foreach ($mapping as $update_key => $result_key) {
             if (isset($update_params[$update_key])) {
                 $result[$result_key] = $update_params[$update_key];
@@ -194,13 +196,18 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      * Resume paused payment
      *
      * @param int $recurring_contribution_id
+     * @param array $update
      *
      * @throws Exception
      *
      * @return void
      */
-    public static function resume ($recurring_contribution_id) {
-        // Nothing to do here
+    public static function resume ($recurring_contribution_id, $update = []) {
+        if (count($update) > 0) {
+            return self::update($recurring_contribution_id, $update);
+        }
+
+        return $recurring_contribution_id;
     }
 
     /**
@@ -235,13 +242,13 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      *
      * @param int $recurring_contribution_id
      * @param array $params
-     * @param boolean $terminate_current - Not used
+     * @param int $activity_type_id - Not used
      *
      * @throws Exception
      *
      * @return int - Recurring contribution ID
      */
-    public static function update ($recurring_contribution_id, $params, $terminate_current = true) {
+    public static function update ($recurring_contribution_id, $params, $activity_type_id = null) {
         // Load current recurring contribution data
         $current_rc_data = civicrm_api3("ContributionRecur", "getsingle", [
             "id" => $recurring_contribution_id,

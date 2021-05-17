@@ -115,12 +115,13 @@ interface CRM_Contract_PaymentAdapter {
      * Resume paused payment
      *
      * @param int $recurring_contribution_id
+     * @param array $update
      *
      * @throws Exception
      *
-     * @return void
+     * @return int - Recurring contribution ID
      */
-    public static function resume ($recurring_contribution_id);
+    public static function resume ($recurring_contribution_id, $update = []);
 
     /**
      * Terminate payment
@@ -139,13 +140,13 @@ interface CRM_Contract_PaymentAdapter {
      *
      * @param int $recurring_contribution_id
      * @param array $params - Parameters depend on the implementation
-     * @param boolean $terminate_current - Terminate the current contribution/payment
+     * @param int $activity_type_id
      *
      * @throws Exception
      *
      * @return int - Recurring contribution ID
      */
-    public static function update ($recurring_contribution_id, $params, $terminate_current = true);
+    public static function update ($recurring_contribution_id, $params, $activity_type_id = null);
 
 }
 

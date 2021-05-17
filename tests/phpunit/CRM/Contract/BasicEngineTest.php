@@ -231,7 +231,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
    */
   public function testUpdateFailure() {
     // create a new contract
-    $contract = $this->createNewContract();
+    $contract = $this->createNewContract([ "is_sepa" => true ]);
 
     // schedule and update with an invalid from_ba
     $this->modifyContract($contract['id'], 'update', 'tomorrow', [
@@ -641,6 +641,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->modifyContract($contract['id'], 'update', 'now', [
       'membership_payment.membership_frequency' => '12',
       'membership_payment.defer_payment_start'  => 0,
+      'payment_method.reference' => "SEPA-" . $contract['id'] . "-" . date("Ymd") . bin2hex(random_bytes(4)),
     ]);
     $this->runContractEngine($contract['id']);
 
