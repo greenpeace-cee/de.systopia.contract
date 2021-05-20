@@ -7,8 +7,18 @@
 | http://www.systopia.de/                                      |
 +-------------------------------------------------------------*}
 
+{include file="CRM/Contract/Form/FormUtils.tpl"}
+
+{literal}
+
+<script>
+    window.PaymentAdapters = {};
+</script>
+
+{/literal}
+
 {foreach from=$payment_adapter_fields key=pa_name item=_}
-    {include file="CRM/Contract/Form/PaymentAdapterUtils/$pa_name.tpl"}
+    {include file="CRM/Contract/Form/PaymentAdapters/$pa_name.tpl"}
 {/foreach}
 
 <div class="crm-block crm-form-block">

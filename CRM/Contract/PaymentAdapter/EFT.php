@@ -88,7 +88,8 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         // ...
 
         return [
-            "next_cycle_day" => date("d"), // Today
+            "default_currency" => "EUR",
+            "next_cycle_day"   => date("d"), // Today
         ];
     }
 

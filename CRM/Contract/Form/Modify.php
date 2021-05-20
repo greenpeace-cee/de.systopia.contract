@@ -22,9 +22,10 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
     private $membership;
     private $membership_types;
     private $modify_action;
-    private $payment_instrument;
-    private $payment_instrument_class;
-    private $payment_instrument_name;
+    private $payment_adapters;
+    // private $payment_instrument;
+    // private $payment_instrument_class;
+    // private $payment_instrument_name;
     private $recurring_contribution;
 
     function preProcess () {
@@ -45,6 +46,14 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             }
 
             CRM_Core_Error::fatal("File does not exist");
+        }
+
+        // Change class
+        $this->modify_action = strtolower(CRM_Utils_Request::retrieve("modify_action", "String"));
+        $this->change_class = CRM_Contract_Change::getClassByAction($this->modify_action);
+
+        if (empty($this->change_class)) {
+            CRM_Core_Error::fatal(E::ts("Unknown action '%1'", [ 1 => $this->modify_action ]));
         }
 
         // Contract
@@ -75,14 +84,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             $this->membership = civicrm_api3("Membership", "getsingle", [ "id" => $contract_id ]);
         } catch (Exception $e) {
             CRM_Core_Error::fatal("Not a valid contract ID");
-        }
-
-        // Modify action
-        $this->modify_action = strtolower(CRM_Utils_Request::retrieve("modify_action", "String"));
-        $this->change_class = CRM_Contract_Change::getClassByAction($this->modify_action);
-
-        if (empty($this->change_class)) {
-            CRM_Core_Error::fatal(E::ts("Unknown action '%1'", [ 1 => $this->modify_action ]));
         }
 
         // Title
@@ -147,22 +148,30 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->recurring_contribution = civicrm_api3("ContributionRecur", "getsingle", [ "id" => $rc_id ]);
 
         // Payment instrumtent
-        foreach (self::$payment_instruments as $pi_name => $pi_class) {
-            if ($pi_class::isInstance($this->recurring_contribution["payment_instrument_id"])) {
-                $this->payment_instrument = $pi_class::loadByRecurringContributionId($rc_id);
-                $this->payment_instrument_class = $pi_class;
-                $this->payment_instrument_name = $pi_name;
-                break;
-            }
+        // foreach (self::$payment_instruments as $pi_name => $pi_class) {
+        //     if ($pi_class::isInstance($this->recurring_contribution["payment_instrument_id"])) {
+        //         $this->payment_instrument = $pi_class::loadByRecurringContributionId($rc_id);
+        //         $this->payment_instrument_class = $pi_class;
+        //         $this->payment_instrument_name = $pi_name;
+        //         break;
+        //     }
+        // }
+
+        // Payment adapters
+        $this->payment_adapters = CRM_Contract_FormUtils::getPaymentAdapters();
+
+        $resources = CRM_Core_Resources::singleton();
+
+        foreach ($this->payment_adapters as $pa_name => $pa_class) {
+            $resources->addVars("de.systopia.contract/$pa_name", $pa_class::formVars());
         }
 
-        // JS variables
-        $cycle_days =
-            isset($this->payment_instrument_class)
-            ? $this->payment_instrument_class::getCycleDays()
-            : range(1, 28);
+        // $cycle_days =
+        //     isset($this->payment_instrument_class)
+        //     ? $this->payment_instrument_class::getCycleDays()
+        //     : range(1, 28);
 
-        $grace_end = CRM_Contract_RecurringContribution::getNextInstallmentDate($rc_id, $cycle_days);
+        // $grace_end = CRM_Contract_RecurringContribution::getNextInstallmentDate($rc_id, $cycle_days);
         $current_contract = CRM_Contract_RecurringContribution::getCurrentContract($contact_id, $rc_id);
         $frequencies = CRM_Contract_RecurringContribution::getPaymentFrequencies();
 
@@ -173,8 +182,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         $recurring_contributions = CRM_Contract_RecurringContribution::getAllForContact($contact_id, true);
 
-        $resources = CRM_Core_Resources::singleton();
-
         $resources->addVars("de.systopia.contract", [
             "action"                     => $this->modify_action,
             "cid"                        => $contact_id,
@@ -182,27 +189,19 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "current_contract"           => $current_contract,
             "current_cycle_day"          => $this->recurring_contribution["cycle_day"],
             "current_frequency"          => $current_frequency,
+            "current_payment_adapter"    => CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id),
             "current_recurring"          => $rc_id,
-            "current_payment_instrument" => $this->payment_instrument_name,
             "debitor_name"               => $this->contact["display_name"],
             "frequencies"                => $frequencies,
-            "grace_end"                  => $grace_end,
+            // "grace_end"                  => $grace_end,
             "recurring_contributions"    => $recurring_contributions,
         ]);
-
-        foreach (self::$payment_instruments as $pi_name => $pi_class) {
-            $resources->addVars(
-                "de.systopia.contract/$pi_name",
-                $pi_class::formVars($this->payment_instrument)
-            );
-        }
-
     }
 
     function buildQuickForm () {
 
         // Currency
-        $this->assign("currency", CRM_Sepa_Logic_Settings::defaultCreditor()->currency);
+        // $this->assign("currency", CRM_Sepa_Logic_Settings::defaultCreditor()->currency);
 
         // Payment change (payment_change)
         $payment_change_options = [
@@ -216,35 +215,35 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         $this->add("select", "payment_change", ts("Payment change"), $payment_change_options);
 
-        // Payment method (payment_instrument)
-        $payment_instrument_options = [];
+        // Payment method (payment_adapter)
+        $payment_adapter_options = [];
 
-        foreach (self::$payment_instruments as $pi_name => $pi_class) {
-            $payment_instrument_options[$pi_name] = $pi_class::displayName();
+        foreach ($this->payment_adapters as $pa_name => $pa_class) {
+            $payment_adapter_options[$pa_name] = $pa_class::adapterInfo()["display_name"];
         }
 
         $this->add(
             "select",
-            "payment_instrument",
+            "payment_adapter",
             ts("Payment method"),
-            $payment_instrument_options,
+            $payment_adapter_options,
             false
         );
 
-        // Payment-instrument-specific fields
-        $pif_template_var = [];
+        // Payment-adapter-specific fields
+        $paf_template_var = [];
 
-        foreach (self::$payment_instruments as $pi_name => $pi_class) {
-            $pif_template_var[$pi_name] = [];
+        foreach ($this->payment_adapters as $pa_name => $pa_class) {
+            $paf_template_var[$pa_name] = [];
 
-            foreach ($pi_class::formFields() as $field) {
+            foreach ($pa_class::formFields() as $field) {
                 if (!$field["enabled"]) continue;
 
                 $field_name = $field["name"];
-                $field_id = "pi-$pi_name-$field_name";
+                $field_id = "pa-$pa_name-$field_name";
                 $field_settings = isset($field["settings"]) ? $field["settings"] : [];
 
-                array_push($pif_template_var[$pi_name], $field_id);
+                array_push($paf_template_var[$pa_name], $field_id);
 
                 switch ($field["type"]) {
                     case "select":
@@ -265,14 +264,14 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
             $this->add(
                 "select",
-                "pi-$pi_name-cycle_day",
+                "pa-$pa_name-cycle_day",
                 ts("Cycle day"),
-                $pi_class::getCycleDays()
+                $pa_class::cycleDays()
             );
         }
 
-        $this->assign("payment_instrument_fields", $pif_template_var);
-        $this->assign("payment_instrument_fields_json", json_encode($pif_template_var));
+        $this->assign("payment_adapter_fields", $paf_template_var);
+        $this->assign("payment_adapter_fields_json", json_encode($paf_template_var));
 
         // Recurring contribution (recurring_contribution)
         $formUtils = new CRM_Contract_FormUtils($this, "Membership");
@@ -384,15 +383,15 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $min_change_date = Civi::settings()->get("contract_minimum_change_date");
         $this->assign("default_to_minimum_change_date", $default_change_date === $min_change_date);
 
-        // Payment-instrument-specific defaults
-        foreach (self::$payment_instruments as $pi_name => $pi_class) {
-            foreach ($pi_class::formFields() as $field_name => $field) {
+        // Payment-adapter-specific defaults
+        foreach ($this->payment_adapters as $pa_name => $pa_class) {
+            foreach ($pa_class::formFields() as $field_name => $field) {
                 if (!$field["enabled"] || empty($field["default"])) continue;
 
-                $defaults["pi-$pi_name-$field_name"] = $field["default"];
+                $defaults["pa-$pa_name-$field_name"] = $field["default"];
             }
 
-            $defaults["pi-$pi_name-cycle_day"] = $pi_class::nextCycleDay();
+            $defaults["pa-$pa_name-cycle_day"] = $pa_class::nextCycleDay();
         }
 
         parent::setDefaults($defaults);
@@ -440,13 +439,13 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                     HTML_QuickForm::setElementError("frequency", "Please specify a payment frequency");
                 }
 
-                $pi_name = $submitted["payment_instrument"];
-                $pi_class = self::$payment_instruments[$pi_name];
+                $pa_name = $submitted["payment_adapter"];
+                $pa_class = $this->payment_adapters[$pa_name];
 
-                foreach ($pi_class::formFields() as $field_name => $field) {
+                foreach ($pa_class::formFields() as $field_name => $field) {
                     if (!$field["enabled"] || empty($field["validate"])) continue;
 
-                    $field_id = "pi-$pi_name-$field_name";
+                    $field_id = "pa-$pa_name-$field_name";
 
                     try {
                         call_user_func($field["validate"], $submitted[$field_id], $field["required"]);
@@ -502,17 +501,17 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                 $annual_amount = $frequency * $amount;
                 $contract_modify_params["membership_payment.membership_annual"] = CRM_Contract_Utils::formatMoney($annual_amount);
 
-                $payment_instrument = $submitted["payment_instrument"];
-                $contract_modify_params["membership_payment.cycle_day"] = $submitted["pi-$payment_instrument-cycle_day"];
+                $payment_adapter = $submitted["payment_adapter"];
+                $contract_modify_params["membership_payment.cycle_day"] = $submitted["pa-$payment_adapter-cycle_day"];
 
-                if ($submitted["payment_instrument"] === "sepa_mandate") {
+                if ($submitted["payment_adapter"] === "sepa_mandate") {
                     $contract_modify_params["membership_payment.to_ba"] = CRM_Contract_BankingLogic::getCreditorBankAccount();
 
-                    $bic = isset($submitted["pi-sepa_mandate-bic"]) ? $submitted["pi-sepa_mandate-bic"] : null;
+                    $bic = isset($submitted["pa-sepa_mandate-bic"]) ? $submitted["pa-sepa_mandate-bic"] : null;
 
                     $contract_modify_params["membership_payment.from_ba"] = CRM_Contract_BankingLogic::getOrCreateBankAccount(
                         $this->membership["contact_id"],
-                        $submitted["pi-sepa_mandate-iban"],
+                        $submitted["pa-sepa_mandate-iban"],
                         $bic
                     );
                 }

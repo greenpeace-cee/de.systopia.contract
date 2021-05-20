@@ -16,7 +16,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     private $membership_channels;
     private $membership_types;
     private $payment_adapters;
-    private $title;
 
     function preProcess () {
 
@@ -24,7 +23,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $this->change_class = CRM_Contract_Change::getClassByAction("sign");
 
         // Title
-        $this->title = $this->change_class::getChangeTitle();
+        CRM_Utils_System::setTitle($this->change_class::getChangeTitle());
 
         // Destination
         $this->controller->_destination = CRM_Utils_System::url(
@@ -95,9 +94,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
     }
 
     function buildQuickForm () {
-        // Title
-        CRM_Utils_System::setTitle($this->title);
-
         $this->assign("bic_lookup_accessible", CRM_Sepa_Logic_Settings::isLittleBicExtensionAccessible());
         $this->assign("cid", $this->contact["id"]);
         $this->assign("contact", $this->contact);
