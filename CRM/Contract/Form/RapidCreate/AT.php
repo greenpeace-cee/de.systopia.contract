@@ -77,9 +77,9 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     CRM_Core_Resources::singleton()->addVars('de.systopia.contract', array(
       'creditor'    => CRM_Sepa_Logic_Settings::defaultCreditor(),
       'frequencies' => CRM_Contract_RecurringContribution::getPaymentFrequencies()));
-    CRM_Contract_PaymentInstrument_SepaMandate::addJsSepaTools();
+    CRM_Contract_PaymentAdapter_SEPAMandate::addJsSepaTools();
 
-    $this->add('select', 'cycle_day', ts('Cycle day'), CRM_Contract_PaymentInstrument_SepaMandate::getCycleDays());
+    $this->add('select', 'cycle_day', ts('Cycle day'), CRM_Contract_PaymentAdapter_SEPAMandate::cycleDays());
     $this->add('text',   'iban', ts('IBAN'), array('class' => 'huge'), true);
     if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
       $this->add('text', 'bic', ts('BIC'), null, true);
@@ -160,7 +160,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     if (!empty($submitted['iban']) && CRM_Sepa_Logic_Verification::verifyIBAN($submitted['iban']) !== null) {
       HTML_QuickForm::setElementError ( 'iban', 'Please enter a valid IBAN');
     }
-    if (!empty($submitted['iban']) && CRM_Contract_PaymentInstrument_SepaMandate::isOrganisationIBAN($submitted['iban'])) {
+    if (!empty($submitted['iban']) && CRM_Contract_PaymentAdapter_SEPAMandate::isOrganisationIBAN($submitted['iban'])) {
       HTML_QuickForm::setElementError ( 'iban', "Do not use any of the organisation's own IBANs");
     }
     if (!empty($submitted['bic']) && CRM_Sepa_Logic_Verification::verifyBIC($submitted['bic']) !== null) {
@@ -195,7 +195,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
 
     // sepa defaults
     $defaults['payment_frequency'] = '12'; // monthly
-    $defaults['cycle_day'] = CRM_Contract_PaymentInstrument_SepaMandate::nextCycleDay();
+    $defaults['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::nextCycleDay();
 
     $config = CRM_Core_Config::singleton();
     $countryDefault = $config->defaultContactCountry;
@@ -290,7 +290,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     // Create mandate
     if ($submitted['cycle_day'] < 1 || $submitted['cycle_day'] > 30) {
       // invalid cycle day
-      $submitted['cycle_day'] = CRM_Contract_PaymentInstrument_SepaMandate::nextCycleDay();
+      $submitted['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::nextCycleDay();
     }
 
     // calculate amount
@@ -316,9 +316,8 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
       $new_mandate_params['bic'] = $submitted['bic'];
     }
-    $new_mandate = CRM_Contract_PaymentInstrument_SepaMandate::create($new_mandate_params);
-    $new_mandate_params = $new_mandate->getParameters();
-    $contractParams['membership_payment.membership_recurring_contribution'] = $new_mandate_params['entity_id'];
+    $new_mandate = CRM_Contract_PaymentAdapter_SEPAMandate::create($new_mandate_params);
+    $contractParams['membership_payment.membership_recurring_contribution'] = $new_mandate['recurring_contribution_id'];
     $contractParams['membership_general.membership_dialoger'] = $submitted['membership_dialoger']; // DD fundraiser
 
     $contractParams['contact_id'] = $contact['id'];

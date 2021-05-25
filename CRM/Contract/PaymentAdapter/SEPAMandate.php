@@ -6,6 +6,45 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     const DISPLAY_NAME = "SEPA mandate";
 
     /**
+     * Prepare and inject the SEPA tools JS
+     *
+     * @return void
+     */
+    public static function addJsSepaTools() {
+        $creditor_parameters = civicrm_api3("SepaCreditor", "get", [
+            "options.limit" => 0,
+        ])["values"];
+
+        foreach ($creditor_parameters as &$creditor) {
+            $creditor["grace"] = (int) CRM_Sepa_Logic_Settings::getSetting(
+                "batching.RCUR.grace",
+                $creditor["id"]
+            );
+
+            $creditor["notice"] = (int) CRM_Sepa_Logic_Settings::getSetting(
+                "batching.RCUR.notice",
+                $creditor["id"]
+            );
+        }
+
+        $default_creditor_id = (int) CRM_Sepa_Logic_Settings::getSetting(
+            "batching_default_creditor"
+        );
+
+        $creditor_parameters["default"] = $creditor_parameters[$default_creditor_id];
+
+        $script = file_get_contents(__DIR__ . "/../../../js/sepa_tools.js");
+
+        $script = str_replace(
+            "SEPA_CREDITOR_PARAMETERS",
+            json_encode($creditor_parameters),
+            $script
+        );
+
+        CRM_Core_Region::instance("page-header")->add([ "script" => $script ]);
+    }
+
+    /**
      * Get metadata about the payment adapter
      *
      * @see CRM_Contract_PaymentAdapter::adapterInfo
@@ -134,6 +173,37 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     }
 
     /**
+     * Check if an IBAN is one of the organisation's own
+     *
+     * @param string $iban
+     *
+     * @return boolean
+     */
+    public static function isOrganisationIBAN($iban) {
+        if (empty($iban)) return false;
+
+        if (self::$organisation_ibans === null) {
+            self::$organisation_ibans = [];
+
+            $query = CRM_Core_DAO::executeQuery(
+                "SELECT reference
+                FROM civicrm_bank_account_reference
+                LEFT JOIN civicrm_bank_account ON civicrm_bank_account_reference.ba_id = civicrm_bank_account.id
+                LEFT JOIN civicrm_option_value ON civicrm_bank_account_reference.reference_type_id = civicrm_option_value.id
+                WHERE civicrm_bank_account.contact_id = 1 AND civicrm_option_value.name = 'IBAN'"
+            );
+
+            while ($query->fetch()) {
+                self::$organisation_ibans[] = $query->reference;
+            }
+
+            $query->free();
+        }
+
+        return in_array($iban, self::$organisation_ibans);
+    }
+
+    /**
      * Map submitted form values to paramters for a specific API call
      *
      * @param string $apiEndpoint
@@ -224,7 +294,24 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      * @return int - the next cycle day
      */
     public static function nextCycleDay () {
-        return date("d");
+        $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
+        $notice = (int) CRM_Sepa_Logic_Settings::getSetting("batching.FRST.notice", $creditor->id);
+        $buffer_days = (int) CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days") + $notice;
+        $cycle_days = self::cycleDays();
+
+        $safety_counter = 32;
+        $start_date = strtotime("+{$buffer_days} day", strtotime("now"));
+
+        while (!in_array(date("d", $start_date), $cycle_days)) {
+            $start_date = strtotime("+ 1 day", $start_date);
+            $safety_counter -= 1;
+
+            if ($safety_counter == 0) {
+                throw new Exception("There's something wrong with the nextCycleDay method.");
+            }
+        }
+
+        return (int) date("d", $start_date);
     }
 
     /**

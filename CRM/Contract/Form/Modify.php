@@ -12,10 +12,6 @@ use CRM_Contract_ExtensionUtil as E;
 
 class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
-    private static $payment_instruments = [
-        "sepa_mandate" => "CRM_Contract_PaymentInstrument_SepaMandate",
-    ];
-
     private $change_class;
     private $contact;
     private $medium_ids;
@@ -23,9 +19,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
     private $membership_types;
     private $modify_action;
     private $payment_adapters;
-    // private $payment_instrument;
-    // private $payment_instrument_class;
-    // private $payment_instrument_name;
     private $recurring_contribution;
 
     function preProcess () {
@@ -146,16 +139,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Recurring contribution
         $this->recurring_contribution = civicrm_api3("ContributionRecur", "getsingle", [ "id" => $rc_id ]);
-
-        // Payment instrumtent
-        // foreach (self::$payment_instruments as $pi_name => $pi_class) {
-        //     if ($pi_class::isInstance($this->recurring_contribution["payment_instrument_id"])) {
-        //         $this->payment_instrument = $pi_class::loadByRecurringContributionId($rc_id);
-        //         $this->payment_instrument_class = $pi_class;
-        //         $this->payment_instrument_name = $pi_name;
-        //         break;
-        //     }
-        // }
 
         // Payment adapters
         $this->payment_adapters = CRM_Contract_FormUtils::getPaymentAdapters();
