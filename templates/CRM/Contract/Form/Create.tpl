@@ -236,10 +236,10 @@
         const selectedPaymentAdapter = formFields["payment_adapter"].val();
 
         if (
-            window._PAYMENT_ADAPTER_
-            && window._PAYMENT_ADAPTER_[selectedPaymentAdapter]
+            window.PaymentAdapters
+            && window.PaymentAdapters[selectedPaymentAdapter]
         ) {
-            PaymentAdapter = window._PAYMENT_ADAPTER_[selectedPaymentAdapter];
+            PaymentAdapter = window.PaymentAdapters[selectedPaymentAdapter];
         }
     }
 

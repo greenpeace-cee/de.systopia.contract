@@ -4,6 +4,7 @@
     Frequency: <span id="frequency"></span><br />
     Annual amount: <span id="annual"></span><br />
     Installment amount: <span id="installment"></span><br />
+    Cycle day: <span id="cycle_day"></span><br />
 </div>
 
 {literal}
@@ -32,6 +33,10 @@
         // Installment amount
         const installmentAmount = `${amount.toFixed(2)} ${currency}`;
         paymentPreviewContainer.find("span#installment").text(installmentAmount);
+
+        // Cycle day
+        const cycleDay = formFields["pa-eft-cycle_day"].val();
+        paymentPreviewContainer.find("span#cycle_day").text(cycleDay);
     };
 </script>
 

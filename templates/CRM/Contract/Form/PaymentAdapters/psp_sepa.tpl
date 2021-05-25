@@ -8,6 +8,9 @@
     PSP.clearPaymentParameters = (formFields) => {
         formFields["amount"].val("");
         formFields["frequency"].val("12");
+        formFields["pa-psp_sepa-label"].val("");
+        formFields["pa-psp_sepa-account_reference"].val("");
+        formFields["pa-psp_sepa-account_name"].val("");
     };
 
     PSP.fillPaymentParameters = (formFields) => {

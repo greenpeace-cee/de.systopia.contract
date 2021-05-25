@@ -157,11 +157,18 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
                 }
             }
 
+            $cycle_days = $pa_class::cycleDays();
+            $cycle_day_options = [];
+
+            foreach ($cycle_days as $cday) {
+                $cycle_day_options[$cday] = $cday;
+            }
+
             $this->add(
                 "select",
                 "pa-$pa_name-cycle_day",
                 ts("Cycle day"),
-                $pa_class::cycleDays()
+                $cycle_day_options,
             );
         }
 

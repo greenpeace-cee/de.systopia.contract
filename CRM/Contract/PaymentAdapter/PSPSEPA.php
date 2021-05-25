@@ -161,8 +161,6 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
      * @return array - Form variables
      */
     public static function formVars () {
-        // ...
-
         return [];
     }
 
