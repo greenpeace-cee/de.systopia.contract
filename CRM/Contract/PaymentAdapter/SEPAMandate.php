@@ -298,6 +298,20 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     }
 
     /**
+     * Revive a cancelled payment
+     *
+     * @param int $recurring_contribution_id
+     * @param array $update
+     *
+     * @throws Exception
+     *
+     * @return int - Recurring contribution ID
+     */
+    public static function revive ($recurring_contribution_id, $update = []) {
+        return self::update($recurring_contribution_id, $update);
+    }
+
+    /**
      * Terminate payment
      *
      * @param int $recurring_contribution_id

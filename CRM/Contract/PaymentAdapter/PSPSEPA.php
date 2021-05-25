@@ -351,6 +351,20 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     }
 
     /**
+     * Revive a cancelled payment
+     *
+     * @param int $recurring_contribution_id
+     * @param array $update
+     *
+     * @throws Exception
+     *
+     * @return int - Recurring contribution ID
+     */
+    public static function revive ($recurring_contribution_id, $update = []) {
+        return self::update($recurring_contribution_id, $update);
+    }
+
+    /**
      * Terminate payment
      *
      * @param int $recurring_contribution_id

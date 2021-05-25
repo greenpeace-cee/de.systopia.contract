@@ -124,6 +124,18 @@ interface CRM_Contract_PaymentAdapter {
     public static function resume ($recurring_contribution_id, $update = []);
 
     /**
+     * Revive a cancelled payment
+     *
+     * @param int $recurring_contribution_id
+     * @param array $update
+     *
+     * @throws Exception
+     *
+     * @return int - Recurring contribution ID
+     */
+    public static function revive ($recurring_contribution_id, $update = []);
+
+    /**
      * Terminate payment
      *
      * @param int $recurring_contribution_id

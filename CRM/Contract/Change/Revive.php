@@ -12,6 +12,50 @@ use CRM_Contract_ExtensionUtil as E;
  * "Revive Membership" change
  */
 class CRM_Contract_Change_Revive extends CRM_Contract_Change {
+
+  /**
+   * Map update (API) parameters to payment changes
+   *
+   * @param array $current_contract
+   *
+   * @return array - Payment changes
+   */
+  public function mapParametersToPaymentChanges ($current_contract) {
+    // Derive the new payment adapter
+    $payment_adapter_id = CRM_Utils_Array::value("payment_method.adapter", $this->data);
+
+    if (empty($payment_adapter_id)) {
+      $current_rc_id = $current_contract["membership_payment.membership_recurring_contribution"];
+      $payment_adapter_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($current_rc_id);
+    }
+
+    // Map paramters
+    $param_mapping = [
+      "campaign_id"                             => "campaign_id",
+      "contract_updates.ch_cycle_day"           => "cycle_day",
+      "membership_payment.cycle_day"            => "cycle_day",
+      "membership_payment.defer_payment_start"  => "defer_payment_start",
+      "membership_payment.from_ba"              => "from_ba",
+      "membership_payment.membership_annual"    => "annual",
+      "membership_payment.membership_frequency" => "frequency",
+      "payment_method.reference"                => "reference",
+    ];
+
+    $payment_changes = [];
+
+    foreach ($param_mapping as $original_key => $result_key) {
+      if (array_key_exists($original_key, $this->data)) {
+        $payment_changes[$result_key] = $this->data[$original_key];
+      }
+    }
+
+    return [
+      "activity_type_id" => CRM_Utils_Array::value("activity_type_id", $this->data),
+      "adapter"          => $payment_adapter_id,
+      "parameters"       => $payment_changes,
+    ];
+  }
+
   public function populateData () {
     if (!$this->isNew()) return;
 
@@ -41,25 +85,10 @@ class CRM_Contract_Change_Revive extends CRM_Contract_Change {
       }
     }
 
-    // Try to derive the payment adapter if it is not explicitly set
-    if (empty($this->data["payment_method.adapter"])) {
-      $active_links = CRM_Contract_BAO_ContractPaymentLink::getActiveLinks($contract["id"]);
-      $recurring_contribution_id = $active_links[0]["contribution_recur_id"];
-
-      $this->data["payment_method.adapter"] =
-        CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($recurring_contribution_id);
-    }
-
-    $payment_changes = [];
-
-    if (isset($this->data["payment_method.adapter"])) {
-      $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($this->data["payment_method.adapter"]);
-      $payment_changes = $payment_adapter::mapUpdateParameters($this->data);
-      $payment_changes["adapter"] = $this->data["payment_method.adapter"];
-    }
-
+    $payment_changes = $this->mapParametersToPaymentChanges($contract);
     $this->data["contract_updates.ch_payment_changes"] = json_encode($payment_changes);
 
+    // Delete all update parameters prefixed with payment_method.*
     foreach ($this->data as $key => $value) {
       if (preg_match('/^payment_method\./', $key)) {
         unset($this->data[$key]);
@@ -86,7 +115,7 @@ class CRM_Contract_Change_Revive extends CRM_Contract_Change {
    */
   public function execute() {
     $contract_before = $this->getContract(TRUE);
-    $new_rc_id = $this->updatePayment($contract_before);
+    $new_rc_id = $this->revivePayment($contract_before);
 
     $contract_update = $this->buildContractUpdate($contract_before);
     $contract_update["membership_payment.membership_recurring_contribution"] = $new_rc_id;
@@ -155,7 +184,7 @@ class CRM_Contract_Change_Revive extends CRM_Contract_Change {
   /**
    *
    */
-  public function updatePayment ($contract) {
+  public function revivePayment ($contract) {
     $change_data = $this->data;
 
     // Resolve custom field IDs
@@ -177,12 +206,32 @@ class CRM_Contract_Change_Revive extends CRM_Contract_Change {
       return $new_rc_id;
     }
 
+    $current_pa_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($current_rc_id);
+    $current_payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($current_pa_id);
     $payment_changes = json_decode($change_data["contract_updates.ch_payment_changes"], true);
-    $payment_adapter_id = CRM_Utils_Array::value("adapter", $payment_changes);
-    $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_adapter_id);
-    unset($payment_changes["adapter"]);
 
-    $new_rc_id = $payment_adapter::update($current_rc_id, $payment_changes, false);
+    // If a different payment adapter is set,
+    // create a new contribution/payment and terminate the old one
+    if ($payment_changes["adapter"] !== $current_pa_id) {
+      $current_payment_adapter::terminate($current_rc_id);
+
+      $new_payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_changes["adapter"]);
+      $new_payment_adapter::create($payment_changes["parameters"]);
+
+      return $current_rc_id;
+    }
+
+    if (isset($current_payment_adapter)) {
+      $new_rc_id = $current_payment_adapter::revive($current_rc_id, $payment_changes["parameters"]);
+    } else {
+      $update_params = array_merge($payment_changes["parameters"], [
+        "id"                     => $current_rc_id,
+        "contribution_status_id" => "In Progress",
+      ]);
+
+      civicrm_api3("ContributionRecur", "create", $update_params);
+      $new_rc_id = $current_rc_id;
+    }
 
     CRM_Contract_BAO_ContractPaymentLink::setContractPaymentLink($membership_id, $new_rc_id);
 
