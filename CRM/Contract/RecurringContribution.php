@@ -508,29 +508,4 @@ class CRM_Contract_RecurringContribution {
     return $options;
   }
 
-  /**
-   * Get the associated payment instrument class for a recurring contribution
-   *
-   * @param string $recurring_contribution_id
-   *
-   * @return string|null
-   */
-  public static function getPaymentInstrumentClass ($recurring_contribution_id) {
-    $payment_instrument_classes = [
-      "sepa_mandate" => "CRM_Contract_PaymentInstrument_SepaMandate",
-    ];
-
-    $recurring_contribution = civicrm_api3("ContributionRecur", "getsingle", [
-      "id" => $recurring_contribution_id,
-    ]);
-
-    foreach ($payment_instrument_classes as $pi_class) {
-      if ($pi_class::isInstance($recurring_contribution["payment_instrument_id"])) {
-        return $pi_class;
-      }
-    }
-
-    return null;
-  }
-
 }

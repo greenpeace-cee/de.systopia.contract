@@ -94,22 +94,6 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     }
 
     /**
-     * Check if a recurring contribution is associated with the implemented
-     * payment method
-     *
-     * @param int $recurring_contribution_id
-     *
-     * @throws Exception
-     *
-     * @return boolean
-     */
-    public static function isInstance ($recurring_contribution_id) {
-        // ...
-
-        return false;
-    }
-
-    /**
      * Map submitted form values to paramters for a specific API call
      *
      * @param string $apiEndpoint
