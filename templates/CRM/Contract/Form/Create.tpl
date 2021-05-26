@@ -222,14 +222,12 @@
 
             formFields[fieldId].change(() => {
                 setPaymentAdapter();
-                showHideFormFields();
-                updatePaymentPreview();
+                updateForm();
             });
         }
 
         setPaymentAdapter();
-        showHideFormFields();
-        updatePaymentPreview();
+        updateForm();
     }
 
     function setPaymentAdapter () {
@@ -243,7 +241,7 @@
         }
     }
 
-    function showHideFormFields () {
+    function updateForm () {
         // Show only fields relevant to the currently selected payment option / adapter
         const selectedPaymentOption = formFields["payment_option"].val();
         const selectedPaymentAdapter = formFields["payment_adapter"].val();
@@ -271,11 +269,15 @@
 
             cj(element).show(300);
         });
-    }
 
-    function updatePaymentPreview () {
+        // Update payment preview
         if (PaymentAdapter.updatePaymentPreview) {
             PaymentAdapter.updatePaymentPreview(formFields);
+        }
+
+        // Call update callbacks of payment adapters
+        if (PaymentAdapter.onUpdate) {
+            PaymentAdapter.onUpdate(formFields);
         }
     }
 

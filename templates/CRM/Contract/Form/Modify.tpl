@@ -190,22 +190,19 @@
                 if (fieldId === "payment_change" || fieldId === "payment_adapter") {
                     formFields[fieldId].change(() => {
                         setPaymentAdapter();
-                        showHideFormFields();
                         resetPaymentFields();
-                        updatePaymentPreview();
+                        updateForm();
                     });
                 } else {
                     formFields[fieldId].change(() => {
                         setPaymentAdapter();
-                        showHideFormFields();
-                        updatePaymentPreview();
+                        updateForm();
                     });
                 }
             }
 
             setPaymentAdapter();
-            showHideFormFields();
-            updatePaymentPreview();
+            updateForm();
         }
 
         function resetPaymentFields () {
@@ -238,14 +235,12 @@
             }
         }
 
-        function showHideFormFields () {
+        function updateForm () {
             // Show only fields relevant to the currently selected payment change mode / adapter
             const selectedPaymentChange = formFields["payment_change"].val();
             const selectedPaymentAdapter= formFields["payment_adapter"].val();
 
             cj("*[data-payment-change], *[data-payment-adapter]").each((_, element) => {
-                // console.log(element);
-
                 const change =
                     element.hasAttribute("data-payment-change")
                     ? element.getAttribute("data-payment-change")
@@ -268,11 +263,15 @@
 
                 cj(element).show(300);
             });
-        }
 
-        function updatePaymentPreview () {
+            // Update payment preview
             if (PaymentAdapter.updatePaymentPreview) {
                 PaymentAdapter.updatePaymentPreview(formFields);
+            }
+
+            // Call update callbacks of payment adapters
+            if (PaymentAdapter.onUpdate) {
+                PaymentAdapter.onUpdate(formFields);
             }
         }
 

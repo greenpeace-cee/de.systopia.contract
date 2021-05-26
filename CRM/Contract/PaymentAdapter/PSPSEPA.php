@@ -161,7 +161,21 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
      * @return array - Form variables
      */
     public static function formVars () {
-        return [];
+        $psp_creditors = civicrm_api3("SepaCreditor", "get", [
+            "creditor_type" => "PSP",
+            "sequential"    => 1,
+            "return"        => ["id", "label"],
+        ])["values"];
+
+        $cycle_days = [];
+
+        foreach ($psp_creditors as $creditor) {
+            $cycle_days[$creditor["id"]] = self::cycleDays([ "creditor_id" => $creditor["id"] ]);
+        }
+
+        return [
+            "cycle_days" => $cycle_days,
+        ];
     }
 
     /**
