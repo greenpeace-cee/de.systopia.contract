@@ -14,6 +14,10 @@
     };
 
     PSP.fillPaymentParameters = (formFields) => {
+        // Cycle day
+        const cycleDay = CRM.vars["de.systopia.contract"].current_cycle_day;
+        formFields["pa-psp_sepa-cycle_day"].val(cycleDay);
+
         // Installment amount (amount)
         const amount = FormUtils.parseMoney(CRM.vars["de.systopia.contract"].current_amount);
         formFields["amount"].val(amount);

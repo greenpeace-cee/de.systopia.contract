@@ -201,6 +201,8 @@
                 }
             }
 
+            formFields["payment_adapter"].val(CRM.vars["de.systopia.contract"].current_payment_adapter);
+
             setPaymentAdapter();
             updateForm();
         }
