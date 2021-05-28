@@ -399,6 +399,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             $contract_params = array_merge($contract_params, $payment_params);
             $contract_params["payment_method.adapter"] = $payment_adapter;
             $contract_params["payment_method.contact_id"] = $contact_id;
+            $contract_params["cycle_day"] = $submitted["pa-$payment_adapter-cycle_day"];
         }
 
         if ($submitted["payment_option"] === "select") {

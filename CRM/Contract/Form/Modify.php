@@ -146,7 +146,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $resources = CRM_Core_Resources::singleton();
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            $resources->addVars("de.systopia.contract/$pa_name", $pa_class::formVars());
+            $resources->addVars("de.systopia.contract/$pa_name", $pa_class::formVars([
+                "recurring_contribution_id" => $rc_id,
+            ]));
         }
 
         // $cycle_days =
@@ -479,32 +481,36 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             );
         }
 
+        $contract_modify_params["membership_type_id"] = $submitted["membership_type_id"];
+        $contract_modify_params["campaign_id"] = $submitted["campaign_id"];
+
         switch ($submitted["payment_change"]) {
             case "no_change":
                 break;
 
             case "modify":
-                $frequency = (int) $submitted["frequency"];
-                $contract_modify_params["membership_payment.membership_frequency"] = $frequency;
+                $pa_id = $submitted["payment_adapter"];
+                $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($pa_id);
 
-                $amount = (float) CRM_Contract_Utils::formatMoney($submitted["amount"]);
-                $annual_amount = $frequency * $amount;
-                $contract_modify_params["membership_payment.membership_annual"] = CRM_Contract_Utils::formatMoney($annual_amount);
+                if (empty($payment_adapter)) break;
 
-                $payment_adapter = $submitted["payment_adapter"];
-                $contract_modify_params["membership_payment.cycle_day"] = $submitted["pa-$payment_adapter-cycle_day"];
+                $mapped_values = $payment_adapter::mapSubmittedFormValues("Contract.modify", $submitted);
 
-                if ($submitted["payment_adapter"] === "sepa_mandate") {
-                    $contract_modify_params["membership_payment.to_ba"] = CRM_Contract_BankingLogic::getCreditorBankAccount();
-
-                    $bic = isset($submitted["pa-sepa_mandate-bic"]) ? $submitted["pa-sepa_mandate-bic"] : null;
-
-                    $contract_modify_params["membership_payment.from_ba"] = CRM_Contract_BankingLogic::getOrCreateBankAccount(
-                        $this->membership["contact_id"],
-                        $submitted["pa-sepa_mandate-iban"],
-                        $bic
-                    );
+                foreach ($mapped_values as $key => $value) {
+                    $contract_modify_params[$key] = $value;
                 }
+
+                // if ($submitted["payment_adapter"] === "sepa_mandate") {
+                //     $contract_modify_params["membership_payment.to_ba"] = CRM_Contract_BankingLogic::getCreditorBankAccount();
+
+                //     $bic = isset($submitted["pa-sepa_mandate-bic"]) ? $submitted["pa-sepa_mandate-bic"] : null;
+
+                //     $contract_modify_params["membership_payment.from_ba"] = CRM_Contract_BankingLogic::getOrCreateBankAccount(
+                //         $this->membership["contact_id"],
+                //         $submitted["pa-sepa_mandate-iban"],
+                //         $bic
+                //     );
+                // }
 
                 break;
 
@@ -514,9 +520,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
                 break;
         }
-
-        $contract_modify_params["membership_type_id"] = $submitted["membership_type_id"];
-        $contract_modify_params["campaign_id"] = $submitted["campaign_id"];
 
         civicrm_api3("Contract", "modify", $contract_modify_params);
         civicrm_api3("Contract", "process_scheduled_modifications", [ "id" => $this->get("id") ]);

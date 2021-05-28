@@ -37,7 +37,6 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
       "membership_payment.from_ba"              => "from_ba",
       "membership_payment.membership_annual"    => "annual",
       "membership_payment.membership_frequency" => "frequency",
-      "payment_method.reference"                => "reference",
     ];
 
     $payment_changes = [];
@@ -46,6 +45,13 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
       if (array_key_exists($original_key, $this->data)) {
         $payment_changes[$result_key] = $this->data[$original_key];
       }
+    }
+
+    foreach ($this->data as $key => $value) {
+      if (!preg_match("/^payment_method\./", $key)) continue;
+
+      $stripped_key = preg_replace("/^payment_method\./", "", $key);
+      $payment_changes[$stripped_key] = $value;
     }
 
     return [

@@ -105,6 +105,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                 "enabled"      => true,
                 "name"         => "label",
                 "required"     => true,
+                "settings"     => [ "class" => "huge" ],
                 "type"         => "text",
             ],
             "payment_instrument" => [
@@ -158,9 +159,14 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     /**
      * Get payment specific JS variables for forms
      *
+     * @param array $params - Optional parameters, depending on the implementation
+     *
      * @return array - Form variables
      */
-    public static function formVars () {
+    public static function formVars ($params = []) {
+        $result = [];
+
+        // Cycle days
         $psp_creditors = civicrm_api3("SepaCreditor", "get", [
             "creditor_type" => "PSP",
             "sequential"    => 1,
@@ -173,9 +179,31 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             $cycle_days[$creditor["id"]] = self::cycleDays([ "creditor_id" => $creditor["id"] ]);
         }
 
-        return [
-            "cycle_days" => $cycle_days,
-        ];
+        $result["cycle_days"] = $cycle_days;
+
+        if (empty($params["recurring_contribution_id"])) return $result;
+
+        $mandates_result = civicrm_api3("SepaMandate", "get", [
+            "entity_table" => "civicrm_contribution_recur",
+            "entity_id"    => $params["recurring_contribution_id"],
+            "options"      => [ "sort" => "creation_date" ],
+            "sequential"   => 1,
+            "return"       => ["iban", "bic"],
+        ]);
+
+        $current_mandate_data = end($mandates_result["values"]);
+
+        // Current label
+        // TODO: Set correct label for PSP payment
+        $result["current_label"] = "CURRENT LABEL";
+
+        // Current account reference
+        $result["current_account_reference"] = $current_mandate_data["iban"];
+
+        // Current account name
+        $result["current_account_name"] = $current_mandate_data["bic"];
+
+        return $result;
     }
 
     /**
@@ -213,6 +241,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                     "payment_method.creation_date"         => $now,
                     "payment_method.creditor_id"           => $submitted["pa-psp_sepa-creditor"],
                     "payment_method.currency"              => $currency,
+                    "payment_method.cycle_day"             => $submitted["pa-psp_sepa-cycle_day"],
                     "payment_method.date"                  => $start_date,
                     "payment_method.financial_type_id"     => 2, // = Member dues
                     "payment_method.frequency_interval"    => 12 / (int) $submitted["frequency"],
@@ -223,7 +252,25 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                     "payment_method.validation_date"       => $now,
                 ];
 
-                file_put_contents("/home/mflandor/Tasks/gp-15906/logs/map-submitted.json", json_encode($result, JSON_PRETTY_PRINT));
+                return $result;
+            }
+
+            case "Contract.modify": {
+                // Frequency
+                $frequency = (int) $submitted["frequency"];
+
+                // Annual amount
+                $amount = (float) CRM_Contract_Utils::formatMoney($submitted["amount"]);
+                $annual_amount = $frequency * $amount;
+
+                $result = [
+                    "membership_payment.cycle_day"            => $submitted["pa-psp_sepa-cycle_day"],
+                    "membership_payment.membership_annual"    => $annual_amount,
+                    "membership_payment.membership_frequency" => $frequency,
+                    "payment_method.account_name"             => $submitted["pa-psp_sepa-account_name"],
+                    "payment_method.account_reference"        => $submitted["pa-psp_sepa-account_reference"],
+                    "payment_method.payment_instrument"       => $submitted["pa-psp_sepa-payment_instrument"],
+                ];
 
                 return $result;
             }
@@ -399,11 +446,14 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "id" => $recurring_contribution_id,
         ]);
 
-        $current_mandate_data = civicrm_api3("SepaMandate", "getsingle", [
-            "entity_id"    => $recurring_contribution_id,
+        $mandates_result = civicrm_api3("SepaMandate", "get", [
             "entity_table" => "civicrm_contribution_recur",
-            "status"       => [ "IN" => ["FRST", "RCUR"] ],
+            "entity_id"    => $recurring_contribution_id,
+            "options"      => [ "sort" => "creation_date" ],
+            "sequential"   => 1,
         ]);
+
+        $current_mandate_data = end($mandates_result["values"]);
 
         // Calculate the current annual contribution amount & frequency
         $current_annual_amount = CRM_Contract_Utils::calcAnnualAmount(

@@ -104,7 +104,7 @@ class CRM_Contract_Change_Sign extends CRM_Contract_Change {
    * @return string title
    */
   public static function getChangeTitle() {
-    return E::ts("Sign Contract");
+    return E::ts("Sign contract");
   }
 
   /**

@@ -82,9 +82,11 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     /**
      * Get payment specific JS variables for forms
      *
+     * @param array $params - Optional parameters, depending on the implementation
+     *
      * @return array - Form variables
      */
-    public static function formVars () {
+    public static function formVars ($params = []) {
         // ...
 
         return [

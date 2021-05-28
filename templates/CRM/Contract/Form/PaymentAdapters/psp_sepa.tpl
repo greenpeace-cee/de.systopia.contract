@@ -21,6 +21,18 @@
         // Payment frequency (frequency)
         const frequency = FormUtils.mapFrequency(CRM.vars["de.systopia.contract"].current_frequency);
         formFields["frequency"].val(frequency);
+
+        // Label (pa-psp_sepa-label)
+        const label = CRM.vars["de.systopia.contract/psp_sepa"].current_label;
+        formFields["pa-psp_sepa-label"].val(label);
+
+        // Account reference (pa-psp_sepa-account_reference)
+        const account_reference = CRM.vars["de.systopia.contract/psp_sepa"].current_account_reference;
+        formFields["pa-psp_sepa-account_reference"].val(account_reference);
+
+        // Account name (pa-psp_sepa-account_name)
+        const account_name = CRM.vars["de.systopia.contract/psp_sepa"].current_account_name;
+        formFields["pa-psp_sepa-account_name"].val(account_name);
     };
 
     PSP.onUpdate = (formFields) => {
