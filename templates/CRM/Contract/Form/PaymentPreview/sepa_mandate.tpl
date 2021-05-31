@@ -23,7 +23,7 @@
         paymentPreviewContainer.find("span#debitor_name").text(debitorName);
 
         // Debitor account
-        const iban = formFields["pi-sepa_mandate-iban"].val();
+        const iban = formFields["pa-sepa_mandate-iban"].val();
         paymentPreviewContainer.find("span#iban").text(iban);
 
         // Creditor name
@@ -49,7 +49,7 @@
 
         // Next debit
         const action = CRM.vars["de.systopia.contract"].action;
-        const cycleDay = formFields["pi-sepa_mandate-cycle_day"].val();
+        const cycleDay = formFields["pa-sepa_mandate-cycle_day"].val();
         const startDate = formFields["activity_date"].val();
         const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;
         const nextDebit = nextCollectionDate(cycleDay, startDate, graceEnd);

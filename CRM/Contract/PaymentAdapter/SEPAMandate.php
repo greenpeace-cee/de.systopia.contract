@@ -5,6 +5,8 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     const ADAPTER_ID = "sepa_mandate";
     const DISPLAY_NAME = "SEPA mandate";
 
+    private static $organisation_ibans = [];
+
     /**
      * Prepare and inject the SEPA tools JS
      *
@@ -124,28 +126,6 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     }
 
     /**
-     * Get necessary JS files for forms
-     *
-     * @return array - Paths to the files
-     */
-    public static function formScripts () {
-        // ...
-
-        return [];
-    }
-
-    /**
-     * Get necessary templates for forms
-     *
-     * @return array - Paths to the templates
-     */
-    public static function formTemplates () {
-        // ...
-
-        return [];
-    }
-
-    /**
      * Get payment specific JS variables for forms
      *
      * @param array $params - Optional parameters, depending on the implementation
@@ -153,9 +133,43 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      * @return array - Form variables
      */
     public static function formVars ($params = []) {
-        // ...
+        $result = [];
 
-        return [];
+        // Creditor
+        $default_creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
+        $result["creditor"] = $default_creditor;
+
+        // Default creditor grace
+        $result["default_creditor_grace"] = (int) CRM_Sepa_Logic_Settings::getSetting(
+            "batching.RCUR.grace",
+            $default_creditor->creditor_id
+        );
+
+        // Default creditor notice
+        $result["default_creditor_notice"] = (int) CRM_Sepa_Logic_Settings::getSetting(
+            "batching.RCUR.notice",
+            $default_creditor->creditor_id
+        );
+
+        // Next cycle day
+        $result["next_cycle_day"] = self::nextCycleDay();
+
+        if (empty($params["recurring_contribution_id"])) return $result;
+
+        $mandates_result = civicrm_api3("SepaMandate", "get", [
+            "entity_table" => "civicrm_contribution_recur",
+            "entity_id"    => $params["recurring_contribution_id"],
+            "options"      => [ "sort" => "creation_date" ],
+            "sequential"   => 1,
+            "return"       => ["iban", "bic"],
+        ]);
+
+        $current_mandate_data = end($mandates_result["values"]);
+
+        // Current IBAN
+        $result["current_iban"] = $current_mandate_data["iban"];
+
+        return $result;
     }
 
     /**
@@ -230,6 +244,25 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
                 if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
                     $result["payment_method.bic"] = $submitted["pa-sepa_mandate-bic"];
                 }
+
+                return $result;
+            }
+
+            case "Contract.modify": {
+                // Frequency
+                $frequency = (int) $submitted["frequency"];
+
+                // Annual amount
+                $amount = (float) CRM_Contract_Utils::formatMoney($submitted["amount"]);
+                $annual_amount = $frequency * $amount;
+
+                $result = [
+                    "membership_payment.cycle_day"            => $submitted["pa-sepa_mandate-cycle_day"],
+                    "membership_payment.membership_annual"    => $annual_amount,
+                    "membership_payment.membership_frequency" => $frequency,
+                    // "payment_method.bic"                      => $submitted["pa-sepa_mandate-bic"],
+                    "payment_method.iban"                     => $submitted["pa-sepa_mandate-iban"],
+                ];
 
                 return $result;
             }

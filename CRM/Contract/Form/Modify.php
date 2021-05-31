@@ -151,12 +151,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             ]));
         }
 
-        // $cycle_days =
-        //     isset($this->payment_instrument_class)
-        //     ? $this->payment_instrument_class::getCycleDays()
-        //     : range(1, 28);
-
-        // $grace_end = CRM_Contract_RecurringContribution::getNextInstallmentDate($rc_id, $cycle_days);
         $current_contract = CRM_Contract_RecurringContribution::getCurrentContract($contact_id, $rc_id);
         $frequencies = CRM_Contract_RecurringContribution::getPaymentFrequencies();
 
@@ -178,7 +172,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "current_recurring"          => $rc_id,
             "debitor_name"               => $this->contact["display_name"],
             "frequencies"                => $frequencies,
-            // "grace_end"                  => $grace_end,
             "recurring_contributions"    => $recurring_contributions,
         ]);
     }

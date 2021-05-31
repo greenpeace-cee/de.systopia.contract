@@ -60,26 +60,6 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     }
 
     /**
-     * Get necessary JS files for forms
-     *
-     * @return array - Paths to the files
-     */
-    public static function formScripts () {
-        // ...
-
-        return [];
-    }
-
-    /**
-     * Get necessary templates for forms
-     *
-     * @return array - Paths to the templates
-     */
-    public static function formTemplates () {
-        return [];
-    }
-
-    /**
      * Get payment specific JS variables for forms
      *
      * @param array $params - Optional parameters, depending on the implementation

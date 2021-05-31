@@ -40,20 +40,6 @@ interface CRM_Contract_PaymentAdapter {
     public static function formFields ();
 
     /**
-     * Get necessary JS files for forms
-     *
-     * @return array - Paths to the files
-     */
-    public static function formScripts ();
-
-    /**
-     * Get necessary templates for forms
-     *
-     * @return array - Paths to the templates
-     */
-    public static function formTemplates ();
-
-    /**
      * Get payment specific JS variables for forms
      *
      * @param array $params - Optional parameters, depending on the implementation

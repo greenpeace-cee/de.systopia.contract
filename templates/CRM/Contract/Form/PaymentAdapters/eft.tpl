@@ -16,7 +16,7 @@
         const amount = FormUtils.parseMoney(CRM.vars["de.systopia.contract"].current_amount);
         formFields["amount"].val(amount);
 
-        // Cycle day (pi-sepa_mandate-cycle_day)
+        // Cycle day (pa-eft-cycle_day)
         const cycle_day =
             CRM.vars["de.systopia.contract"].action === "revive"
             ? CRM.vars["de.systopia.contract/eft"].next_cycle_day
