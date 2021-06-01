@@ -70,13 +70,20 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $psp_creditors = civicrm_api3("SepaCreditor", "get", [
             "creditor_type" => "PSP",
             "sequential"    => 1,
-            "return"        => ["id", "label"],
+            "return"        => ["id", "label", "sepa_file_format_id"],
         ])["values"];
 
         $creditor_options = [];
 
         foreach ($psp_creditors as $pc) {
-            $creditor_options[$pc["id"]] = $pc["label"];
+            $pain_version = civicrm_api3("OptionValue", "getvalue", [
+                "option_group_id" => "sepa_file_format",
+                "value"           => 12,
+                "return"          => "label",
+            ]);
+
+            $label = $pc["label"];
+            $creditor_options[$pc["id"]] = "$label [$pain_version]";
         }
 
         $pi_option_values = civicrm_api3("OptionValue", "get", [
@@ -99,14 +106,6 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                 "options"      => $creditor_options,
                 "required"     => true,
                 "type"         => "select",
-            ],
-            "label" => [
-                "display_name" => "Label",
-                "enabled"      => true,
-                "name"         => "label",
-                "required"     => true,
-                "settings"     => [ "class" => "huge" ],
-                "type"         => "text",
             ],
             "payment_instrument" => [
                 "display_name" => "Payment instrument",
@@ -144,23 +143,41 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     public static function formVars ($params = []) {
         $result = [];
 
-        // Cycle days
+        // Creditor-specific cycle days & payment instruments
         $psp_creditors = civicrm_api3("SepaCreditor", "get", [
             "creditor_type" => "PSP",
             "sequential"    => 1,
-            "return"        => ["id", "label"],
+            "return"        => ["id", "label", "pi_rcur"],
         ])["values"];
 
         $cycle_days = [];
+        $payment_instruments = [];
 
         foreach ($psp_creditors as $creditor) {
             $cycle_days[$creditor["id"]] = self::cycleDays([ "creditor_id" => $creditor["id"] ]);
+
+            $pi_ids = explode(",", $creditor["pi_rcur"]);
+
+            $pi_option_values = civicrm_api3("OptionValue", "get", [
+                "option_group_id" => "payment_instrument",
+                "value"           => [ "IN" => $pi_ids ],
+                "sequential"      => 1,
+                "return"          => ["value", "label"],
+            ])["values"];
+
+            $payment_instruments[$creditor["id"]] = [];
+
+            foreach ($pi_option_values as $pi_opt) {
+                $payment_instruments[$creditor["id"]][$pi_opt["value"]] = $pi_opt["label"];
+            }
         }
 
         $result["cycle_days"] = $cycle_days;
+        $result["payment_instruments"] = $payment_instruments;
 
         if (empty($params["recurring_contribution_id"])) return $result;
 
+        // Current payment parameters
         $mandates_result = civicrm_api3("SepaMandate", "get", [
             "entity_table" => "civicrm_contribution_recur",
             "entity_id"    => $params["recurring_contribution_id"],
@@ -171,14 +188,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
 
         $current_mandate_data = end($mandates_result["values"]);
 
-        // Current label
-        // TODO: Set correct label for PSP payment
-        $result["current_label"] = "CURRENT LABEL";
-
-        // Current account reference
         $result["current_account_reference"] = $current_mandate_data["iban"];
-
-        // Current account name
         $result["current_account_name"] = $current_mandate_data["bic"];
 
         return $result;

@@ -8,7 +8,6 @@
     PSP.clearPaymentParameters = (formFields) => {
         formFields["amount"].val("");
         formFields["frequency"].val("12");
-        formFields["pa-psp_sepa-label"].val("");
         formFields["pa-psp_sepa-account_reference"].val("");
         formFields["pa-psp_sepa-account_name"].val("");
     };
@@ -26,10 +25,6 @@
         const frequency = FormUtils.mapFrequency(CRM.vars["de.systopia.contract"].current_frequency);
         formFields["frequency"].val(frequency);
 
-        // Label (pa-psp_sepa-label)
-        const label = CRM.vars["de.systopia.contract/psp_sepa"].current_label;
-        formFields["pa-psp_sepa-label"].val(label);
-
         // Account reference (pa-psp_sepa-account_reference)
         const account_reference = CRM.vars["de.systopia.contract/psp_sepa"].current_account_reference;
         formFields["pa-psp_sepa-account_reference"].val(account_reference);
@@ -42,18 +37,33 @@
     PSP.onUpdate = (formFields) => {
         // Update options for cycle days
         const cycleDayField = formFields["pa-psp_sepa-cycle_day"];
-        const previousCreditor = cycleDayField.attr("data-psp-creditor");
+        let previousCreditor = cycleDayField.attr("data-psp-creditor");
         const selectedCreditor = formFields["pa-psp_sepa-creditor"].val();
 
-        if (previousCreditor === selectedCreditor) return;
+        if (previousCreditor !== selectedCreditor) {
+            cycleDayField.attr("data-psp-creditor", selectedCreditor);
+            cycleDayField.empty();
 
-        cycleDayField.attr("data-psp-creditor", selectedCreditor);
-        cycleDayField.empty();
+            const cycleDays = CRM.vars["de.systopia.contract/psp_sepa"].cycle_days[selectedCreditor];
 
-        const cycleDays = CRM.vars["de.systopia.contract/psp_sepa"].cycle_days[selectedCreditor];
+            for (const cycleDay of Object.values(cycleDays)) {
+                cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
+            }
+        }
 
-        for (const cycleDay of Object.values(cycleDays)) {
-            cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
+        // Update options for payment instruments
+        const paymentInstrumentField = formFields["pa-psp_sepa-payment_instrument"];
+        previousCreditor = paymentInstrumentField.attr("data-psp-creditor");
+
+        if (previousCreditor !== selectedCreditor) {
+            paymentInstrumentField.attr("data-psp-creditor", selectedCreditor);
+            paymentInstrumentField.empty();
+
+            const paymentInstruments = CRM.vars["de.systopia.contract/psp_sepa"].payment_instruments[selectedCreditor];
+
+            for (const [piValue, piLabel] of Object.entries(paymentInstruments)) {
+                paymentInstrumentField.append(`<option value="${piValue}">${piLabel}</option>`);
+            }
         }
     };
 </script>

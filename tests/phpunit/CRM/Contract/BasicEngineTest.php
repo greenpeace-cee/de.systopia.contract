@@ -618,7 +618,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       'return' => 'next_sched_contribution_date',
       'id'     => $contract['membership_payment.membership_recurring_contribution'],
     ]));
-    $this->assertTrue($nextScheduleDate >= $nowPlusOneYear);
+    $this->assertTrue($nextScheduleDate->format("Y-m-d") >= $nowPlusOneYear->format("Y-m-d"));
 
     // update to a monthly membership with defer_payment_start's default value of 1
     $this->modifyContract($contract['id'], 'update', 'now', [

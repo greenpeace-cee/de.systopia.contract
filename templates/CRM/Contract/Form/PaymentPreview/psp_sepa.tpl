@@ -2,7 +2,6 @@
     Debitor name: <span id="debitor_name"></span><br />
     Payment method: <span id="payment_method">PSP</span><br />
     Creditor: <span id="creditor"></span><br />
-    Label: <span id="label"></span><br />
     Payment instrument: <span id="payment_instrument"></span><br />
     Account reference: <span id="account_reference"></span><br />
     Account name: <span id="account_name"></span><br />
@@ -33,10 +32,6 @@
 
         const creditorId = formFields["pa-psp_sepa-creditor"].val();
         paymentPreviewContainer.find("span#creditor").text(pspCreditors[creditorId]);
-
-        // Label
-        const label = formFields["pa-psp_sepa-label"].val();
-        paymentPreviewContainer.find("span#label").text(label);
 
         // Payment instrument
         const paymentInstruments = formFields["pa-psp_sepa-payment_instrument"]
