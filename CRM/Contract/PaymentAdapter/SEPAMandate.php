@@ -487,7 +487,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         // Calculate the new contribution amount & frequency
         $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
             (float) CRM_Utils_Array::value("annual", $params, $current_rc_data["annual"]),
-            (int) CRM_Utils_Array::value("frequency", $params, $current_rc_data["frequency"]),
+            (int) CRM_Utils_Array::value("frequency", $params, $current_rc_data["frequency"])
         );
 
         // Calculate the new start date
@@ -495,7 +495,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             [ "membership_payment.membership_recurring_contribution" => $recurring_contribution_id ],
             [ "contract_updates.ch_defer_payment_start" => CRM_Utils_Array::value("defer_payment_start", $params, "1") ],
             [ "activity_type_id" => $activity_type_id ],
-            self::cycleDays(),
+            self::cycleDays()
         );
 
         // Get bank account by ID
