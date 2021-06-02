@@ -78,7 +78,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         foreach ($psp_creditors as $pc) {
             $pain_version = civicrm_api3("OptionValue", "getvalue", [
                 "option_group_id" => "sepa_file_format",
-                "value"           => 12,
+                "value"           => $pc['sepa_file_format_id'],
                 "return"          => "label",
             ]);
 
