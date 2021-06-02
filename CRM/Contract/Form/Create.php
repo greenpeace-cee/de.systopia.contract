@@ -168,7 +168,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
                 "select",
                 "pa-$pa_name-cycle_day",
                 ts("Cycle day"),
-                $cycle_day_options,
+                $cycle_day_options
             );
         }
 
