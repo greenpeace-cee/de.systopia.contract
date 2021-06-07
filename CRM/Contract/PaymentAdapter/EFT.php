@@ -105,6 +105,23 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
                 return $result;
             }
 
+            case "Contract.modify": {
+                // Frequency
+                $frequency = (int) $submitted["frequency"];
+
+                // Annual amount
+                $amount = (float) CRM_Contract_Utils::formatMoney($submitted["amount"]);
+                $annual_amount = $frequency * $amount;
+
+                $result = [
+                    "membership_payment.cycle_day"            => $submitted["pa-psp_sepa-cycle_day"],
+                    "membership_payment.membership_annual"    => $annual_amount,
+                    "membership_payment.membership_frequency" => $frequency,
+                ];
+
+                return $result;
+            }
+
             default: {
                 return [];
             }
