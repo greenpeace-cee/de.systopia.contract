@@ -197,7 +197,6 @@
         );
 
         const formFieldIds = [
-            "activity_date",
             "activity_details",
             "activity_medium",
             "amount",
