@@ -487,6 +487,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
             case "modify":
                 $pa_id = $submitted["payment_adapter"];
+                $contract_modify_params["payment_method.adapter"] = $pa_id;
                 $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($pa_id);
 
                 if (empty($payment_adapter)) break;
@@ -496,18 +497,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                 foreach ($mapped_values as $key => $value) {
                     $contract_modify_params[$key] = $value;
                 }
-
-                // if ($submitted["payment_adapter"] === "sepa_mandate") {
-                //     $contract_modify_params["membership_payment.to_ba"] = CRM_Contract_BankingLogic::getCreditorBankAccount();
-
-                //     $bic = isset($submitted["pa-sepa_mandate-bic"]) ? $submitted["pa-sepa_mandate-bic"] : null;
-
-                //     $contract_modify_params["membership_payment.from_ba"] = CRM_Contract_BankingLogic::getOrCreateBankAccount(
-                //         $this->membership["contact_id"],
-                //         $submitted["pa-sepa_mandate-iban"],
-                //         $bic
-                //     );
-                // }
 
                 break;
 

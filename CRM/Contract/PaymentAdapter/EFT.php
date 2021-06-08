@@ -34,9 +34,59 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             "info"
         );
 
-        return [
-            "recurring_contribution_id" => $rc_id,
+        return $rc_id;
+    }
+
+    /**
+     * Create a new payment by merging an existing payment and an update,
+     * The existing payment will be terminated.
+     *
+     * @param int $recurring_contribution_id
+     * @param string $current_adapter
+     * @param array $update
+     * @param int $activity_type_id
+     *
+     * @throws Exception
+     *
+     * @return int - ID of the newly created recurring contribution
+     */
+    public static function createFromUpdate ($recurring_contribution_id, $current_adapter, $update, $activity_type_id = null) {
+        $current_rc_data = civicrm_api3("ContributionRecur", "getsingle", [
+            "id" => $recurring_contribution_id,
+        ]);
+
+        $current_adapter_class = CRM_Contract_Utils::getPaymentAdapterClass($current_adapter);
+        $current_adapter_class::terminate($recurring_contribution_id);
+
+        $current_annual = CRM_Contract_Utils::calcAnnualAmount(
+            (float) $current_rc_data["amount"],
+            (int) $current_rc_data["frequency_interval"],
+            (string) $current_rc_data["frequency_unit"]
+        );
+
+        // Calculate the new contribution amount & frequency
+        $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
+            (float) CRM_Utils_Array::value("annual", $update, $current_annual["annual"]),
+            (int) CRM_Utils_Array::value("frequency", $update, $current_annual["frequency"])
+        );
+
+        // Get the current campaign ID
+        $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
+
+        $create_params = [
+            "amount"             => $new_recurring_amount["amount"],
+            "campaign_id"        => CRM_Utils_Array::value("campaign_id", $update, $current_campaign_id),
+            "contact_id"         => $current_rc_data["contact_id"],
+            "create_date"        => date("Y-m-d H:i:s"),
+            "currency"           => CRM_Utils_Array::value("currency", $update, "EUR"),
+            "cycle_day"          => CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]),
+            "financial_type_id"  => $current_rc_data["financial_type_id"],
+            "frequency_interval" => $new_recurring_amount["frequency_interval"],
+            "frequency_unit"     => $new_recurring_amount["frequency_unit"],
+            "start_date"         => $current_rc_data["start_date"],
         ];
+
+        return self::create($create_params);
     }
 
     /**
@@ -114,7 +164,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
                 $annual_amount = $frequency * $amount;
 
                 $result = [
-                    "membership_payment.cycle_day"            => $submitted["pa-psp_sepa-cycle_day"],
+                    "membership_payment.cycle_day"            => $submitted["pa-eft-cycle_day"],
                     "membership_payment.membership_annual"    => $annual_amount,
                     "membership_payment.membership_frequency" => $frequency,
                 ];
@@ -126,32 +176,6 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
                 return [];
             }
         }
-    }
-
-    /**
-     * Map update parameters to payment adapter parameters
-     *
-     * @param array $update_params
-     *
-     * @return array - Payment adapter parameters
-     */
-    public static function mapUpdateParameters ($update_params) {
-        $mapping = [
-            "activity_type_id"              => "activity_type_id",
-            "contract_updates.ch_annual"    => "annual",
-            "contract_updates.ch_cycle_day" => "cycle_day",
-            "contract_updates.ch_frequency" => "frequency",
-        ];
-
-        $result = [];
-
-        foreach ($mapping as $update_key => $result_key) {
-            if (isset($update_params[$update_key])) {
-                $result[$result_key] = $update_params[$update_key];
-            }
-        }
-
-        return $result;
     }
 
     /**
@@ -227,7 +251,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      *
      * @return void
      */
-    public static function terminate ($recurring_contribution_id, $reason) {
+    public static function terminate ($recurring_contribution_id, $reason = "CHNG") {
         $now = date("Y-m-d H:i:s");
 
         $update_result = civicrm_api3("ContributionRecur", "create", [
@@ -276,10 +300,14 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             (int) CRM_Utils_Array::value("frequency", $params, $current_rc_data["frequency"])
         );
 
+        // Get the current campaign ID
+        $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
+
         // Make API call
         $update_result = civicrm_api3("ContributionRecur", "create", [
             "id"                 => $recurring_contribution_id,
             "amount"             => $new_recurring_amount["amount"],
+            "campaign_id"        => CRM_Utils_Array::value("campaign_id", $params, $current_campaign_id),
             "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
             "frequency_interval" => $new_recurring_amount["frequency_interval"],
             "frequency_unit"     => $new_recurring_amount["frequency_unit"],

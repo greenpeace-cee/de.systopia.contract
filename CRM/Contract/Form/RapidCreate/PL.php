@@ -320,7 +320,7 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
       $new_mandate_params['bic'] = $submitted['bic'];
     }
-    $new_mandate = CRM_Contract_PaymentAdapter_SEPAMandate::create($new_mandate_params);
+    $new_rc_id = CRM_Contract_PaymentAdapter_SEPAMandate::create($new_mandate_params);
     $contractParams['contact_id'] = $contact['id'];
     $contractParams['membership_type_id'] = $submitted['membership_type_id'];
     $contractParams['start_date'] = CRM_Utils_Date::processDate($submitted['start_date'], NULL, NULL, 'Y-m-d H:i:s');
@@ -329,7 +329,7 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     $contractParams['campaign_id'] = $submitted['campaign_id'];
 
     // 'Custom' fields
-    $contractParams['membership_payment.membership_recurring_contribution'] = $new_mandate['recurring_contribution_id'];
+    $contractParams['membership_payment.membership_recurring_contribution'] = $new_rc_id;
     $contractParams['membership_general.membership_reference'] = $submitted['membership_reference'];
     $contractParams['membership_general.dirdiavenue'] = $submitted['membership_venue'];
     $contractParams['membership_general.ts_week'] = $submitted['membership_ts_week'];

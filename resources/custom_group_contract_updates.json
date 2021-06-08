@@ -183,6 +183,7 @@
       "column_name": "ch_payment_changes",
       "label": "Payment changes",
       "data_type": "String",
+      "text_length": "1023",
       "html_type": "Text",
       "is_required": "0",
       "is_searchable": "1",

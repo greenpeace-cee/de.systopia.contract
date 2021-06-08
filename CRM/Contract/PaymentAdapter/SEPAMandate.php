@@ -80,9 +80,81 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "info"
         );
 
-        return [
-            "recurring_contribution_id" => $mandate_data["entity_id"],
+        return $mandate_data["entity_id"];
+    }
+
+    /**
+     * Create a new payment by merging an existing payment and an update,
+     * The existing payment will be terminated.
+     *
+     * @param int $recurring_contribution_id
+     * @param string $current_adapter
+     * @param array $update
+     * @param int $activity_type_id
+     *
+     * @throws Exception
+     *
+     * @return int - ID of the newly created recurring contribution
+     */
+    public static function createFromUpdate ($recurring_contribution_id, $current_adapter, $update, $activity_type_id = null) {
+        $current_rc_data = civicrm_api3("ContributionRecur", "getsingle", [
+            "id" => $recurring_contribution_id,
+        ]);
+
+        $current_annual = CRM_Contract_Utils::calcAnnualAmount(
+            (float) $current_rc_data["amount"],
+            (int) $current_rc_data["frequency_interval"],
+            (string) $current_rc_data["frequency_unit"]
+        );
+
+        // Calculate the new contribution amount & frequency
+        $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
+            (float) CRM_Utils_Array::value("annual", $update, $current_annual["annual"]),
+            (int) CRM_Utils_Array::value("frequency", $update, $current_annual["frequency"])
+        );
+
+        // Get the current campaign ID
+        $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
+
+        // Get the creditor & currency
+        $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
+
+        $currency = civicrm_api3("SepaCreditor", "getvalue", [
+            "return" => "currency",
+            "id"     => $creditor->id,
+        ]);
+
+        // Calculate the new start date
+        $new_start_date = CRM_Contract_RecurringContribution::getUpdateStartDate(
+            [ "membership_payment.membership_recurring_contribution" => $recurring_contribution_id ],
+            [ "contract_updates.ch_defer_payment_start" => CRM_Utils_Array::value("defer_payment_start", $update, false) ],
+            [ "activity_type_id" => $activity_type_id ],
+            self::cycleDays()
+        );
+
+        $current_adapter_class = CRM_Contract_Utils::getPaymentAdapterClass($current_adapter);
+        $current_adapter_class::terminate($recurring_contribution_id);
+
+        $create_params = [
+            "amount"                => $new_recurring_amount["amount"],
+            "bic"                   => CRM_Utils_Array::value("bic", $update),
+            "campaign_id"           => CRM_Utils_Array::value("campaign_id", $update, $current_campaign_id),
+            "contact_id"            => $current_rc_data["contact_id"],
+            "creation_date"         => date("Y-m-d H:i:s"),
+            "creditor_id"           => $creditor->id,
+            "currency"              => $currency,
+            "cycle_day"             => CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]),
+            "financial_type_id"     => $current_rc_data["financial_type_id"],
+            "frequency_interval"    => $new_recurring_amount["frequency_interval"],
+            "frequency_unit"        => $new_recurring_amount["frequency_unit"],
+            "iban"                  => CRM_Utils_Array::value("iban", $update),
+            "payment_instrument_id" => CRM_Utils_Array::value("payment_instrument", $update),
+            "start_date"            => $new_start_date,
+            "type"                  => "RCUR",
+            "validation_date"       => date("Y-m-d H:i:s"),
         ];
+
+        return self::create($create_params);
     }
 
     /**
@@ -274,40 +346,6 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     }
 
     /**
-     * Map update parameters to payment adapter parameters
-     *
-     * @param array $update_params
-     *
-     * @return array - Payment adapter parameters
-     */
-    public static function mapUpdateParameters ($update_params) {
-        $mapping = [
-            "activity_type_id"                        => "activity_type_id",
-            "campaign_id"                             => "campaign_id",
-            "contract_updates.ch_annual"              => "annual",
-            "contract_updates.ch_cycle_day"           => "cycle_day",
-            "contract_updates.ch_defer_payment_start" => "defer_payment_start",
-            "contract_updates.ch_frequency"           => "frequency",
-            "contract_updates.ch_from_ba"             => "from_ba",
-            "contract_updates.ch_to_ba"               => "to_ba",
-            "payment_method.creditor_id"              => "creditor_id",
-            "payment_method.currency"                 => "currency",
-            "payment_method.financial_type_id"        => "financial_type_id",
-            "payment_method.reference"                => "reference",
-        ];
-
-        $result = [];
-
-        foreach ($mapping as $update_key => $result_key) {
-            if (isset($update_params[$update_key])) {
-                $result[$result_key] = $update_params[$update_key];
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * Get the next possible cycle day
      *
      * @return int - the next cycle day
@@ -427,7 +465,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      *
      * @return void
      */
-    public static function terminate ($recurring_contribution_id, $reason) {
+    public static function terminate ($recurring_contribution_id, $reason = "CHNG") {
         $mandate_id = civicrm_api3("SepaMandate", "getvalue", [
             "entity_id"    => $recurring_contribution_id,
             "entity_table" => "civicrm_contribution_recur",
@@ -526,9 +564,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "validation_date"    => date("Y-m-d H:i:s"),
         ];
 
-        $create_result = self::create($create_params);
-
-        return $create_result["recurring_contribution_id"];
+        return self::create($create_params);
     }
 
     /**

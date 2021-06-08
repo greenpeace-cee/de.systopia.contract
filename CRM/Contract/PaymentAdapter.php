@@ -18,10 +18,24 @@ interface CRM_Contract_PaymentAdapter {
      *
      * @throws Exception
      *
-     * @return array $payment_data -
-     *      [recurring_contribution_id] => (string) ID of the associated recurring contribution
+     * @return array $recurring_contribution_id
      */
     public static function create ($params);
+
+    /**
+     * Create a new payment by merging an existing payment and an update,
+     * The existing payment will be terminated.
+     *
+     * @param int $recurring_contribution_id
+     * @param string $current_adapter
+     * @param array $update
+     * @param int $activity_type_id
+     *
+     * @throws Exception
+     *
+     * @return int - ID of the newly created recurring contribution
+     */
+    public static function createFromUpdate ($recurring_contribution_id, $current_adapter, $update, $activity_type_id = null);
 
     /**
      * Get a list of possible cycle days
@@ -59,15 +73,6 @@ interface CRM_Contract_PaymentAdapter {
      * @return array - API parameters
      */
     public static function mapSubmittedFormValues ($apiEndpoint, $submitted);
-
-    /**
-     * Map update parameters to payment adapter parameters
-     *
-     * @param array $update_params
-     *
-     * @return array - Payment adapter parameters
-     */
-    public static function mapUpdateParameters ($update_params);
 
     /**
      * Get the next possible cycle day
@@ -121,7 +126,7 @@ interface CRM_Contract_PaymentAdapter {
      *
      * @return void
      */
-    public static function terminate ($recurring_contribution_id, $reason);
+    public static function terminate ($recurring_contribution_id, $reason = "CHNG");
 
     /**
      * Update payment data

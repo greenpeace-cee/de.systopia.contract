@@ -316,8 +316,8 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
       $new_mandate_params['bic'] = $submitted['bic'];
     }
-    $new_mandate = CRM_Contract_PaymentAdapter_SEPAMandate::create($new_mandate_params);
-    $contractParams['membership_payment.membership_recurring_contribution'] = $new_mandate['recurring_contribution_id'];
+    $new_rc_id = CRM_Contract_PaymentAdapter_SEPAMandate::create($new_mandate_params);
+    $contractParams['membership_payment.membership_recurring_contribution'] = $new_rc_id;
     $contractParams['membership_general.membership_dialoger'] = $submitted['membership_dialoger']; // DD fundraiser
 
     $contractParams['contact_id'] = $contact['id'];

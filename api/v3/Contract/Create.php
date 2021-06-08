@@ -49,8 +49,8 @@ function civicrm_api3_Contract_create($params){
   if (isset($payment_method_params["adapter"])) {
     $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_method_params["adapter"]);
     unset($payment_method_params["adapter"]);
-    $payment_data = $payment_adapter::create($payment_method_params);
-    $params[$recurring_contribution_field_key] = $payment_data["recurring_contribution_id"];
+    $recurring_contribution_id = $payment_adapter::create($payment_method_params);
+    $params[$recurring_contribution_field_key] = $recurring_contribution_id;
   }
 
   // create

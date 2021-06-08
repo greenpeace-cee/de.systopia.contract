@@ -219,12 +219,18 @@ class CRM_Contract_Change_Revive extends CRM_Contract_Change {
     // If a different payment adapter is set,
     // create a new contribution/payment and terminate the old one
     if ($payment_changes["adapter"] !== $current_pa_id) {
-      $current_payment_adapter::terminate($current_rc_id);
-
       $new_payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_changes["adapter"]);
-      $new_payment_adapter::create($payment_changes["parameters"]);
 
-      return $current_rc_id;
+      $new_rc_id =  $new_payment_adapter::createFromUpdate(
+        $current_rc_id,
+        $current_pa_id,
+        $payment_changes["parameters"],
+        $payment_changes["activity_type_id"]
+      );
+
+      CRM_Contract_BAO_ContractPaymentLink::setContractPaymentLink($membership_id, $new_rc_id);
+
+      return $new_rc_id;
     }
 
     if (isset($current_payment_adapter)) {
