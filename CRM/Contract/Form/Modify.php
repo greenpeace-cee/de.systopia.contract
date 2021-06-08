@@ -427,6 +427,10 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                 $pa_name = $submitted["payment_adapter"];
                 $pa_class = $this->payment_adapters[$pa_name];
 
+                if (empty($submitted["pa-$pa_name-cycle_day"])) {
+                    HTML_QuickForm::setElementError("pa-$pa_name-cycle_day", "Please select a cycle day");
+                }
+
                 foreach ($pa_class::formFields() as $field_name => $field) {
                     if (!$field["enabled"] || empty($field["validate"])) continue;
 

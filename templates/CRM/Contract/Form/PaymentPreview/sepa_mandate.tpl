@@ -50,7 +50,7 @@
         // Next debit
         const action = CRM.vars["de.systopia.contract"].action;
         const cycleDay = formFields["pa-sepa_mandate-cycle_day"].val();
-        const startDate = formFields["start_date"].val();
+        const startDate = formFields["start_date"] ? formFields["start_date"].val() : null;
         const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;
         const nextDebit = SEPAMandate.nextCollectionDate(cycleDay, startDate, graceEnd);
         paymentPreviewContainer.find("span#next_debit").text(nextDebit);

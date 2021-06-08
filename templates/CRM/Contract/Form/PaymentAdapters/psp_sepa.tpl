@@ -43,6 +43,7 @@
         if (previousCreditor !== selectedCreditor) {
             cycleDayField.attr("data-psp-creditor", selectedCreditor);
             cycleDayField.empty();
+            cycleDayField.append("<option></option>");
 
             const cycleDays = CRM.vars["de.systopia.contract/psp_sepa"].cycle_days[selectedCreditor];
 
