@@ -52,11 +52,11 @@
         const cycleDay = formFields["pa-sepa_mandate-cycle_day"].val();
         const startDate = formFields["start_date"].val();
         const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;
-        const nextDebit = nextCollectionDate(cycleDay, startDate, graceEnd);
+        const nextDebit = SEPAMandate.nextCollectionDate(cycleDay, startDate, graceEnd);
         paymentPreviewContainer.find("span#next_debit").text(nextDebit);
     }
 
-    function nextCollectionDate(cycle_day, start_date, grace_end) {
+    SEPAMandate.nextCollectionDate = (cycle_day, start_date, grace_end) => {
         cycle_day = parseInt(cycle_day);
 
         if (cycle_day < 1 || cycle_day > 30) {
@@ -118,7 +118,6 @@
             day = '0' + day;
         }
 
-        // console.log(earliest_date.getFullYear() + '-' + month + '-' + day);
         return earliest_date.getFullYear() + '-' + month + '-' + day;
     }
 </script>

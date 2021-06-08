@@ -9,6 +9,7 @@
     Annual amount: <span id="annual"></span><br />
     Installment amount: <span id="installment"></span><br />
     Cycle day: <span id="cycle_day"></span><br />
+    Next debit: <span id="next_debit"></span><br />
 </div>
 
 {literal}
@@ -58,7 +59,7 @@
 
         // Annual amount
         const amount = FormUtils.parseMoney(formFields["amount"].val());
-        const currency = CRM.vars["de.systopia.contract/eft"].default_currency;
+        const currency = CRM.vars["de.systopia.contract/psp_sepa"].default_currency;
         const annualAmount = `${(amount * frequency).toFixed(2)} ${currency}`;
         paymentPreviewContainer.find("span#annual").text(annualAmount);
 
@@ -67,9 +68,55 @@
         paymentPreviewContainer.find("span#installment").text(installmentAmount);
 
         // Cycle day
-        const cycleDay = formFields["pa-psp_sepa-cycle_day"].val();
+        const cycleDay = formFields["pa-psp_sepa-cycle_day"].val() || "";
         paymentPreviewContainer.find("span#cycle_day").text(cycleDay);
+
+        // Next debit
+        const action = CRM.vars["de.systopia.contract"].action;
+        const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;
+        const startDate = formFields["start_date"].val();
+        const nextDebit = PSP.nextCollectionDate({ creditorId, cycleDay, graceEnd, startDate });
+        paymentPreviewContainer.find("span#next_debit").text(nextDebit);
     };
+
+    PSP.nextCollectionDate = ({ creditorId, cycleDay, graceEnd, startDate }) => {
+        if (!cycleDay) return "";
+
+        let date = new Date();
+
+        const grace = parseInt(CRM.vars["de.systopia.contract/psp_sepa"].grace_days[creditorId]);
+        const notice = parseInt(CRM.vars["de.systopia.contract/psp_sepa"].notice_days[creditorId]);
+        const millisecondsInADay = 24 * 60 * 60 * 1000;
+
+        date.setTime(date.getTime() + (notice - grace) * millisecondsInADay);
+
+        if (startDate && new Date(startDate).getTime() > date.getTime()) {
+            date = new Date(startDate);
+        }
+
+        if (graceEnd && new Date(graceEnd).getTime() > date.getTime()) {
+            date = new Date(graceEnd);
+        }
+
+        const cycleDay_int = parseInt(cycleDay, 10);
+
+        if (cycleDay_int < date.getDate()) {
+            let i = 31;
+
+            while (i > 0 && date.getDate() !== cycleDay_int) {
+                date.setTime(date.getTime() + millisecondsInADay);
+                i--;
+            }
+        } else {
+            date.setDate(cycleDay_int);
+        }
+
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString(10).padStart(2, "0");
+        const day = date.getDate().toString(10).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+    }
 </script>
 
 {/literal}

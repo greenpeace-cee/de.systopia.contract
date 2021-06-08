@@ -143,19 +143,57 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     public static function formVars ($params = []) {
         $result = [];
 
-        // Creditor-specific cycle days & payment instruments
+        // Creditor-specific data
         $psp_creditors = civicrm_api3("SepaCreditor", "get", [
             "creditor_type" => "PSP",
             "sequential"    => 1,
             "return"        => ["id", "label", "pi_rcur"],
         ])["values"];
 
+        $grace_default = civicrm_api3("Setting", "get", [
+            "sequential" => 1,
+            "return"     => ["batching_RCUR_grace"],
+        ])["values"][0]["batching_RCUR_grace"];
+
+        $grace_override = json_decode(civicrm_api3("Setting", "get", [
+            "sequential" => 1,
+            "return"     => ["batching_RCUR_grace_override"],
+        ])["values"][0]["batching_RCUR_grace_override"], true);
+
+        $notice_default = civicrm_api3("Setting", "get", [
+            "sequential" => 1,
+            "return"     => ["batching_RCUR_notice"],
+        ])["values"][0]["batching_RCUR_notice"];
+
+        $notice_override = json_decode(civicrm_api3("Setting", "get", [
+            "sequential" => 1,
+            "return"     => ["batching_RCUR_notice_override"],
+        ])["values"][0]["batching_RCUR_notice_override"], true);
+
         $cycle_days = [];
+        $grace_days = [];
+        $notice_days = [];
         $payment_instruments = [];
 
         foreach ($psp_creditors as $creditor) {
+            // Cycle days
             $cycle_days[$creditor["id"]] = self::cycleDays([ "creditor_id" => $creditor["id"] ]);
 
+            // Grace days
+            $grace_days[$creditor["id"]] = CRM_Utils_Array::value(
+                $creditor["id"],
+                $grace_override,
+                $grace_default
+            );
+
+            // Notice days
+            $notice_days[$creditor["id"]] = CRM_Utils_Array::value(
+                $creditor["id"],
+                $notice_override,
+                $notice_default
+            );
+
+            // Payment instruments
             $pi_ids = explode(",", $creditor["pi_rcur"]);
 
             $pi_option_values = civicrm_api3("OptionValue", "get", [
@@ -173,6 +211,8 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         }
 
         $result["cycle_days"] = $cycle_days;
+        $result["grace_days"] = $grace_days;
+        $result["notice_days"] = $notice_days;
         $result["payment_instruments"] = $payment_instruments;
 
         if (empty($params["recurring_contribution_id"])) return $result;
