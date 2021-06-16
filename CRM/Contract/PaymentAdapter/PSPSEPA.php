@@ -245,6 +245,12 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "return"     => ["batching_RCUR_notice_override"],
         ])["values"][0]["batching_RCUR_notice_override"], true);
 
+        $pi_option_values = civicrm_api3("OptionValue", "get", [
+            "option_group_id" => "payment_instrument",
+            "sequential"      => 1,
+            "return"          => ["value", "label"],
+        ])["values"];
+
         $cycle_days = [];
         $grace_days = [];
         $notice_days = [];
@@ -270,17 +276,10 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
 
             // Payment instruments
             $pi_ids = explode(",", $creditor["pi_rcur"]);
-
-            $pi_option_values = civicrm_api3("OptionValue", "get", [
-                "option_group_id" => "payment_instrument",
-                "value"           => [ "IN" => $pi_ids ],
-                "sequential"      => 1,
-                "return"          => ["value", "label"],
-            ])["values"];
-
             $payment_instruments[$creditor["id"]] = [];
 
             foreach ($pi_option_values as $pi_opt) {
+                if (!in_array($pi_opt["value"], $pi_ids)) continue;
                 $payment_instruments[$creditor["id"]][$pi_opt["value"]] = $pi_opt["label"];
             }
         }
@@ -298,13 +297,18 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "entity_id"    => $params["recurring_contribution_id"],
             "options"      => [ "sort" => "creation_date" ],
             "sequential"   => 1,
-            "return"       => ["iban", "bic"],
+            "return"       => ["iban", "bic", "creditor_id"],
         ]);
 
         $current_mandate_data = end($mandates_result["values"]);
 
         $result["current_account_reference"] = $current_mandate_data["iban"];
         $result["current_account_name"] = $current_mandate_data["bic"];
+        $result["current_creditor"] = $current_mandate_data["creditor_id"];
+
+        $result["current_payment_instrument"] = civicrm_api3('ContributionRecur', 'getsingle', [
+            "id" => $params["recurring_contribution_id"],
+        ])["payment_instrument_id"];
 
         return $result;
     }
@@ -372,7 +376,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                     "membership_payment.membership_frequency" => $frequency,
                     "payment_method.account_name"             => $submitted["pa-psp_sepa-account_name"],
                     "payment_method.account_reference"        => $submitted["pa-psp_sepa-account_reference"],
-                    "payment_method.creditor"                 => $submitted["pa-psp_sepa-creditor"],
+                    "payment_method.creditor_id"              => $submitted["pa-psp_sepa-creditor"],
                     "payment_method.payment_instrument"       => $submitted["pa-psp_sepa-payment_instrument"],
                 ];
 
