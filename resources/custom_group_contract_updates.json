@@ -186,7 +186,7 @@
       "text_length": "1023",
       "html_type": "Text",
       "is_required": "0",
-      "is_searchable": "1",
+      "is_searchable": "0",
       "is_search_range": "1",
       "is_active": "1",
       "is_view": "1",
