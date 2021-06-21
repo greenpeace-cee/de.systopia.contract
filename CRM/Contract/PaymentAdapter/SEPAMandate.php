@@ -328,12 +328,17 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
                 $amount = (float) CRM_Contract_Utils::formatMoney($submitted["amount"]);
                 $annual_amount = $frequency * $amount;
 
+                // Bank account
+                $bank_account_id = CRM_Contract_BankingLogic::getOrCreateBankAccount(
+                    $submitted["contact_id"],
+                    $submitted["pa-sepa_mandate-iban"]
+                );
+
                 $result = [
                     "membership_payment.cycle_day"            => $submitted["pa-sepa_mandate-cycle_day"],
+                    "membership_payment.from_ba"              => $bank_account_id,
                     "membership_payment.membership_annual"    => $annual_amount,
                     "membership_payment.membership_frequency" => $frequency,
-                    // "payment_method.bic"                      => $submitted["pa-sepa_mandate-bic"],
-                    "payment_method.iban"                     => $submitted["pa-sepa_mandate-iban"],
                 ];
 
                 return $result;

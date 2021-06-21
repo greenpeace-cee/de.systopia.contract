@@ -13,7 +13,7 @@ use CRM_Contract_ExtensionUtil as E;
 class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
     private $change_class;
-    private $contact;
+    private $contact_id;
     private $medium_ids;
     private $membership;
     private $membership_types;
@@ -84,6 +84,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Contact
         $contact_id = $this->membership["contact_id"];
+        $this->contact_id = $contact_id;
         $this->assign("cid", $contact_id);
         $this->contact = civicrm_api3("Contact", "getsingle", [ "id" => $contact_id ]);
 
@@ -493,6 +494,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
                 if (empty($payment_adapter)) break;
 
+                $submitted["contact_id"] = $this->contact_id;
                 $mapped_values = $payment_adapter::mapSubmittedFormValues("Contract.modify", $submitted);
 
                 foreach ($mapped_values as $key => $value) {
