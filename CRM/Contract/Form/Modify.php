@@ -171,6 +171,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "current_payment_adapter"    => CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id),
             "current_recurring"          => $rc_id,
             "debitor_name"               => $this->contact["display_name"],
+            "default_currency"           => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "frequencies"                => $frequencies,
             "recurring_contributions"    => $recurring_contributions,
         ]);
@@ -179,7 +180,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
     function buildQuickForm () {
 
         // Currency
-        // $this->assign("currency", CRM_Sepa_Logic_Settings::defaultCreditor()->currency);
+        $this->assign("currency", CRM_Sepa_Logic_Settings::defaultCreditor()->currency);
 
         // Payment change (payment_change)
         $payment_change_options = [

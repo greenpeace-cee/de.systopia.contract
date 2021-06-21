@@ -28,6 +28,11 @@
         const frequency = FormUtils.mapFrequency(CRM.vars["de.systopia.contract"].current_frequency);
         formFields["frequency"].val(frequency);
     };
+
+    EFT.onUpdate = (formFields) => {
+        cj("span#currency").text(CRM.vars["de.systopia.contract"].default_currency);
+    }
+
 </script>
 
 {/literal}

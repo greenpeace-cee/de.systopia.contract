@@ -57,9 +57,13 @@
         const frequency = Number(formFields["frequency"].val());
         paymentPreviewContainer.find("span#frequency").text(frequencyMapping[frequency]);
 
+        // Currency
+        const currency =
+            CRM.vars["de.systopia.contract/psp_sepa"].currencies[creditorId]
+            || CRM.vars["de.systopia.contract"].default_currency;
+
         // Annual amount
         const amount = FormUtils.parseMoney(formFields["amount"].val());
-        const currency = CRM.vars["de.systopia.contract/psp_sepa"].default_currency;
         const annualAmount = `${(amount * frequency).toFixed(2)} ${currency}`;
         paymentPreviewContainer.find("span#annual").text(annualAmount);
 

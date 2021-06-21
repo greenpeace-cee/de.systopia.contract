@@ -74,6 +74,10 @@
                 paymentInstrumentField.append(`<option value="${piValue}">${piLabel}</option>`);
             }
         }
+
+        // Update currency
+        const currency = CRM.vars["de.systopia.contract/psp_sepa"].currencies[selectedCreditor];
+        cj("span#currency").text(currency);
     };
 </script>
 

@@ -92,7 +92,7 @@
 
     <div class="crm-section form-field" id="amount" data-payment-option="create">
         <div class="label">{$form.amount.label}</div>
-        <div class="content">{$form.amount.html} {$currency}</div>
+        <div class="content">{$form.amount.html} <span id="currency">{$currency}</span></div>
         <div class="clear"></div>
     </div>
 

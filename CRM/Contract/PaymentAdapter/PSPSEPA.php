@@ -222,7 +222,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $psp_creditors = civicrm_api3("SepaCreditor", "get", [
             "creditor_type" => "PSP",
             "sequential"    => 1,
-            "return"        => ["id", "label", "pi_rcur"],
+            "return"        => ["id", "currency", "label", "pi_rcur"],
         ])["values"];
 
         $grace_default = civicrm_api3("Setting", "get", [
@@ -251,12 +251,16 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "return"          => ["value", "label"],
         ])["values"];
 
+        $currencies = [];
         $cycle_days = [];
         $grace_days = [];
         $notice_days = [];
         $payment_instruments = [];
 
         foreach ($psp_creditors as $creditor) {
+            // Currencies
+            $currencies[$creditor["id"]] = $creditor["currency"];
+
             // Cycle days
             $cycle_days[$creditor["id"]] = self::cycleDays([ "creditor_id" => $creditor["id"] ]);
 
@@ -284,6 +288,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             }
         }
 
+        $result["currencies"] = $currencies;
         $result["cycle_days"] = $cycle_days;
         $result["grace_days"] = $grace_days;
         $result["notice_days"] = $notice_days;

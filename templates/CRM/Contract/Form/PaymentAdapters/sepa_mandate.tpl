@@ -33,6 +33,10 @@
         const iban = CRM.vars["de.systopia.contract/sepa_mandate"].current_iban;
         formFields["pa-sepa_mandate-iban"].val(iban);
     };
+
+    SEPAMandate.onUpdate = (formFields) => {
+        cj("span#currency").text(CRM.vars["de.systopia.contract"].default_currency);
+    }
 </script>
 
 {/literal}
