@@ -132,12 +132,16 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             self::cycleDays()
         );
 
+        // Get bank account by ID
+        $bank_account_id = CRM_Utils_Array::value("from_ba", $update);
+        $bank_account = CRM_Contract_BankingLogic::getBankAccount($bank_account_id);
+
         $current_adapter_class = CRM_Contract_Utils::getPaymentAdapterClass($current_adapter);
         $current_adapter_class::terminate($recurring_contribution_id);
 
         $create_params = [
             "amount"                => $new_recurring_amount["amount"],
-            "bic"                   => CRM_Utils_Array::value("bic", $update),
+            "bic"                   => CRM_Utils_Array::value("bic", $bank_account),
             "campaign_id"           => CRM_Utils_Array::value("campaign_id", $update, $current_campaign_id),
             "contact_id"            => $current_rc_data["contact_id"],
             "creation_date"         => date("Y-m-d H:i:s"),
@@ -147,7 +151,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "financial_type_id"     => $current_rc_data["financial_type_id"],
             "frequency_interval"    => $new_recurring_amount["frequency_interval"],
             "frequency_unit"        => $new_recurring_amount["frequency_unit"],
-            "iban"                  => CRM_Utils_Array::value("iban", $update),
+            "iban"                  => CRM_Utils_Array::value("iban", $bank_account),
             "payment_instrument_id" => CRM_Utils_Array::value("payment_instrument", $update),
             "start_date"            => $new_start_date,
             "type"                  => "RCUR",
