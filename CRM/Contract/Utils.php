@@ -430,7 +430,7 @@ class CRM_Contract_Utils
       "return"       => ["creditor_id"],
     ]);
 
-    if ($mandates_result["count"] === 0) return null;
+    if ($mandates_result["count"] === 0) return "eft";
 
     $creditor_id = end($mandates_result["values"])["creditor_id"];
 

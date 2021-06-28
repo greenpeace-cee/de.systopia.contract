@@ -322,7 +322,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
     if ($payment_changes["adapter"] !== $current_pa_id) {
       $new_payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_changes["adapter"]);
 
-      $new_rc_id =  $new_payment_adapter::createFromUpdate(
+      $new_rc_id = $new_payment_adapter::createFromUpdate(
         $current_rc_id,
         $current_pa_id,
         $payment_changes["parameters"],
@@ -341,13 +341,11 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
         $payment_changes["activity_type_id"]
       );
     } else {
-      CRM_Contract_PaymentAdapter_EFT::update(
+      $new_rc_id = CRM_Contract_PaymentAdapter_EFT::update(
         $current_rc_id,
         $payment_changes["parameters"],
         $payment_changes["activity_type_id"]
       );
-
-      $new_rc_id = $current_rc_id;
     }
 
     CRM_Contract_BAO_ContractPaymentLink::setContractPaymentLink($membership_id, $new_rc_id);

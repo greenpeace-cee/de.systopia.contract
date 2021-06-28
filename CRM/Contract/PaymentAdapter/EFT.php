@@ -303,22 +303,27 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         // Get the current campaign ID
         $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
-        // Make API call
-        $update_result = civicrm_api3("ContributionRecur", "create", [
-            "id"                 => $recurring_contribution_id,
+        // Get current the date
+        $now = date("Y-m-d H:i:s");
+
+        // Terminate the current mandate
+        self::terminate($recurring_contribution_id, "CHNG");
+
+        // Create a new EFT payment
+        $create_params = [
             "amount"             => $new_recurring_amount["amount"],
             "campaign_id"        => CRM_Utils_Array::value("campaign_id", $params, $current_campaign_id),
+            "contact_id"         => $current_rc_data["contact_id"],
+            "create_date"        => $now,
+            "currency"           => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),
             "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
+            "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
             "frequency_interval" => $new_recurring_amount["frequency_interval"],
             "frequency_unit"     => $new_recurring_amount["frequency_unit"],
-        ]);
+            "start_date"         => $now,
+        ];
 
-        if ($update_result["is_error"]) {
-            $error_message = $update_result["error_message"];
-            throw new Exception("Contribution cannot be updated: $error_message");
-        }
-
-        return $recurring_contribution_id;
+        return self::create($create_params);
     }
 
 }
