@@ -33,6 +33,11 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $mandate_url = CRM_Utils_System::url("civicrm/sepa/xmandate", "mid=$mandate_id");
         $mandate_reference = $mandate_data["reference"];
 
+        civicrm_api3("ContributionRecur", "create", [
+            "id"                    => $mandate_data["entity_id"],
+            "payment_instrument_id" => $params["payment_instrument_id"],
+        ]);
+
         CRM_Core_Session::setStatus(
             "New PSP SEPA Mandate <a href=\"$mandate_url\">$mandate_reference</a> created.",
             "Success",
@@ -76,7 +81,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
         // Get the creditor ID & currency
-        $creditor_id = CRM_Utils_Array::value("creditor", $update);
+        $creditor_id = CRM_Utils_Array::value("creditor_id", $update);
         $currency = null;
 
         if (isset($creditor_id)) {
@@ -222,7 +227,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $psp_creditors = civicrm_api3("SepaCreditor", "get", [
             "creditor_type" => "PSP",
             "sequential"    => 1,
-            "return"        => ["id", "currency", "label", "pi_rcur"],
+            "return"        => ["id", "currency", "label"],
         ])["values"];
 
         $grace_default = civicrm_api3("Setting", "get", [
@@ -279,7 +284,13 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             );
 
             // Payment instruments
-            $pi_ids = explode(",", $creditor["pi_rcur"]);
+            $creditor_id = $creditor["id"];
+
+            $creditor_pi_rcur = CRM_Core_DAO::singleValueQuery(
+                "SELECT pi_rcur FROM civicrm_sdd_creditor WHERE id = $creditor_id LIMIT 1"
+            );
+
+            $pi_ids = explode(",", $creditor_pi_rcur);
             $payment_instruments[$creditor["id"]] = [];
 
             foreach ($pi_option_values as $pi_opt) {
