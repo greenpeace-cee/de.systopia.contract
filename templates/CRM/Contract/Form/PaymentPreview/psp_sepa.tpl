@@ -78,7 +78,7 @@
         // Next debit
         const action = CRM.vars["de.systopia.contract"].action;
         const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;
-        const startDate = formFields["start_date"] ? formFields["start_date"].val() : null;
+        const startDate = formFields["start_date"] ? formFields["start_date"].val() : formFields["activity_date"].val();
         const nextDebit = PSP.nextCollectionDate({ creditorId, cycleDay, graceEnd, startDate });
         paymentPreviewContainer.find("span#next_debit").text(nextDebit);
     };
