@@ -75,7 +75,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
 
         $create_params = [
             "amount"             => $new_recurring_amount["amount"],
-            "campaign_id"        => CRM_Utils_Array::value("campaign_id", $update, $current_campaign_id),
+            "campaign_id"        => !empty($update["campaign_id"]) ? $update["campaign_id"] : $current_campaign_id,
             "contact_id"         => $current_rc_data["contact_id"],
             "create_date"        => date("Y-m-d H:i:s"),
             "currency"           => CRM_Utils_Array::value("currency", $update, "EUR"),

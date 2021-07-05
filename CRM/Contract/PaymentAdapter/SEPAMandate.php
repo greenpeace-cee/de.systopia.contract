@@ -142,7 +142,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $create_params = [
             "amount"                => $new_recurring_amount["amount"],
             "bic"                   => CRM_Utils_Array::value("bic", $bank_account),
-            "campaign_id"           => !empty($params["campaign_id"]) ? $params["campaign_id"] : $current_campaign_id,
+            "campaign_id"           => !empty($update["campaign_id"]) ? $update["campaign_id"] : $current_campaign_id,
             "contact_id"            => $current_rc_data["contact_id"],
             "creation_date"         => date("Y-m-d H:i:s"),
             "creditor_id"           => $creditor->id,

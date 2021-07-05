@@ -106,7 +106,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "account_name"          => CRM_Utils_Array::value("account_name", $update),
             "account_reference"     => CRM_Utils_Array::value("account_reference", $update),
             "amount"                => $new_recurring_amount["amount"],
-            "campaign_id"           => CRM_Utils_Array::value("campaign_id", $update, $current_campaign_id),
+            "campaign_id"           => !empty($update["campaign_id"]) ? $update["campaign_id"] : $current_campaign_id,
             "contact_id"            => $current_rc_data["contact_id"],
             "creation_date"         => date("Y-m-d H:i:s"),
             "creditor_id"           => $creditor_id,
