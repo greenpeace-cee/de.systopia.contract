@@ -22,6 +22,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      */
     public static function create ($params) {
         $params["payment_instrument_id"] = "EFT";
+        $params["contribution_status_id"] = "Pending";
 
         $create_result = civicrm_api3("ContributionRecur", "create", $params);
 
@@ -74,17 +75,16 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
         $create_params = [
-            "amount"                 => $new_recurring_amount["amount"],
-            "campaign_id"            => !empty($update["campaign_id"]) ? $update["campaign_id"] : $current_campaign_id,
-            "contact_id"             => $current_rc_data["contact_id"],
-            "create_date"            => date("Y-m-d H:i:s"),
-            "currency"               => CRM_Utils_Array::value("currency", $update, "EUR"),
-            "cycle_day"              => CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]),
-            "financial_type_id"      => $current_rc_data["financial_type_id"],
-            "frequency_interval"     => $new_recurring_amount["frequency_interval"],
-            "frequency_unit"         => $new_recurring_amount["frequency_unit"],
-            "start_date"             => $current_rc_data["start_date"],
-            "contribution_status_id" => "Pending",
+            "amount"             => $new_recurring_amount["amount"],
+            "campaign_id"        => !empty($update["campaign_id"]) ? $update["campaign_id"] : $current_campaign_id,
+            "contact_id"         => $current_rc_data["contact_id"],
+            "create_date"        => date("Y-m-d H:i:s"),
+            "currency"           => CRM_Utils_Array::value("currency", $update, "EUR"),
+            "cycle_day"          => CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]),
+            "financial_type_id"  => $current_rc_data["financial_type_id"],
+            "frequency_interval" => $new_recurring_amount["frequency_interval"],
+            "frequency_unit"     => $new_recurring_amount["frequency_unit"],
+            "start_date"         => $current_rc_data["start_date"],
         ];
 
         return self::create($create_params);
@@ -312,17 +312,16 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
 
         // Create a new EFT payment
         $create_params = [
-            "amount"                 => $new_recurring_amount["amount"],
-            "campaign_id"            => CRM_Utils_Array::value("campaign_id", $params, $current_campaign_id),
-            "contact_id"             => $current_rc_data["contact_id"],
-            "create_date"            => $now,
-            "currency"               => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),
-            "cycle_day"              => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
-            "financial_type_id"      => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
-            "frequency_interval"     => $new_recurring_amount["frequency_interval"],
-            "frequency_unit"         => $new_recurring_amount["frequency_unit"],
-            "start_date"             => $now,
-            "contribution_status_id" => "Pending",
+            "amount"             => $new_recurring_amount["amount"],
+            "campaign_id"        => CRM_Utils_Array::value("campaign_id", $params, $current_campaign_id),
+            "contact_id"         => $current_rc_data["contact_id"],
+            "create_date"        => $now,
+            "currency"           => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),
+            "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
+            "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
+            "frequency_interval" => $new_recurring_amount["frequency_interval"],
+            "frequency_unit"     => $new_recurring_amount["frequency_unit"],
+            "start_date"         => $now,
         ];
 
         return self::create($create_params);
