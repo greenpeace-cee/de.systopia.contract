@@ -466,4 +466,39 @@ class CRM_Contract_Utils
       "frequency_unit"     => $frequency_unit,
     ];
   }
+
+  /**
+   * Calculate payment changes for a given legacy SEPA contract update activity
+   *
+   * @param array $activity
+   *
+   * @return array
+   * @throws \Exception
+   */
+  public static function getPaymentChangesForLegacyUpdate(array $activity) {
+    CRM_Contract_CustomData::labelCustomFields($activity);
+    $requiredFields = [
+      'contract_updates.ch_cycle_day',
+      'contract_updates.ch_from_ba',
+      'contract_updates.ch_annual',
+      'contract_updates.ch_frequency',
+    ];
+    foreach ($requiredFields as $requiredField) {
+      if (empty($activity[$requiredField])) {
+        throw new Exception("{$requiredField} must not be empty");
+      }
+    }
+    return [
+      'activity_type_id' => $activity['activity_type_id'],
+      'adapter' => CRM_Contract_PaymentAdapter_SEPAMandate::ADAPTER_ID,
+      'parameters' => [
+        'campaign_id' => $activity['campaign_id'] ?? "",
+        'cycle_day' => $activity['contract_updates.ch_cycle_day'],
+        'from_ba' => $activity['contract_updates.ch_from_ba'],
+        'annual' => $activity['contract_updates.ch_annual'],
+        'frequency' => $activity['contract_updates.ch_frequency'],
+        'defer_payment_start' => $activity['contract_updates.defer_payment_start'] ?? 0,
+      ],
+    ];
+  }
 }
