@@ -166,8 +166,11 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
       HTML_QuickForm::setElementError('bic', 'Please enter a valid BIC');
     }
 
-    if (!empty($submitted['join_date']) && CRM_Utils_Date::processDate(date('Ymd')) < CRM_Utils_Date::processDate($submitted['join_date'])) {
-      HTML_QuickForm::setElementError('join_date', ts('Join date cannot be in the future.'));
+    $join_date = isset($submitted["join_date"]) ? strtotime($submitted["join_date"]) : null;
+    $now = time();
+
+    if (isset($join_date) && $join_date > $now) {
+      HTML_QuickForm::setElementError("join_date", ts("Join date cannot be in the future"));
     }
 
     if (!empty($submitted['start_date']) && !empty($submitted['join_date'])) {
