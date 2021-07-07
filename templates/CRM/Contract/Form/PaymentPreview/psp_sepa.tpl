@@ -72,7 +72,7 @@
         paymentPreviewContainer.find("span#installment").text(installmentAmount);
 
         // Cycle day
-        const cycleDay = formFields["pa-psp_sepa-cycle_day"].val() || "";
+        const cycleDay = formFields["cycle_day"].val() || "";
         paymentPreviewContainer.find("span#cycle_day").text(cycleDay);
 
         // Next debit

@@ -49,9 +49,11 @@ interface CRM_Contract_PaymentAdapter {
     /**
      * Get payment specific form field specifications
      *
+     * @param int|null $recurring_contribution_id
+     *
      * @return array - List of form field specifications
      */
-    public static function formFields ();
+    public static function formFields ($recurring_contribution_id = null);
 
     /**
      * Get payment specific JS variables for forms

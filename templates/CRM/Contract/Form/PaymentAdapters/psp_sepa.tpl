@@ -5,79 +5,49 @@
 
     const PSP = window.PaymentAdapters["psp_sepa"];
 
-    PSP.clearPaymentParameters = (formFields) => {
-        formFields["amount"].val("");
-        formFields["frequency"].val("12");
-        formFields["pa-psp_sepa-account_reference"].val("");
-        formFields["pa-psp_sepa-account_name"].val("");
-    };
-
-    PSP.fillPaymentParameters = (formFields) => {
-        // Cycle day
-        const cycleDay = CRM.vars["de.systopia.contract"].current_cycle_day;
-        formFields["pa-psp_sepa-cycle_day"].val(cycleDay);
-
-        // Installment amount (amount)
-        const amount = FormUtils.parseMoney(CRM.vars["de.systopia.contract"].current_amount);
-        formFields["amount"].val(amount);
-
-        // Payment frequency (frequency)
-        const frequency = FormUtils.mapFrequency(CRM.vars["de.systopia.contract"].current_frequency);
-        formFields["frequency"].val(frequency);
-
-        // Payment instrument (pa-psp_sepa-payment_instrument)
-        const paymentInstrument = CRM.vars["de.systopia.contract/psp_sepa"].current_payment_instrument;
-        formFields["pa-psp_sepa-payment_instrument"].val(paymentInstrument);
-
-        // Account reference (pa-psp_sepa-account_reference)
-        const accountReference = CRM.vars["de.systopia.contract/psp_sepa"].current_account_reference;
-        formFields["pa-psp_sepa-account_reference"].val(accountReference);
-
-        // Account name (pa-psp_sepa-account_name)
-        const accountName = CRM.vars["de.systopia.contract/psp_sepa"].current_account_name;
-        formFields["pa-psp_sepa-account_name"].val(accountName);
-
-        // Creditor (pa-psp_sepa-creditor)
-        const creditorId = CRM.vars["de.systopia.contract/psp_sepa"].current_creditor;
-        formFields["pa-psp_sepa-creditor"].val(creditorId);
-    };
+    PSP.vars = CRM.vars["de.systopia.contract/psp_sepa"];
 
     PSP.onUpdate = (formFields) => {
-        // Update options for cycle days
-        const cycleDayField = formFields["pa-psp_sepa-cycle_day"];
-        let previousCreditor = cycleDayField.attr("data-psp-creditor");
+        const { action, current_cycle_day } = CRM.vars["de.systopia.contract"];
+
         const selectedCreditor = formFields["pa-psp_sepa-creditor"].val();
 
-        if (previousCreditor !== selectedCreditor) {
-            cycleDayField.attr("data-psp-creditor", selectedCreditor);
-            cycleDayField.empty();
-            cycleDayField.append("<option></option>");
-
-            const cycleDays = CRM.vars["de.systopia.contract/psp_sepa"].cycle_days[selectedCreditor];
-
-            for (const cycleDay of Object.values(cycleDays)) {
-                cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
-            }
-        }
-
-        // Update options for payment instruments
-        const paymentInstrumentField = formFields["pa-psp_sepa-payment_instrument"];
-        previousCreditor = paymentInstrumentField.attr("data-psp-creditor");
-
-        if (previousCreditor !== selectedCreditor) {
-            paymentInstrumentField.attr("data-psp-creditor", selectedCreditor);
-            paymentInstrumentField.empty();
-
-            const paymentInstruments = CRM.vars["de.systopia.contract/psp_sepa"].payment_instruments[selectedCreditor];
-
-            for (const [piValue, piLabel] of Object.entries(paymentInstruments)) {
-                paymentInstrumentField.append(`<option value="${piValue}">${piLabel}</option>`);
-            }
-        }
-
-        // Update currency
-        const currency = CRM.vars["de.systopia.contract/psp_sepa"].currencies[selectedCreditor];
+        // Currency
+        const currency = PSP.vars.currencies[selectedCreditor];
         cj("span#currency").text(currency);
+
+        // Cycle days
+        const cycleDayField = formFields["cycle_day"];
+        const defaultCycleDay = action === "sign" ? PSP.vars.next_cycle_day : current_cycle_day;
+        const selectedCycleDay = cycleDayField.val() || defaultCycleDay;
+        const cycleDayOptions = PSP.vars.cycle_days[selectedCreditor];
+
+        cycleDayField.empty();
+        cycleDayField.append("<option value=\"\">- none -</option>");
+
+        for (const cycleDay of Object.values(cycleDayOptions)) {
+            cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
+
+            if (parseInt(selectedCycleDay) === parseInt(cycleDay)) {
+                cycleDayField.val(cycleDay);
+            }
+        }
+
+        // Payment instruments
+        const paymentInstrumentField = formFields["pa-psp_sepa-payment_instrument"];
+        const selectedPaymentInstrument = paymentInstrumentField.val();
+        const paymentInstrumentOptions = PSP.vars.payment_instruments[selectedCreditor];
+
+        paymentInstrumentField.empty();
+        paymentInstrumentField.append("<option value=\"\">- none -</option>");
+
+        for (const [piValue, piLabel] of Object.entries(paymentInstrumentOptions)) {
+            paymentInstrumentField.append(`<option value="${piValue}">${piLabel}</option>`);
+
+            if (parseInt(selectedPaymentInstrument) === parseInt(piValue)) {
+                paymentInstrumentField.val(piValue);
+            }
+        }
     };
 </script>
 

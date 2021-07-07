@@ -176,11 +176,27 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     /**
      * Get payment specific form field specifications
      *
+     * @param int|null $recurring_contribution_id
+     *
      * @return array - List of form field specifications
      */
-    public static function formFields () {
+    public static function formFields ($recurring_contribution_id = null) {
+        $defaults = [];
+        $payment_adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($recurring_contribution_id);
+
+        if (isset($recurring_contribution_id) && $payment_adapter === self::ADAPTER_ID) {
+            $mandate_data = civicrm_api3("SepaMandate", "getsingle", [
+                "entity_table" => "civicrm_contribution_recur",
+                "entity_id"    => $recurring_contribution_id,
+            ]);
+
+            $defaults["iban"] = $mandate_data["iban"];
+            $defaults["bic"] = $mandate_data["bic"];
+        }
+
         return [
             "iban" => [
+                "default"      => CRM_Utils_Array::value("iban", $defaults),
                 "display_name" => "IBAN",
                 "enabled"      => true,
                 "name"         => "iban",
@@ -189,8 +205,8 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
                 "type"         => "text",
                 "validate"     => "CRM_Contract_PaymentAdapter_SEPAMandate::validateIBAN",
             ],
-
             "bic" => [
+                "default"      => CRM_Utils_Array::value("bic", $defaults),
                 "display_name" => "BIC",
                 "enabled"      => CRM_Contract_Utils::isDefaultCreditorUsesBic(),
                 "name"         => "bic",
@@ -215,6 +231,9 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $default_creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
         $result["creditor"] = $default_creditor;
 
+        // Cycle days
+        $result["cycle_days"] = self::cycleDays();
+
         // Default creditor grace
         $result["default_creditor_grace"] = (int) CRM_Sepa_Logic_Settings::getSetting(
             "batching.RCUR.grace",
@@ -227,23 +246,11 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             $default_creditor->creditor_id
         );
 
+        // Default currency
+        $result["default_currency"] = $default_creditor->currency;
+
         // Next cycle day
         $result["next_cycle_day"] = self::nextCycleDay();
-
-        if (empty($params["recurring_contribution_id"])) return $result;
-
-        $mandates_result = civicrm_api3("SepaMandate", "get", [
-            "entity_table" => "civicrm_contribution_recur",
-            "entity_id"    => $params["recurring_contribution_id"],
-            "options"      => [ "sort" => "creation_date" ],
-            "sequential"   => 1,
-            "return"       => ["iban", "bic"],
-        ]);
-
-        $current_mandate_data = end($mandates_result["values"]);
-
-        // Current IBAN
-        $result["current_iban"] = $current_mandate_data["iban"];
 
         return $result;
     }
@@ -306,7 +313,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
                     "payment_method.campaign_id"        => $submitted["campaign_id"],
                     "payment_method.creation_date"      => $now,
                     "payment_method.currency"           => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
-                    "payment_method.cycle_day"          => $submitted["pa-sepa_mandate-cycle_day"],
+                    "payment_method.cycle_day"          => $submitted["cycle_day"],
                     "payment_method.date"               => $start_date,
                     "payment_method.financial_type_id"  => 2, // = Member dues
                     "payment_method.frequency_interval" => 12 / (int) $submitted["frequency"],
@@ -339,7 +346,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
                 );
 
                 $result = [
-                    "membership_payment.cycle_day"            => $submitted["pa-sepa_mandate-cycle_day"],
+                    "membership_payment.cycle_day"            => $submitted["cycle_day"],
                     "membership_payment.from_ba"              => $bank_account_id,
                     "membership_payment.membership_annual"    => $annual_amount,
                     "membership_payment.membership_frequency" => $frequency,

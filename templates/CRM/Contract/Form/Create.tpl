@@ -75,20 +75,11 @@
 
     <hr />
 
-    {foreach from=$payment_adapter_fields key=pa_name item=_}
-        {assign var="field_id" value="pa-$pa_name-cycle_day"}
-
-        <div
-            class="crm-section form-field"
-            id="{$field_id}"
-            data-payment-option="create"
-            data-payment-adapter="{$pa_name}"
-        >
-            <div class="label">{$form[$field_id].label}</div>
-            <div class="content">{$form[$field_id].html}</div>
-            <div class="clear"></div>
-        </div>
-    {/foreach}
+    <div class="crm-section form-field" id="cycle_day" data-payment-option="create">
+        <div class="label">{$form.cycle_day.label}</div>
+        <div class="content">{$form.cycle_day.html}</div>
+        <div class="clear"></div>
+    </div>
 
     <div class="crm-section form-field" id="amount" data-payment-option="create">
         <div class="label">{$form.amount.label}</div>
@@ -192,7 +183,7 @@
         const paymentAdapterFields = {/literal}{$payment_adapter_fields_json}{literal};
 
         const paFieldIds = Object.entries(paymentAdapterFields).reduce(
-            (result, [pa, ids]) => [ ...result, ...ids, `pa-${pa}-cycle_day` ],
+            (result, [pa, ids]) => [ ...result, ...ids ],
             []
         );
 
@@ -201,6 +192,7 @@
             "activity_medium",
             "amount",
             "campaign_id",
+            "cycle_day",
             "end_date",
             "existing_recurring_contribution",
             "frequency",

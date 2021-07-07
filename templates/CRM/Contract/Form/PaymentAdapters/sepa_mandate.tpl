@@ -3,39 +3,32 @@
 <script>
     window.PaymentAdapters["sepa_mandate"] = {};
 
-    const SEPAMandate = window.PaymentAdapters["sepa_mandate"];
+    const SEPA = window.PaymentAdapters["sepa_mandate"];
 
-    SEPAMandate.clearPaymentParameters = (formFields) => {
-        formFields["amount"].val("");
-        formFields["pa-sepa_mandate-cycle_day"].val("1");
-        formFields["frequency"].val("12");
-        formFields["pa-sepa_mandate-iban"].val("");
-    };
+    SEPA.vars = CRM.vars["de.systopia.contract/sepa_mandate"];
 
-    SEPAMandate.fillPaymentParameters = (formFields) => {
-        // Installment amount (amount)
-        const amount = FormUtils.parseMoney(CRM.vars["de.systopia.contract"].current_amount);
-        formFields["amount"].val(amount);
+    SEPA.onUpdate = (formFields) => {
+        const { action, current_cycle_day } = CRM.vars["de.systopia.contract"];
 
-        // Cycle day (pa-sepa_mandate-cycle_day)
-        const cycle_day =
-            CRM.vars["de.systopia.contract"].action === "revive"
-            ? CRM.vars["de.systopia.contract/sepa_mandate"].next_cycle_day
-            : CRM.vars["de.systopia.contract"].current_cycle_day;
+        // Currency
+        cj("span#currency").text(SEPA.vars.default_currency);
 
-        formFields["pa-sepa_mandate-cycle_day"].val(cycle_day);
+        // Cycle days
+        const cycleDayField = formFields["cycle_day"];
+        const defaultCycleDay = action === "sign" ? SEPA.vars.next_cycle_day : current_cycle_day;
+        const selectedCycleDay = cycleDayField.val() || defaultCycleDay;
+        const cycleDayOptions = CRM.vars["de.systopia.contract/sepa_mandate"].cycle_days;
 
-        // Payment frequency (frequency)
-        const frequency = FormUtils.mapFrequency(CRM.vars["de.systopia.contract"].current_frequency);
-        formFields["frequency"].val(frequency);
+        cycleDayField.empty();
+        cycleDayField.append("<option value=\"\">- none -</option>");
 
-        // IBAN (payment-sepa_mandate-iban)
-        const iban = CRM.vars["de.systopia.contract/sepa_mandate"].current_iban;
-        formFields["pa-sepa_mandate-iban"].val(iban);
-    };
+        for (const cycleDay of Object.values(cycleDayOptions)) {
+            cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
 
-    SEPAMandate.onUpdate = (formFields) => {
-        cj("span#currency").text(CRM.vars["de.systopia.contract"].default_currency);
+            if (parseInt(selectedCycleDay) === parseInt(cycleDay)) {
+                cycleDayField.val(cycleDay);
+            }
+        }
     }
 </script>
 

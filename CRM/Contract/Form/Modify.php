@@ -155,11 +155,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $current_contract = CRM_Contract_RecurringContribution::getCurrentContract($contact_id, $rc_id);
         $frequencies = CRM_Contract_RecurringContribution::getPaymentFrequencies();
 
-        $current_frequency = [
-            "interval" => $this->recurring_contribution["frequency_interval"],
-            "unit"     => $this->recurring_contribution["frequency_unit"],
-        ];
-
         $recurring_contributions = CRM_Contract_RecurringContribution::getAllForContact($contact_id, true);
 
         $resources->addVars("de.systopia.contract", [
@@ -167,8 +162,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "cid"                        => $contact_id,
             "current_amount"             => $this->recurring_contribution["amount"],
             "current_contract"           => $current_contract,
-            "current_cycle_day"          => $this->recurring_contribution["cycle_day"],
-            "current_frequency"          => $current_frequency,
+            "current_cycle_day"          => (int) $this->recurring_contribution["cycle_day"],
             "current_payment_adapter"    => CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id),
             "current_recurring"          => $rc_id,
             "debitor_name"               => $this->contact["display_name"],
@@ -196,7 +190,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->add("select", "payment_change", ts("Payment change"), $payment_change_options);
 
         // Payment method (payment_adapter)
-        $payment_adapter_options = [];
+        $payment_adapter_options = [ "" => "- none -" ];
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
             $payment_adapter_options[$pa_name] = $pa_class::adapterInfo()["display_name"];
@@ -207,7 +201,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "payment_adapter",
             ts("Payment method"),
             $payment_adapter_options,
-            false
+            true
         );
 
         // Payment-adapter-specific fields
@@ -241,20 +235,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                         break;
                 }
             }
-
-            $cycle_days = $pa_class::cycleDays();
-            $cycle_day_options = [];
-
-            foreach ($cycle_days as $cday) {
-                $cycle_day_options[$cday] = $cday;
-            }
-
-            $this->add(
-                "select",
-                "pa-$pa_name-cycle_day",
-                ts("Cycle day"),
-                $cycle_day_options
-            );
         }
 
         $this->assign("payment_adapter_fields", $paf_template_var);
@@ -268,6 +248,15 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             $this->contact["id"],
             false
         );
+
+        // Cycle day (cycle_day)
+        $cycle_day_options = [ "" => "- none -" ];
+
+        foreach (range(1, 31) as $cycle_day) {
+            $cycle_day_options[$cycle_day] = $cycle_day;
+        }
+
+        $this->add("select", "cycle_day", ts("Cycle day"), $cycle_day_options, true);
 
         // Installment amount
         $this->add("text", "amount", ts("Installment amount"), [ "size" => 6 ]);
@@ -352,10 +341,14 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $defaults = [];
 
         // Recurring contribution (recurring_contribution)
-        $defaults["recurring_contribution"] = $this->recurring_contribution["id"];
+        $rc_id = $this->recurring_contribution["id"];
+        $defaults["recurring_contribution"] = $rc_id;
+
+        // Installment amount (amount)
+        $defaults["amount"] = $this->recurring_contribution["amount"];
 
         // Payment frequency (frequency)
-        $defaults["frequency"] = "12"; // monthly
+        $defaults["frequency"] = CRM_Contract_FormUtils::numberOfAnnualPayments($this->recurring_contribution);
 
         // Membership type (membership_type_id)
         $defaults["membership_type_id"] = $this->membership["membership_type_id"];
@@ -372,13 +365,11 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Payment-adapter-specific defaults
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            foreach ($pa_class::formFields() as $field_name => $field) {
+            foreach ($pa_class::formFields($rc_id) as $field_name => $field) {
                 if (!$field["enabled"] || empty($field["default"])) continue;
 
                 $defaults["pa-$pa_name-$field_name"] = $field["default"];
             }
-
-            $defaults["pa-$pa_name-cycle_day"] = $pa_class::nextCycleDay();
         }
 
         parent::setDefaults($defaults);
@@ -429,8 +420,8 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                 $pa_name = $submitted["payment_adapter"];
                 $pa_class = $this->payment_adapters[$pa_name];
 
-                if (empty($submitted["pa-$pa_name-cycle_day"])) {
-                    HTML_QuickForm::setElementError("pa-$pa_name-cycle_day", "Please select a cycle day");
+                if (empty($submitted["cycle_day"])) {
+                    HTML_QuickForm::setElementError("cycle_day", "Please select a cycle day");
                 }
 
                 foreach ($pa_class::formFields() as $field_name => $field) {

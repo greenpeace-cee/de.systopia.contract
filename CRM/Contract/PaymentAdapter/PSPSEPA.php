@@ -144,9 +144,11 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     /**
      * Get payment specific form field specifications
      *
+     * @param int|null $recurring_contribution_id
+     *
      * @return array - List of form field specifications
      */
-    public static function formFields () {
+    public static function formFields ($recurring_contribution_id = null) {
         $psp_creditors = civicrm_api3("SepaCreditor", "get", [
             "creditor_type" => "PSP",
             "sequential"    => 1,
@@ -178,8 +180,28 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             $payment_instrument_options[$pi["value"]] = $pi["label"];
         }
 
+        $defaults = [];
+        $payment_adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($recurring_contribution_id);
+
+        if (isset($recurring_contribution_id) && $payment_adapter === self::ADAPTER_ID) {
+            $rc_data = civicrm_api3("ContributionRecur", "getsingle", [
+                "id" => $recurring_contribution_id,
+            ]);
+
+            $mandate_data = civicrm_api3("SepaMandate", "getsingle", [
+                "entity_table" => "civicrm_contribution_recur",
+                "entity_id"    => $recurring_contribution_id,
+            ]);
+
+            $defaults["creditor"] = $mandate_data["creditor_id"];
+            $defaults["payment_instrument"] = $rc_data["payment_instrument"];
+            $defaults["account_reference"] = $mandate_data["iban"];
+            $defaults["account_name"] = $mandate_data["bic"];
+        }
+
         return [
             "creditor" => [
+                "default"      => CRM_Utils_Array::value("creditor", $defaults),
                 "display_name" => "Creditor",
                 "enabled"      => true,
                 "name"         => "creditor",
@@ -188,6 +210,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                 "type"         => "select",
             ],
             "payment_instrument" => [
+                "default"      => CRM_Utils_Array::value("payment_instrument", $defaults),
                 "display_name" => "Payment instrument",
                 "enabled"      => true,
                 "name"         => "payment_instrument",
@@ -196,6 +219,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                 "type"         => "select",
             ],
             "account_reference" => [
+                "default"      => CRM_Utils_Array::value("account_reference", $defaults),
                 "display_name" => "Account reference",
                 "enabled"      => true,
                 "name"         => "account_reference",
@@ -204,6 +228,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                 "type"         => "text",
             ],
             "account_name" => [
+                "default"      => CRM_Utils_Array::value("account_name", $defaults),
                 "display_name" => "Account name",
                 "enabled"      => true,
                 "name"         => "account_name",
@@ -302,6 +327,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $result["currencies"] = $currencies;
         $result["cycle_days"] = $cycle_days;
         $result["grace_days"] = $grace_days;
+        $result["next_cycle_day"] = self::nextCycleDay();
         $result["notice_days"] = $notice_days;
         $result["payment_instruments"] = $payment_instruments;
 
@@ -364,7 +390,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                     "payment_method.creation_date"         => $now,
                     "payment_method.creditor_id"           => $submitted["pa-psp_sepa-creditor"],
                     "payment_method.currency"              => $currency,
-                    "payment_method.cycle_day"             => $submitted["pa-psp_sepa-cycle_day"],
+                    "payment_method.cycle_day"             => $submitted["cycle_day"],
                     "payment_method.date"                  => $start_date,
                     "payment_method.financial_type_id"     => 2, // = Member dues
                     "payment_method.frequency_interval"    => 12 / (int) $submitted["frequency"],
@@ -387,7 +413,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                 $annual_amount = $frequency * $amount;
 
                 $result = [
-                    "membership_payment.cycle_day"            => $submitted["pa-psp_sepa-cycle_day"],
+                    "membership_payment.cycle_day"            => $submitted["cycle_day"],
                     "membership_payment.membership_annual"    => $annual_amount,
                     "membership_payment.membership_frequency" => $frequency,
                     "payment_method.account_name"             => $submitted["pa-psp_sepa-account_name"],

@@ -67,26 +67,6 @@
 
     <hr />
 
-    {foreach from=$payment_adapter_fields key=pa_name item=_}
-        {assign var="field_id" value="pa-$pa_name-cycle_day"}
-
-        <div
-            class="crm-section form-field"
-            id="{$field_id}"
-            data-payment-change="modify"
-            data-payment-adapter="{$pa_name}"
-        >
-            <div class="label">{$form[$field_id].label}</div>
-
-            <div class="content">
-                {$form[$field_id].html}
-                <span>currently: <b>{$current_cycle_day}</b></span>
-            </div>
-
-            <div class="clear"></div>
-        </div>
-    {/foreach}
-
     <div class="crm-section form-field" id="recurring_contribution" data-payment-change="select_existing">
         <div class="label">
             {$form.recurring_contribution.label}
@@ -94,6 +74,17 @@
         </div>
 
         <div class="content">{$form.recurring_contribution.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section form-field" id="cycle_day" data-payment-change="modify">
+        <div class="label">{$form.cycle_day.label}</div>
+
+        <div class="content">
+            {$form.cycle_day.html}
+            <span>currently: <b>{$current_cycle_day}</b></span>
+        </div>
+
         <div class="clear"></div>
     </div>
 
@@ -169,7 +160,7 @@
             const paymentAdapterFields = {/literal}{$payment_adapter_fields_json}{literal};
 
             const paFieldIds = Object.entries(paymentAdapterFields).reduce(
-                (result, [pa, ids]) => [ ...result, ...ids, `pa-${pa}-cycle_day` ],
+                (result, [pa, ids]) => [ ...result, ...ids ],
                 []
             );
 
@@ -177,6 +168,7 @@
                 "activity_date",
                 "amount",
                 "campaign_id",
+                "cycle_day",
                 "frequency",
                 "membership_type_id",
                 "payment_change",
@@ -187,44 +179,20 @@
             for (const fieldId of formFieldIds) {
                 formFields[fieldId] = cj(`div.form-field div.content *[name=${fieldId}]`);
 
-                if (fieldId === "payment_change" || fieldId === "payment_adapter") {
-                    formFields[fieldId].change(() => {
-                        setPaymentAdapter();
-                        resetPaymentFields();
-                        updateForm();
-                    });
-                } else {
-                    formFields[fieldId].change(() => {
-                        setPaymentAdapter();
-                        updateForm();
-                    });
-                }
+                formFields[fieldId].change(() => {
+                    setPaymentAdapter();
+                    updateForm();
+                });
             }
 
-            formFields["payment_adapter"].val(CRM.vars["de.systopia.contract"].current_payment_adapter);
+            const selectedPaymentAdapter =
+                formFields["payment_adapter"].val()
+                || CRM.vars["de.systopia.contract"].current_payment_adapter;
+
+            formFields["payment_adapter"].val(selectedPaymentAdapter);
 
             setPaymentAdapter();
-            resetPaymentFields();
             updateForm();
-        }
-
-        function resetPaymentFields () {
-            const selectedPaymentChange = formFields["payment_change"].val();
-            const selectedPaymentAdapter = formFields["payment_adapter"].val();
-            const currentPaymentAdapter = CRM.vars["de.systopia.contract"].current_payment_adapter;
-
-            if (selectedPaymentChange === "modify") {
-                if (
-                    selectedPaymentAdapter === currentPaymentAdapter
-                    && PaymentAdapter.fillPaymentParameters
-                ) {
-                    // Fill in current payment parameters in case of same payment method
-                    PaymentAdapter.fillPaymentParameters(formFields);
-                } else if (PaymentAdapter.clearPaymentParameters) {
-                    // Clear payment parameters in case of new payment method
-                    PaymentAdapter.clearPaymentParameters(formFields);
-                }
-            }
         }
 
         function setPaymentAdapter () {
@@ -241,7 +209,7 @@
         function updateForm () {
             // Show only fields relevant to the currently selected payment change mode / adapter
             const selectedPaymentChange = formFields["payment_change"].val();
-            const selectedPaymentAdapter= formFields["payment_adapter"].val();
+            const selectedPaymentAdapter = formFields["payment_adapter"].val();
 
             cj("*[data-payment-change], *[data-payment-adapter]").each((_, element) => {
                 const change =

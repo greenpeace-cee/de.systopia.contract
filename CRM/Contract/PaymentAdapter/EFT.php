@@ -104,9 +104,11 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     /**
      * Get payment specific form field specifications
      *
+     * @param int|null $recurring_contribution_id
+     *
      * @return array - List of form field specifications
      */
-    public static function formFields () {
+    public static function formFields ($recurring_contribution_id = null) {
         return [];
     }
 
@@ -121,6 +123,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         // ...
 
         return [
+            "cycle_days"       => self::cycleDays(),
             "default_currency" => "EUR",
             "next_cycle_day"   => date("d"), // Today
         ];
@@ -146,7 +149,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
                     "payment_method.campaign_id"        => $submitted["campaign_id"],
                     "payment_method.create_date"        => $now,
                     "payment_method.currency"           => $submitted["currency"],
-                    "payment_method.cycle_day"          => $submitted["pa-eft-cycle_day"],
+                    "payment_method.cycle_day"          => $submitted["cycle_day"],
                     "payment_method.financial_type_id"  => 2, // = Member dues
                     "payment_method.frequency_interval" => 12 / (int) $submitted["frequency"],
                     "payment_method.frequency_unit"     => "month",
@@ -165,7 +168,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
                 $annual_amount = $frequency * $amount;
 
                 $result = [
-                    "membership_payment.cycle_day"            => $submitted["pa-eft-cycle_day"],
+                    "membership_payment.cycle_day"            => $submitted["cycle_day"],
                     "membership_payment.membership_annual"    => $annual_amount,
                     "membership_payment.membership_frequency" => $frequency,
                 ];

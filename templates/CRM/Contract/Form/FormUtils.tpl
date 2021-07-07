@@ -2,16 +2,6 @@
 
 <script>
     window.FormUtils = {
-        mapFrequency: ({ interval, unit }) => {
-            if (interval === "1" && unit === "month") return "12";
-            if (interval === "3" && unit === "month") return "4";
-            if (interval === "6" && unit === "month") return "2";
-            if (interval === "12" && unit === "month") return "1";
-            if (interval === "1" && unit === "year") return "1";
-
-            return "1";
-        },
-
         parseMoney: (raw_value) => {
             if (raw_value.length == 0) {
                 return 0.0;

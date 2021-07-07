@@ -80,6 +80,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $resources = CRM_Core_Resources::singleton();
 
         $resources->addVars("de.systopia.contract", [
+            "action"                  => "sign",
             "cid"                     => $this->contact["id"],
             "debitor_name"            => $this->contact["display_name"],
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
@@ -157,20 +158,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
                         break;
                 }
             }
-
-            $cycle_days = $pa_class::cycleDays();
-            $cycle_day_options = [];
-
-            foreach ($cycle_days as $cday) {
-                $cycle_day_options[$cday] = $cday;
-            }
-
-            $this->add(
-                "select",
-                "pa-$pa_name-cycle_day",
-                ts("Cycle day"),
-                $cycle_day_options
-            );
         }
 
         $this->assign("payment_adapter_fields", $pa_form_template_var);
@@ -184,6 +171,15 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             $this->contact["id"],
             false
         );
+
+        // Cycle day (cycle_day)
+        $cycle_day_options = [ "" => "- none -" ];
+
+        foreach (range(1, 31) as $cycle_day) {
+            $cycle_day_options[$cycle_day] = $cycle_day;
+        }
+
+        $this->add("select", "cycle_day", ts("Cycle day"), $cycle_day_options, true);
 
         // Installment amount
         $this->add("text", "amount", ts("Installment amount"), [ "size" => 6 ]);
@@ -379,8 +375,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
                 $defaults["pa-$pa_name-$field_name"] = $field["default"];
             }
-
-            $defaults["pa-$pa_name-cycle_day"] = $pa_class::nextCycleDay();
         }
 
         parent::setDefaults($defaults);
@@ -400,7 +394,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             $contract_params = array_merge($contract_params, $payment_params);
             $contract_params["payment_method.adapter"] = $payment_adapter;
             $contract_params["payment_method.contact_id"] = $contact_id;
-            $contract_params["cycle_day"] = $submitted["pa-$payment_adapter-cycle_day"];
+            $contract_params["cycle_day"] = $submitted["cycle_day"];
         }
 
         if ($submitted["payment_option"] === "select") {
