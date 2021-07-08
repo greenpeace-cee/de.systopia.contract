@@ -31,4 +31,29 @@ class CRM_Contract_UtilsTest extends CRM_Contract_ContractTestBase {
     );
   }
 
+  public function testGetPaymentChangesForLegacyUpdate() {
+    $activity = [
+      'activity_type_id' => 123,
+      'campaign_id' => 345,
+      'contract_updates.ch_cycle_day' => 5,
+      'contract_updates.ch_from_ba' => 1,
+      'contract_updates.ch_annual' => 100.50,
+      'contract_updates.ch_frequency' => 12,
+      'contract_updates.defer_payment_start' => 0,
+    ];
+    $result = CRM_Contract_Utils::getPaymentChangesForLegacyUpdate($activity);
+    $this->assertArraysEqual([
+      'activity_type_id' => '123',
+      'adapter' => CRM_Contract_PaymentAdapter_SEPAMandate::ADAPTER_ID,
+      'parameters' => [
+        'campaign_id'         => 345,
+        'cycle_day'           => 5,
+        'from_ba'             => 1,
+        'annual'              => 100.50,
+        'frequency'           => 12,
+        'defer_payment_start' => 0
+      ],
+    ], $result);
+  }
+
 }

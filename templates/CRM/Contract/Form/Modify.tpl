@@ -6,8 +6,18 @@
 | http://www.systopia.de/                                      |
 +-------------------------------------------------------------*}
 
-{foreach from=$payment_instrument_fields key=pi_name item=_}
-    {include file="CRM/Contract/Form/PaymentInstrumentUtils/$pi_name.tpl"}
+{include file="CRM/Contract/Form/FormUtils.tpl"}
+
+{literal}
+
+<script>
+    window.PaymentAdapters = {};
+</script>
+
+{/literal}
+
+{foreach from=$payment_adapter_fields key=pa_name item=_}
+    {include file="CRM/Contract/Form/PaymentAdapters/$pa_name.tpl"}
 {/foreach}
 
 <div class="crm-block crm-form-block">
@@ -20,8 +30,8 @@
         </div>
 
         <div class="content">
-            {foreach from=$payment_instrument_fields key=pi_name item=_}
-                {include file="CRM/Contract/Form/PaymentPreview/$pi_name.tpl"}
+            {foreach from=$payment_adapter_fields key=pa_name item=_}
+                {include file="CRM/Contract/Form/PaymentPreview/$pa_name.tpl"}
             {/foreach}
         </div>
 
@@ -34,21 +44,19 @@
         <div class="clear"></div>
     </div>
 
-    <div class="crm-section form-field" id="payment_instrument" data-payment-change="modify">
-        <div class="label">{$form.payment_instrument.label}</div>
-        <div class="content">{$form.payment_instrument.html}</div>
+    <div class="crm-section form-field" id="payment_adapter" data-payment-change="modify">
+        <div class="label">{$form.payment_adapter.label}</div>
+        <div class="content">{$form.payment_adapter.html}</div>
         <div class="clear"></div>
     </div>
 
-    <hr />
-
-    {foreach from=$payment_instrument_fields key=pi_name item=field_ids}
+    {foreach from=$payment_adapter_fields key=pa_name item=field_ids}
         {foreach from=$field_ids item=field_id}
             <div
                 class="crm-section form-field"
                 id="{$field_id}"
                 data-payment-change="modify"
-                data-payment-instrument="{$pi_name}"
+                data-payment-adapter="{$pa_name}"
             >
                 <div class="label">{$form[$field_id].label}</div>
                 <div class="content">{$form[$field_id].html}</div>
@@ -57,27 +65,7 @@
         {/foreach}
     {/foreach}
 
-    <hr data-payment-change="modify"/>
-
-    {foreach from=$payment_instrument_fields key=pi_name item=_}
-        {assign var="field_id" value="pi-$pi_name-cycle_day"}
-
-        <div
-            class="crm-section form-field"
-            id="{$field_id}"
-            data-payment-change="modify"
-            data-payment-instrument="{$pi_name}"
-        >
-            <div class="label">{$form[$field_id].label}</div>
-
-            <div class="content">
-                {$form[$field_id].html}
-                <span>currently: <b>{$current_cycle_day}</b></span>
-            </div>
-
-            <div class="clear"></div>
-        </div>
-    {/foreach}
+    <hr />
 
     <div class="crm-section form-field" id="recurring_contribution" data-payment-change="select_existing">
         <div class="label">
@@ -89,9 +77,20 @@
         <div class="clear"></div>
     </div>
 
+    <div class="crm-section form-field" id="cycle_day" data-payment-change="modify">
+        <div class="label">{$form.cycle_day.label}</div>
+
+        <div class="content">
+            {$form.cycle_day.html}
+            <span>currently: <b>{$current_cycle_day}</b></span>
+        </div>
+
+        <div class="clear"></div>
+    </div>
+
     <div class="crm-section form-field" id="amount" data-payment-change="modify">
         <div class="label">{$form.amount.label}</div>
-        <div class="content">{$form.amount.html} {$currency}</div>
+        <div class="content">{$form.amount.html} <span id="currency">{$currency}</span></div>
         <div class="clear"></div>
     </div>
 
@@ -155,13 +154,13 @@
 {literal}
     <script>
         const formFields = {};
-        let PaymentInstrument = {};
+        let PaymentAdapter = {};
 
         function initForm () {
-            const paymentInstrumentFields = {/literal}{$payment_instrument_fields_json}{literal};
+            const paymentAdapterFields = {/literal}{$payment_adapter_fields_json}{literal};
 
-            const piFieldIds = Object.entries(paymentInstrumentFields).reduce(
-                (result, [pi, ids]) => [ ...result, ...ids, `pi-${pi}-cycle_day` ],
+            const paFieldIds = Object.entries(paymentAdapterFields).reduce(
+                (result, [pa, ids]) => [ ...result, ...ids ],
                 []
             );
 
@@ -169,82 +168,58 @@
                 "activity_date",
                 "amount",
                 "campaign_id",
+                "cycle_day",
                 "frequency",
                 "membership_type_id",
                 "payment_change",
-                "payment_instrument",
-                ...piFieldIds,
+                "payment_adapter",
+                ...paFieldIds,
             ];
 
             for (const fieldId of formFieldIds) {
                 formFields[fieldId] = cj(`div.form-field div.content *[name=${fieldId}]`);
 
-                if (fieldId === "payment_change" || fieldId === "payment_instrument") {
-                    // Fill / clear payment fields when the value of payment_change changes
-                    formFields["payment_change"].change(() => {
-                        setPaymentInstrument();
-                        showHideFormFields();
-                        resetPaymentFields();
-                        updatePaymentPreview();
-                    });
-                } else {
-                    formFields[fieldId].change(() => {
-                        setPaymentInstrument();
-                        showHideFormFields();
-                        updatePaymentPreview();
-                    });
-                }
+                formFields[fieldId].change(() => {
+                    setPaymentAdapter();
+                    updateForm();
+                });
             }
 
-            setPaymentInstrument();
-            showHideFormFields();
-            updatePaymentPreview();
+            const selectedPaymentAdapter =
+                formFields["payment_adapter"].val()
+                || CRM.vars["de.systopia.contract"].current_payment_adapter;
+
+            formFields["payment_adapter"].val(selectedPaymentAdapter);
+
+            setPaymentAdapter();
+            updateForm();
         }
 
-        function resetPaymentFields () {
-            const selectedPaymentChange = formFields["payment_change"].val();
-            const selectedPaymentInstrument = formFields["payment_instrument"].val();
-            const currentPaymentInstrument = CRM.vars["de.systopia.contract"].current_payment_instrument;
-
-            if (selectedPaymentChange === "modify") {
-                if (
-                    selectedPaymentInstrument === currentPaymentInstrument
-                    && PaymentInstrument.fillPaymentParameters
-                ) {
-                    // Fill in current payment parameters in case of same payment method
-                    PaymentInstrument.fillPaymentParameters(formFields);
-                } else if (PaymentInstrument.clearPaymentParameters) {
-                    // Clear payment parameters in case of new payment method
-                    PaymentInstrument.clearPaymentParameters(formFields);
-                }
-            }
-        }
-
-        function setPaymentInstrument () {
-            const selectedPaymentInstrument = formFields["payment_instrument"].val();
+        function setPaymentAdapter () {
+            const selectedPaymentAdapter = formFields["payment_adapter"].val();
 
             if (
-                window._PAYMENT_INSTRUMENTS_
-                && window._PAYMENT_INSTRUMENTS_[selectedPaymentInstrument]
+                window.PaymentAdapters
+                && window.PaymentAdapters[selectedPaymentAdapter]
             ) {
-                PaymentInstrument = window._PAYMENT_INSTRUMENTS_[selectedPaymentInstrument];
+                PaymentAdapter = window.PaymentAdapters[selectedPaymentAdapter];
             }
         }
 
-        function showHideFormFields () {
-            // Show only fields relevant to the currently selected payment change mode / instrument
+        function updateForm () {
+            // Show only fields relevant to the currently selected payment change mode / adapter
             const selectedPaymentChange = formFields["payment_change"].val();
-            const selectedPaymentInstrument = formFields["payment_instrument"].val();
+            const selectedPaymentAdapter = formFields["payment_adapter"].val();
 
-            cj("*[data-payment-change], *[data-payment-instrument]").each((_, element) => {
+            cj("*[data-payment-change], *[data-payment-adapter]").each((_, element) => {
                 const change =
                     element.hasAttribute("data-payment-change")
                     ? element.getAttribute("data-payment-change")
                     : undefined;
 
-                const instrument =
-                    element.hasAttribute("data-payment-instrument")
-                    ? element.getAttribute("data-payment-instrument")
+                const adapter =
+                    element.hasAttribute("data-payment-adapter")
+                    ? element.getAttribute("data-payment-adapter")
                     : undefined;
 
                 if (change !== undefined && change !== selectedPaymentChange) {
@@ -252,18 +227,22 @@
                     return;
                 }
 
-                if (instrument !== undefined && instrument !== selectedPaymentInstrument) {
+                if (adapter !== undefined && adapter !== selectedPaymentAdapter) {
                     cj(element).hide(300);
                     return;
                 }
 
                 cj(element).show(300);
             });
-        }
 
-        function updatePaymentPreview () {
-            if (PaymentInstrument.updatePaymentPreview) {
-                PaymentInstrument.updatePaymentPreview(formFields);
+            // Update payment preview
+            if (PaymentAdapter.updatePaymentPreview) {
+                PaymentAdapter.updatePaymentPreview(formFields);
+            }
+
+            // Call update callbacks of payment adapters
+            if (PaymentAdapter.onUpdate) {
+                PaymentAdapter.onUpdate(formFields);
             }
         }
 

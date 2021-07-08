@@ -90,4 +90,51 @@ class CRM_Contract_Upgrader extends CRM_Contract_Upgrader_Base {
     $customData->syncCustomGroup(__DIR__ . '/../../resources/custom_group_membership_general.json');
     return TRUE;
   }
+
+  /**
+   * Convert scheduled legacy update activities by adding ch_payment_changes
+   *
+   * @throws \CiviCRM_API3_Exception
+   */
+  protected function convertLegacyUpdates() {
+    $paymentChangeField = \CRM_Contract_CustomData::getCustomFieldKey(
+      'contract_updates',
+      'ch_payment_changes'
+    );
+    $scheduledActivities = civicrm_api3('Activity', 'get', [
+      'activity_type_id'  => ['IN' => ['Contract_Updated', 'Contract_Revived']],
+      'status_id'         => ['IN' => ['Scheduled', 'Failed', 'Needs Review']],
+      $paymentChangeField => ['IS NULL' => 1],
+      'options'           => ['limit' => 0],
+    ])['values'];
+
+    foreach ($scheduledActivities as $activity) {
+      try {
+        $paymentChanges = CRM_Contract_Utils::getPaymentChangesForLegacyUpdate($activity);
+        civicrm_api3('Activity', 'create', [
+          'id'                => $activity['id'],
+          $paymentChangeField => json_encode($paymentChanges),
+        ]);
+      }
+      catch (API_Exception $e) {
+        $this->ctx->log->err("Unable to convert legacy update activity with ID :{$activity['id']}: " . $e->getMessage());
+      }
+      catch (Exception $e) {
+        civicrm_api3('Activity', 'create', [
+          'id'        => $activity['id'],
+          'status_id' => 'Failed',
+          'details'   => 'Unable to generate Payment Change for legacy update: ' . $e->getMessage(),
+        ]);
+        $this->ctx->log->warning($e->getMessage());
+      }
+    }
+  }
+
+  public function upgrade_1500() {
+    $this->ctx->log->info('Applying update 1500');
+    $customData = new CRM_Contract_CustomData('de.systopia.contract');
+    $customData->syncCustomGroup(__DIR__ . '/../../resources/custom_group_contract_updates.json');
+    $this->convertLegacyUpdates();
+    return TRUE;
+  }
 }

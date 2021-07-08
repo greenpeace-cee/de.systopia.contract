@@ -23,20 +23,40 @@ function _civicrm_api3_Contract_create_spec(&$params) {
  * You cannot schedule Contract.create for the future.
  */
 function civicrm_api3_Contract_create($params){
-  // Any parameters with a period in will be converted to the custom_N format
-  // Other fields will be passed directly to the membership.create API
-  foreach ($params as $key => $value){
-    if(strpos($key, '.')){
+  $payment_method_params = [];
+
+  // Filter / sanitize parameters
+  foreach ($params as $key => $value) {
+    // Parameters prefixed with "payment_method." will be removed
+    // and processed separately by a payment adapter
+    if (preg_match("/^payment_method\./", $key)) {
       unset($params[$key]);
-      $params[CRM_Contract_Utils::getCustomFieldId($key)] = $value;
+      $stripped_key = preg_replace("/^payment_method\./", "", $key);
+      $payment_method_params[$stripped_key] = $value;
     }
+    // Other parameter keys containing a period will be converted to the custom_N format
+    elseif (strpos($key, ".")) {
+      unset($params[$key]);
+      $custom_field_id = CRM_Contract_Utils::getCustomFieldId($key);
+      $params[$custom_field_id] = $value;
+    }
+    // Any other parameters will be passed directly to the Membership.create API
+  }
+
+  $recurring_contribution_field_key = CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution');
+
+  // Create payment with payment adapter
+  if (isset($payment_method_params["adapter"])) {
+    $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_method_params["adapter"]);
+    unset($payment_method_params["adapter"]);
+    $recurring_contribution_id = $payment_adapter::create($payment_method_params);
+    $params[$recurring_contribution_field_key] = $recurring_contribution_id;
   }
 
   // create
   $membership = civicrm_api3('Membership', 'create', $params);
 
   // link SEPA Mandate
-  $recurring_contribution_field_key = CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution');
   if (!empty($params[$recurring_contribution_field_key])) {
     // link recurring contribution to contract
     CRM_Contract_BAO_ContractPaymentLink::setContractPaymentLink(

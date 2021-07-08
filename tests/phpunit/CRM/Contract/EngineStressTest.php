@@ -34,7 +34,9 @@ class CRM_Contract_EngineStressTest extends CRM_Contract_ContractTestBase {
         $update = [
             'membership_payment.membership_annual' => (1 * $i)
         ];
-        if (!$is_sepa) {
+        if ($is_sepa) {
+          $update['payment_method.reference'] = "SEPA-" . $contract['id'] . "-" . date("Ymd") . bin2hex(random_bytes(4));
+        } else {
           // FIXME: if this is not a SEPA contract, we need to pass the bank account
           $update['membership_payment.from_ba'] = $this->getBankAccountID($contract['contact_id']);
         }

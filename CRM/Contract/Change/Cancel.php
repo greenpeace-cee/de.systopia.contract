@@ -63,30 +63,30 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
     if (isset($recurring_contribution_id)) {
       $cancel_reason = $this->data['membership_cancellation.membership_cancel_reason'];
 
-      $pi_class = CRM_Contract_RecurringContribution::getPaymentInstrumentClass(
-        $recurring_contribution_id
-      );
+      $payment_adapter_id = null;
+      $payment_adapter = null;
 
-      $payment =
-        isset($pi_class)
-        ? $pi_class::loadByRecurringContributionId($recurring_contribution_id)
-        : null;
+      if (isset($recurring_contribution_id)) {
+        $payment_adapter_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution(
+          $recurring_contribution_id
+        );
+      }
 
-      if (isset($payment)) {
-        $payment->terminate($cancel_reason);
+      if (isset($payment_adapter_id)) {
+        $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_adapter_id);
+      }
+
+      if (isset($payment_adapter)) {
+        $payment_adapter::terminate($recurring_contribution_id, $cancel_reason);
       } else {
         civicrm_api3("ContributionRecur", "create", [
           "id"                     => $recurring_contribution_id,
           "end_date"               => date("YmdHis"),
           "cancel_date"            => date("YmdHis"),
+          "cancel_reason"          => $cancel_reason,
           "contribution_status_id" => 1,
         ]);
       }
-
-      $recurring_contribution = new CRM_Contribute_DAO_ContributionRecur();
-      $recurring_contribution->get("id", $recurring_contribution_id);
-      $recurring_contribution->cancel_reason = $cancel_reason;
-      $recurring_contribution->save();
     }
 
     // update change activity

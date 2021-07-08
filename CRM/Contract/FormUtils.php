@@ -196,4 +196,28 @@ class CRM_Contract_FormUtils {
     }
   }
 
+  /**
+   * Get a list of available payment adapters
+   */
+  public static function getPaymentAdapters () {
+    return [
+      "eft"          => "CRM_Contract_PaymentAdapter_EFT",
+      "psp_sepa"     => "CRM_Contract_PaymentAdapter_PSPSEPA",
+      "sepa_mandate" => "CRM_Contract_PaymentAdapter_SEPAMandate",
+    ];
+  }
+
+  public static function numberOfAnnualPayments (array $recurring_contribution) {
+    $interval = $recurring_contribution["frequency_interval"];
+    $unit = $recurring_contribution["frequency_unit"];
+
+    if ($interval === "1" && $unit === "month") return 12;
+    if ($interval === "3" && $unit === "month") return 4;
+    if ($interval === "6" && $unit === "month") return 2;
+    if ($interval === "12" && $unit === "month") return 1;
+    if ($interval === "1" && $unit === "year") return 1;
+
+    return 1;
+  }
+
 }

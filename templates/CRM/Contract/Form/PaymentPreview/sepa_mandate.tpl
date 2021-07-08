@@ -1,4 +1,4 @@
-<div class="payment-preview" data-payment-instrument="sepa_mandate">
+<div class="payment-preview" data-payment-adapter="sepa_mandate">
     Debitor name: <span id="debitor_name"></span><br />
     Debitor account: <span id="iban"></span><br />
     Creditor name: <span id="creditor_name"></span><br />
@@ -13,7 +13,50 @@
 {literal}
 
 <script>
-    function nextCollectionDate(cycle_day, start_date, grace_end) {
+    const SEPAMandate = window.PaymentAdapters["sepa_mandate"];
+
+    SEPAMandate.updatePaymentPreview = (formFields) => {
+        const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=sepa_mandate]");
+
+        // Debitor name
+        const debitorName = CRM.vars["de.systopia.contract"].debitor_name;
+        paymentPreviewContainer.find("span#debitor_name").text(debitorName);
+
+        // Debitor account
+        const iban = formFields["pa-sepa_mandate-iban"].val();
+        paymentPreviewContainer.find("span#iban").text(iban);
+
+        // Creditor name
+        const creditor = CRM.vars["de.systopia.contract/sepa_mandate"].creditor;
+        paymentPreviewContainer.find("span#creditor_name").text(creditor.name);
+
+        // Creditor account
+        paymentPreviewContainer.find("span#creditor_iban").text(creditor.iban);
+
+        // Frequency
+        const frequencyMapping = CRM.vars["de.systopia.contract"].frequencies;
+        const frequency = Number(formFields["frequency"].val());
+        paymentPreviewContainer.find("span#frequency").text(frequencyMapping[frequency]);
+
+        // Annual amount
+        const amount = FormUtils.parseMoney(formFields["amount"].val());
+        const annualAmount = `${(amount * frequency).toFixed(2)} ${creditor.currency}`;
+        paymentPreviewContainer.find("span#annual").text(annualAmount);
+
+        // Installment amount
+        const installmentAmount = `${amount.toFixed(2)} ${creditor.currency}`;
+        paymentPreviewContainer.find("span#installment").text(installmentAmount);
+
+        // Next debit
+        const action = CRM.vars["de.systopia.contract"].action;
+        const cycleDay = formFields["cycle_day"].val();
+        const startDate = formFields["start_date"] ? formFields["start_date"].val() : formFields["activity_date"].val();
+        const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;
+        const nextDebit = SEPAMandate.nextCollectionDate(cycleDay, startDate, graceEnd);
+        paymentPreviewContainer.find("span#next_debit").text(nextDebit);
+    }
+
+    SEPAMandate.nextCollectionDate = (cycle_day, start_date, grace_end) => {
         cycle_day = parseInt(cycle_day);
 
         if (cycle_day < 1 || cycle_day > 30) {
@@ -75,59 +118,7 @@
             day = '0' + day;
         }
 
-        // console.log(earliest_date.getFullYear() + '-' + month + '-' + day);
         return earliest_date.getFullYear() + '-' + month + '-' + day;
-    }
-
-    if (window._PAYMENT_INSTRUMENTS_ === undefined) {
-        window._PAYMENT_INSTRUMENTS_ = {};
-    }
-
-    if (!Object.keys(window._PAYMENT_INSTRUMENTS_).includes("sepa_mandate")) {
-        window._PAYMENT_INSTRUMENTS_["sepa_mandate"] = {};
-    }
-
-    const SEPAMandate = window._PAYMENT_INSTRUMENTS_["sepa_mandate"];
-
-    SEPAMandate.updatePaymentPreview = (formFields) => {
-        const paymentPreviewContainer = cj("div.payment-preview[data-payment-instrument=sepa_mandate]");
-
-        // Debitor name
-        const debitorName = CRM.vars["de.systopia.contract"].debitor_name;
-        paymentPreviewContainer.find("span#debitor_name").text(debitorName);
-
-        // Debitor account
-        const iban = formFields["pi-sepa_mandate-iban"].val();
-        paymentPreviewContainer.find("span#iban").text(iban);
-
-        // Creditor name
-        const creditor = CRM.vars["de.systopia.contract/sepa_mandate"].creditor;
-        paymentPreviewContainer.find("span#creditor_name").text(creditor.name);
-
-        // Creditor account
-        paymentPreviewContainer.find("span#creditor_iban").text(creditor.iban);
-
-        // Frequency
-        const frequencyMapping = CRM.vars["de.systopia.contract"].frequencies;
-        const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(frequencyMapping[frequency]);
-
-        // Annual amount
-        const amount = SEPAMandate.parseMoney(formFields["amount"].val());
-        const annualAmount = `${(amount * frequency).toFixed(2)} ${creditor.currency}`;
-        paymentPreviewContainer.find("span#annual").text(annualAmount);
-
-        // Installment amount
-        const installmentAmount = `${amount.toFixed(2)} ${creditor.currency}`;
-        paymentPreviewContainer.find("span#installment").text(installmentAmount);
-
-        // Next debit
-        const action = CRM.vars["de.systopia.contract"].action;
-        const cycleDay = formFields["pi-sepa_mandate-cycle_day"].val();
-        const startDate = formFields["activity_date"].val();
-        const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;
-        const nextDebit = nextCollectionDate(cycleDay, startDate, graceEnd);
-        paymentPreviewContainer.find("span#next_debit").text(nextDebit);
     }
 </script>
 

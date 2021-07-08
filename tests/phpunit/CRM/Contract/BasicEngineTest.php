@@ -87,8 +87,8 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       ])["value"];
 
       $this->assertEquals(
-        $recurringContribution->cancel_reason,
         $cancelReasonOptionValue,
+        $recurringContribution->cancel_reason,
         "'cancel_reason' of the recurring contribution should be ${cancelReasonOptionValue} (='Unknown')"
       );
 
@@ -231,7 +231,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
    */
   public function testUpdateFailure() {
     // create a new contract
-    $contract = $this->createNewContract();
+    $contract = $this->createNewContract([ "is_sepa" => true ]);
 
     // schedule and update with an invalid from_ba
     $this->modifyContract($contract['id'], 'update', 'tomorrow', [
@@ -376,6 +376,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->modifyContract($contract['id'], 'revive', 'now', [
       'membership_payment.membership_annual'             => '240.00',
       'campaign_id'                                      => $revive_campaign_id,
+      'payment_method.reference' => "SEPA-" . $contract['id'] . "-" . date("Ymd") . bin2hex(random_bytes(4)),
     ]);
     $this->runContractEngine($contract['id']);
 
@@ -617,7 +618,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       'return' => 'next_sched_contribution_date',
       'id'     => $contract['membership_payment.membership_recurring_contribution'],
     ]));
-    $this->assertTrue($nextScheduleDate >= $nowPlusOneYear);
+    $this->assertTrue($nextScheduleDate->format("Y-m-d") >= $nowPlusOneYear->format("Y-m-d"));
 
     // update to a monthly membership with defer_payment_start's default value of 1
     $this->modifyContract($contract['id'], 'update', 'now', [
@@ -640,6 +641,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->modifyContract($contract['id'], 'update', 'now', [
       'membership_payment.membership_frequency' => '12',
       'membership_payment.defer_payment_start'  => 0,
+      'payment_method.reference' => "SEPA-" . $contract['id'] . "-" . date("Ymd") . bin2hex(random_bytes(4)),
     ]);
     $this->runContractEngine($contract['id']);
 

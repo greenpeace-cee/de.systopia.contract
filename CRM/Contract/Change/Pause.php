@@ -78,43 +78,42 @@ class CRM_Contract_Change_Pause extends CRM_Contract_Change {
       $contract
     );
 
-    $payment = null;
+    $payment_adapter_id = null;
+    $payment_adapter = null;
 
     if (isset($recurring_contribution_id)) {
-      $pi_class = CRM_Contract_RecurringContribution::getPaymentInstrumentClass(
+      $payment_adapter_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution(
         $recurring_contribution_id
       );
-
-      $payment =
-        isset($pi_class)
-        ? $pi_class::loadByRecurringContributionId($recurring_contribution_id)
-        : null;
     }
 
-    if (isset($payment)) {
-      $payment->pause();
-      $payment_params = $payment->getParameters();
-
-      // delete any scheduled (pending) contributions
-      $contribution_status_id = (int) CRM_Core_PseudoConstant::getKey(
-        "CRM_Contribute_BAO_Contribution",
-        "contribution_status_id",
-        "Pending"
-      );
-
-      $pending_contributions = civicrm_api3("Contribution", "get", [
-        "return"                 => "id",
-        "contribution_recur_id"  => $payment_params["entity_id"],
-        "contribution_status_id" => $contribution_status_id,
-        'receive_date'           => [ ">=" => date("YmdHis") ],
-      ]);
-
-      foreach ($pending_contributions["values"] as $pending_contribution) {
-        civicrm_api3("Contribution", "delete",[ "id" => $pending_contribution["id"] ]);
-      }
-
-      $this->updateContract([ "status_id" => "Paused" ]);
+    if (isset($payment_adapter_id)) {
+      $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_adapter_id);
     }
+
+    if (isset($payment_adapter)) {
+      $payment_adapter::pause($recurring_contribution_id);
+    }
+
+    // delete any scheduled (pending) contributions
+    $contribution_status_id = (int) CRM_Core_PseudoConstant::getKey(
+      "CRM_Contribute_BAO_Contribution",
+      "contribution_status_id",
+      "Pending"
+    );
+
+    $pending_contributions = civicrm_api3("Contribution", "get", [
+      "return"                 => "id",
+      "contribution_recur_id"  => $recurring_contribution_id,
+      "contribution_status_id" => $contribution_status_id,
+      'receive_date'           => [ ">=" => date("YmdHis") ],
+    ]);
+
+    foreach ($pending_contributions["values"] as $pending_contribution) {
+      civicrm_api3("Contribution", "delete",[ "id" => $pending_contribution["id"] ]);
+    }
+
+    $this->updateContract([ "status_id" => "Paused" ]);
 
     // update change activity
     $contract_after = $this->getContract(TRUE);
