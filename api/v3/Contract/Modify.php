@@ -44,9 +44,14 @@ function _civicrm_api3_Contract_modify_spec(&$params){
  * Schedule a new Contract modification
  */
 function civicrm_api3_Contract_modify($params) {
-  // set default date ('api.default' doesn't seem to work)
+  $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
+
+  // Pick a valid default date if none is provided
   if (empty($params['date'])) {
-    $params['date'] = 'now';
+    $params['date'] =
+      isset($minimumChangeDate)
+      ? date("Y-m-d H:i:s", max(strtotime($minimumChangeDate), time()))
+      : "now";
   }
 
   // use activity_type_id instead of modify_action
@@ -61,7 +66,6 @@ function civicrm_api3_Contract_modify($params) {
 
   // check the requested execution time
   $requested_execution_time = strtotime($params['date']);
-  $minimumChangeDate = Civi::settings()->get("contract_minimum_change_date");
 
   if (!empty($minimumChangeDate) && $requested_execution_time < strtotime($minimumChangeDate)) {
     throw new Exception("Parameter 'date' must be after the minimum change date for contracts.");
