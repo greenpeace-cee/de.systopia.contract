@@ -233,16 +233,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      * @return int - Recurring contribution ID
      */
     public static function revive ($recurring_contribution_id, $update = []) {
-        if (count($update) > 0) {
-            return self::update($recurring_contribution_id, $update);
-        }
-
-        civicrm_api3("ContributionRecur", "create", [
-            "id"                     => $recurring_contribution_id,
-            "contribution_status_id" => "In Progress",
-        ]);
-
-        return $recurring_contribution_id;
+        return self::update($recurring_contribution_id, $update);
     }
 
     /**
