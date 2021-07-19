@@ -100,6 +100,12 @@
         <div class="clear"></div>
     </div>
 
+    <div class="crm-section form-field" id="defer_payment_start" data-payment-change="modify">
+        <div class="label">{$form.defer_payment_start.label}</div>
+        <div class="content">{$form.defer_payment_start.html}</div>
+        <div class="clear"></div>
+    </div>
+
     <hr data-payment-change="modify"/>
 
     {* --- Membership/campaign fields --- *}
