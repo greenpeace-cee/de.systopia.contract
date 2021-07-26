@@ -175,6 +175,7 @@
                 "amount",
                 "campaign_id",
                 "cycle_day",
+                "defer_payment_start",
                 "frequency",
                 "membership_type_id",
                 "payment_change",

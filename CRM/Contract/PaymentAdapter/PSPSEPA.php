@@ -328,6 +328,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $result["cycle_days"] = $cycle_days;
         $result["grace_days"] = $grace_days;
         $result["next_cycle_day"] = self::nextCycleDay();
+        $result["next_installment_dates"] = [];
         $result["notice_days"] = $notice_days;
         $result["payment_instruments"] = $payment_instruments;
 
@@ -351,6 +352,15 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $result["current_payment_instrument"] = civicrm_api3('ContributionRecur', 'getsingle', [
             "id" => $params["recurring_contribution_id"],
         ])["payment_instrument_id"];
+
+        // Get the earliest possible date of the next installment for each creditor
+        foreach ($cycle_days as $creditor_id => $creditor_cycle_days) {
+            $result["next_installment_dates"][$creditor_id] =
+                CRM_Contract_RecurringContribution::getNextInstallmentDate(
+                    $params["recurring_contribution_id"],
+                    $creditor_cycle_days,
+                );
+        }
 
         return $result;
     }
