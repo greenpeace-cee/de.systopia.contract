@@ -252,6 +252,14 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         // Next cycle day
         $result["next_cycle_day"] = self::nextCycleDay();
 
+        if (empty($params["recurring_contribution_id"])) return $result;
+
+        // Next installment date
+        $result["next_installment_date"] = CRM_Contract_RecurringContribution::getNextInstallmentDate(
+            $params["recurring_contribution_id"],
+            self::cycleDays()
+        );
+
         return $result;
     }
 
