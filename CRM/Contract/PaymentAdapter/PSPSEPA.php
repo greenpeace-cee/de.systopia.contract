@@ -358,7 +358,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             $result["next_installment_dates"][$creditor_id] =
                 CRM_Contract_RecurringContribution::getNextInstallmentDate(
                     $params["recurring_contribution_id"],
-                    $creditor_cycle_days,
+                    $creditor_cycle_days
                 );
         }
 

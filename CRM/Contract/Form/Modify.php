@@ -273,7 +273,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->add(
             "checkbox",
             "defer_payment_start",
-            ts("Defer payment start based on last collection?"),
+            ts("Defer payment start based on last collection?")
         );
 
         // Membership type (membership_type_id)
