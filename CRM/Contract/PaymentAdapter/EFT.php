@@ -74,6 +74,9 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         // Get the current campaign ID
         $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
+        // Get current the date
+        $now = date("Y-m-d H:i:s");
+
         $create_params = [
             "amount"             => $new_recurring_amount["amount"],
             "campaign_id"        => !empty($update["campaign_id"]) ? $update["campaign_id"] : $current_campaign_id,
@@ -84,7 +87,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             "financial_type_id"  => $current_rc_data["financial_type_id"],
             "frequency_interval" => $new_recurring_amount["frequency_interval"],
             "frequency_unit"     => $new_recurring_amount["frequency_unit"],
-            "start_date"         => $current_rc_data["start_date"],
+            "start_date"         => $now,
         ];
 
         return self::create($create_params);
