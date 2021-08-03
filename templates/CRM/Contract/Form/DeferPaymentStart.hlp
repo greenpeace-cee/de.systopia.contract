@@ -1,0 +1,14 @@
+{*-------------------------------------------------------------+
+| SYSTOPIA Contract Extension                                  |
+| Copyright (C) 2017-2019 SYSTOPIA                             |
+| Author: B. Endres (endres -at- systopia.de)                  |
+|         M. McAndrew (michaelmcandrew@thirdsectordesign.org)  |
+|         P. Figel (pfigel -at- greenpeace.org)                |
+| http://www.systopia.de/                                      |
++-------------------------------------------------------------*}
+
+{htxt id="defer_payment_start"}
+<h1>Defer Payment Start</h1>
+<p>To defer the next payment based on the already-paid period of this membership, enable the checkbox. Disable the checkbox to start debiting at the next possible date.</p>
+<p><strong>Example:</strong> An annual membership was last paid two months ago and is updated to a monthly membership. When the checkbox is enabled, the next debit will be 10 months from now. Disabling it will debit the membership as soon as possible.</p>
+{/htxt}

@@ -106,7 +106,10 @@
         data-payment-change="modify"
         data-payment-adapter="psp_sepa sepa_mandate"
     >
-        <div class="label">{$form.defer_payment_start.label}</div>
+        <div class="label">
+          {$form.defer_payment_start.label}
+          {help id="defer_payment_start" file="CRM/Contract/Form/DeferPaymentStart.hlp"}
+        </div>
         <div class="content">{$form.defer_payment_start.html}</div>
         <div class="clear"></div>
     </div>
