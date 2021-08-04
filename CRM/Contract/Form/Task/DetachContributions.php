@@ -6,6 +6,7 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4\Contribution;
 use CRM_Contract_ExtensionUtil as E;
 require_once 'CRM/Core/Form.php';
 
