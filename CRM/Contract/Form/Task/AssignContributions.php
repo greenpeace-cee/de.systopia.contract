@@ -6,6 +6,7 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4\Contribution;
 use CRM_Contract_ExtensionUtil as E;
 require_once 'CRM/Core/Form.php';
 
@@ -159,7 +160,7 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
       // update campaign if requested
       if (!empty($values['adjust_campaign'])) {
         // if rcur has no campaign, pass null as string to force it to NULL
-        $contribution_update['campaign_id'] = $contribution_recur['campaign_id'] ?? 'null';
+        $contribution_update['campaign_id'] = $contribution_recur['campaign_id'] ?? 'NULL';
       }
 
       // now the non-sepa options: if NOT a SEPA contract AND NOT a SEPA contribution
@@ -207,8 +208,11 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
 
       // finally: run the upgrade
       if (!empty($contribution_update)) {
-        $contribution_update['id'] = $contribution_id;
-        civicrm_api3('Contribution', 'create', $contribution_update);
+        Contribution::update()
+          ->addWhere('id', '=', $contribution_id)
+          ->setValues($contribution_update)
+          ->setCheckPermissions(FALSE)
+          ->execute();
         $update_count += 1;
       }
     }
@@ -232,7 +236,7 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
     // see if we need to adjust the bank accounts
     if (empty($contract['sepa_mandate_id']) && $values['assign_mode'] != 'no') {
       // something might have changed, check the accounts
-      list($from_ba, $to_ba) = CRM_Contract_BankingLogic::getAccountsFromRecurringContribution($contract['contribution_recur_id']);
+      [$from_ba, $to_ba] = CRM_Contract_BankingLogic::getAccountsFromRecurringContribution($contract['contribution_recur_id']);
 
       if ($from_ba != $contract['from_ba'] || $to_ba != $contract['to_ba']) {
         $contract_update = [];

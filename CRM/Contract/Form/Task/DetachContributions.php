@@ -68,9 +68,11 @@ class CRM_Contract_Form_Task_DetachContributions extends CRM_Contribute_Form_Tas
       $nonsepa_contribution_ids = $this->getNonSepaContributionIDs();
       foreach ($nonsepa_contribution_ids as $contribution_id) {
         try {
-          civicrm_api3('Contribution', 'create', [
-              'id'                    => $contribution_id,
-              'contribution_recur_id' => '']);
+          Contribution::update()
+            ->addWhere('id', '=', $contribution_id)
+            ->addValue('contribution_recur_id', '')
+            ->setCheckPermissions(FALSE)
+            ->execute();
           $dcounter += 1;
         } catch (Exception $ex) {
           CRM_Core_Session::setStatus(E::ts("Contribution [%1] couldn't be detached: %2", [1 => $contribution_id, 2 => $ex->getMessage()]), ts('Error'), 'error');
@@ -91,9 +93,11 @@ class CRM_Contract_Form_Task_DetachContributions extends CRM_Contribute_Form_Tas
 
       foreach ($this->_contributionIds as $contribution_id) {
         try {
-          civicrm_api3('Contribution', 'create', [
-              'id'                => $contribution_id,
-              'financial_type_id' => $values['change_financial_type']]);
+          Contribution::update()
+            ->addWhere('id', '=', $contribution_id)
+            ->addValue('financial_type_id', $values['change_financial_type'])
+            ->setCheckPermissions(FALSE)
+            ->execute();
           $ccounter += 1;
         } catch (Exception $ex) {
           CRM_Core_Session::setStatus(E::ts("Financial type for contribution [%1] couldn't be changed: %2", [1 => $contribution_id, 2 => $ex->getMessage()]), ts('Error'), 'error');
@@ -189,7 +193,7 @@ class CRM_Contract_Form_Task_DetachContributions extends CRM_Contribute_Form_Tas
     $nonsepa_ids = [];
     if (!empty($id_list)) {
       $query = CRM_Core_DAO::executeQuery("
-          SELECT contribution.id AS rid 
+          SELECT contribution.id AS rid
           FROM civicrm_contribution contribution
           LEFT JOIN civicrm_sdd_mandate mandate  ON mandate.entity_id = contribution.contribution_recur_id
                                                 AND mandate.entity_table = 'civicrm_contribution_recur'
