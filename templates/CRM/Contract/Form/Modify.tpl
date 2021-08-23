@@ -250,14 +250,14 @@
                 cj(element).show(300);
             });
 
-            // Update payment preview
-            if (PaymentAdapter.updatePaymentPreview) {
-                PaymentAdapter.updatePaymentPreview(formFields);
-            }
-
             // Call update callbacks of payment adapters
             if (PaymentAdapter.onUpdate) {
                 PaymentAdapter.onUpdate(formFields);
+            }
+
+            // Update payment preview
+            if (PaymentAdapter.updatePaymentPreview) {
+                PaymentAdapter.updatePaymentPreview(formFields);
             }
         }
 
