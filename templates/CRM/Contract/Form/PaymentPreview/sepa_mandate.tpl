@@ -51,7 +51,7 @@
 
         // Next debit
         const action = CRM.vars["de.systopia.contract"].action;
-        const deferPaymentStart = formFields["defer_payment_start"].prop("checked");
+        const deferPaymentStart = formFields["defer_payment_start"] ? formFields["defer_payment_start"].prop("checked") : false;
         const cycleDay = formFields["cycle_day"].val();
         const startDate = formFields["start_date"] ? formFields["start_date"].val() : formFields["activity_date"].val();
         const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;

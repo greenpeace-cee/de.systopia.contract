@@ -476,7 +476,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      * @return int - Recurring contribution ID
      */
     public static function revive ($recurring_contribution_id, $update = []) {
-        return self::update($recurring_contribution_id, $update);
+        $revive_activity_type  = CRM_Core_PseudoConstant::getKey(
+            "CRM_Activity_BAO_Activity",
+            "activity_type_id",
+            "Contract_Revived"
+        );
+
+        return self::update($recurring_contribution_id, $update, $revive_activity_type);
     }
 
     /**

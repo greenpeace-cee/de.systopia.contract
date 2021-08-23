@@ -467,15 +467,27 @@ class CRM_Contract_RecurringContribution {
    */
   public static function getUpdateStartDate($current_state, $desired_state, $activity, $cycle_days) {
     $now = date('YmdHis');
+
     $update_activity_type  = CRM_Core_PseudoConstant::getKey(
       'CRM_Activity_BAO_Activity',
       'activity_type_id',
       'Contract_Updated'
     );
+
+    $revive_activity_type  = CRM_Core_PseudoConstant::getKey(
+      'CRM_Activity_BAO_Activity',
+      'activity_type_id',
+      'Contract_Revived'
+    );
+
     $contribution_recur_id = CRM_Utils_Array::value('membership_payment.membership_recurring_contribution', $current_state);
 
-    // check if it is a proper update and if we should defer the start date to respect already paid periods
-    if ($contribution_recur_id && $activity['activity_type_id'] == $update_activity_type && $desired_state['contract_updates.ch_defer_payment_start'] == '1') {
+    // check if it is a proper update/revive and if we should defer the start date to respect already paid periods
+    if (
+      $contribution_recur_id
+      && in_array($activity['activity_type_id'], [$update_activity_type, $revive_activity_type], true)
+      && $desired_state['contract_updates.ch_defer_payment_start'] == '1'
+    ) {
       // load last successull collection for the recurring contribution
       $calculated_date = CRM_Contract_RecurringContribution::getNextInstallmentDate(
         $contribution_recur_id,
