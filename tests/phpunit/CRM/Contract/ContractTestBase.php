@@ -374,7 +374,7 @@ class CRM_Contract_ContractTestBase extends \PHPUnit_Framework_TestCase implemen
 
     // Get the activity with the highest id value
     return array_reduce($activities, function ($carry, $item) {
-      return (int) $carry['id'] > (int) $item['id'] ? $carry : $item;
+      return (int) ($carry['id'] ?? -1) > (int) $item['id'] ? $carry : $item;
     });
   }
 

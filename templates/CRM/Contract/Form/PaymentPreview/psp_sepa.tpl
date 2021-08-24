@@ -17,6 +17,8 @@
 <script>
     const PSP = window.PaymentAdapters["psp_sepa"];
 
+    PSP.vars = CRM.vars["de.systopia.contract/psp_sepa"];
+
     PSP.updatePaymentPreview = (formFields) => {
         const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=psp_sepa]");
 
@@ -59,7 +61,7 @@
 
         // Currency
         const currency =
-            CRM.vars["de.systopia.contract/psp_sepa"].currencies[creditorId]
+            PSP.vars.currencies[creditorId]
             || CRM.vars["de.systopia.contract"].default_currency;
 
         // Annual amount
@@ -77,22 +79,23 @@
 
         // Next debit
         const action = CRM.vars["de.systopia.contract"].action;
+        const deferPaymentStart = formFields["defer_payment_start"] ? formFields["defer_payment_start"].prop("checked") : false;
         const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;
         const startDate = formFields["start_date"] ? formFields["start_date"].val() : formFields["activity_date"].val();
-        const nextDebit = PSP.nextCollectionDate({ creditorId, cycleDay, graceEnd, startDate });
+        const nextDebit = PSP.nextCollectionDate({ creditorId, cycleDay, deferPaymentStart, graceEnd, startDate });
         paymentPreviewContainer.find("span#next_debit").text(nextDebit);
     };
 
-    PSP.nextCollectionDate = ({ creditorId, cycleDay, graceEnd, startDate }) => {
+    PSP.nextCollectionDate = ({ creditorId, cycleDay, deferPaymentStart, graceEnd, startDate }) => {
         if (!cycleDay) return "";
 
-        let date = new Date();
+        let date = deferPaymentStart ? new Date(PSP.vars["next_installment_dates"][creditorId]) : new Date();
 
-        const grace = parseInt(CRM.vars["de.systopia.contract/psp_sepa"].grace_days[creditorId]);
-        const notice = parseInt(CRM.vars["de.systopia.contract/psp_sepa"].notice_days[creditorId]);
+        const grace = parseInt(PSP.vars.grace_days[creditorId]);
+        const notice = parseInt(PSP.vars.notice_days[creditorId]);
         const millisecondsInADay = 24 * 60 * 60 * 1000;
 
-        date.setTime(date.getTime() + (notice - grace) * millisecondsInADay);
+        date.setTime(date.getTime() + Math.max(0, (notice - grace)) * millisecondsInADay);
 
         if (startDate && new Date(startDate).getTime() > date.getTime()) {
             date = new Date(startDate);

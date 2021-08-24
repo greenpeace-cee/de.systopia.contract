@@ -15,6 +15,8 @@
 <script>
     const SEPAMandate = window.PaymentAdapters["sepa_mandate"];
 
+    SEPAMandate.vars = CRM.vars["de.systopia.contract/sepa_mandate"];
+
     SEPAMandate.updatePaymentPreview = (formFields) => {
         const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=sepa_mandate]");
 
@@ -27,7 +29,7 @@
         paymentPreviewContainer.find("span#iban").text(iban);
 
         // Creditor name
-        const creditor = CRM.vars["de.systopia.contract/sepa_mandate"].creditor;
+        const creditor = SEPAMandate.vars.creditor;
         paymentPreviewContainer.find("span#creditor_name").text(creditor.name);
 
         // Creditor account
@@ -49,14 +51,15 @@
 
         // Next debit
         const action = CRM.vars["de.systopia.contract"].action;
+        const deferPaymentStart = formFields["defer_payment_start"] ? formFields["defer_payment_start"].prop("checked") : false;
         const cycleDay = formFields["cycle_day"].val();
         const startDate = formFields["start_date"] ? formFields["start_date"].val() : formFields["activity_date"].val();
         const graceEnd = action === "update" ? CRM.vars["de.systopia.contract"].grace_end : null;
-        const nextDebit = SEPAMandate.nextCollectionDate(cycleDay, startDate, graceEnd);
+        const nextDebit = SEPAMandate.nextCollectionDate(cycleDay, startDate, graceEnd, deferPaymentStart);
         paymentPreviewContainer.find("span#next_debit").text(nextDebit);
     }
 
-    SEPAMandate.nextCollectionDate = (cycle_day, start_date, grace_end) => {
+    SEPAMandate.nextCollectionDate = (cycle_day, start_date, grace_end, defer_payment_start) => {
         cycle_day = parseInt(cycle_day);
 
         if (cycle_day < 1 || cycle_day > 30) {
@@ -67,11 +70,12 @@
         // earliest contribution date is: max(now+notice, start_date, grace_end)
 
         // first: calculate the earliest possible collection date
-        var notice = parseInt(CRM.vars['de.systopia.contract/sepa_mandate'].default_creditor_notice);
-        var grace  = parseInt(CRM.vars['de.systopia.contract/sepa_mandate'].default_creditor_grace);
-        var earliest_date = new Date();
+        var notice = parseInt(SEPAMandate.vars.default_creditor_notice);
+        var grace  = parseInt(SEPAMandate.vars.default_creditor_grace);
+        var earliest_date = defer_payment_start ? new Date(SEPAMandate.vars["next_installment_date"]) : new Date();
+
         // see https://stackoverflow.com/questions/6963311/add-days-to-a-date-object
-        earliest_date = new Date(earliest_date.setTime(earliest_date.getTime() + (notice-grace) * 86400000));
+        earliest_date = new Date(earliest_date.setTime(earliest_date.getTime() + Math.max(0, (notice-grace)) * 86400000));
 
         // then: take start date into account
         if (start_date) {

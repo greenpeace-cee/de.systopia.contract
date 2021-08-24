@@ -252,6 +252,14 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         // Next cycle day
         $result["next_cycle_day"] = self::nextCycleDay();
 
+        if (empty($params["recurring_contribution_id"])) return $result;
+
+        // Next installment date
+        $result["next_installment_date"] = CRM_Contract_RecurringContribution::getNextInstallmentDate(
+            $params["recurring_contribution_id"],
+            self::cycleDays()
+        );
+
         return $result;
     }
 
@@ -468,7 +476,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      * @return int - Recurring contribution ID
      */
     public static function revive ($recurring_contribution_id, $update = []) {
-        return self::update($recurring_contribution_id, $update);
+        $revive_activity_type  = CRM_Core_PseudoConstant::getKey(
+            "CRM_Activity_BAO_Activity",
+            "activity_type_id",
+            "Contract_Revived"
+        );
+
+        return self::update($recurring_contribution_id, $update, $revive_activity_type);
     }
 
     /**

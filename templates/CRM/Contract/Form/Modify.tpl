@@ -100,6 +100,20 @@
         <div class="clear"></div>
     </div>
 
+    <div
+        class="crm-section form-field"
+        id="defer_payment_start"
+        data-payment-change="modify"
+        data-payment-adapter="psp_sepa sepa_mandate"
+    >
+        <div class="label">
+          {$form.defer_payment_start.label}
+          {help id="defer_payment_start" file="CRM/Contract/Form/DeferPaymentStart.hlp"}
+        </div>
+        <div class="content">{$form.defer_payment_start.html}</div>
+        <div class="clear"></div>
+    </div>
+
     <hr data-payment-change="modify"/>
 
     {* --- Membership/campaign fields --- *}
@@ -169,6 +183,7 @@
                 "amount",
                 "campaign_id",
                 "cycle_day",
+                "defer_payment_start",
                 "frequency",
                 "membership_type_id",
                 "payment_change",
@@ -217,17 +232,17 @@
                     ? element.getAttribute("data-payment-change")
                     : undefined;
 
-                const adapter =
+                const adapters =
                     element.hasAttribute("data-payment-adapter")
-                    ? element.getAttribute("data-payment-adapter")
-                    : undefined;
+                    ? element.getAttribute("data-payment-adapter").split(" ")
+                    : [];
 
                 if (change !== undefined && change !== selectedPaymentChange) {
                     cj(element).hide(300);
                     return;
                 }
 
-                if (adapter !== undefined && adapter !== selectedPaymentAdapter) {
+                if (adapters.length > 0 && !adapters.includes(selectedPaymentAdapter)) {
                     cj(element).hide(300);
                     return;
                 }
@@ -235,14 +250,14 @@
                 cj(element).show(300);
             });
 
-            // Update payment preview
-            if (PaymentAdapter.updatePaymentPreview) {
-                PaymentAdapter.updatePaymentPreview(formFields);
-            }
-
             // Call update callbacks of payment adapters
             if (PaymentAdapter.onUpdate) {
                 PaymentAdapter.onUpdate(formFields);
+            }
+
+            // Update payment preview
+            if (PaymentAdapter.updatePaymentPreview) {
+                PaymentAdapter.updatePaymentPreview(formFields);
             }
         }
 

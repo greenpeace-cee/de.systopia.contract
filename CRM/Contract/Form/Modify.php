@@ -269,6 +269,13 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             CRM_Contract_RecurringContribution::getPaymentFrequencies()
         );
 
+        // Defer payment start (defer_payment_start)
+        $this->add(
+            "checkbox",
+            "defer_payment_start",
+            ts("Defer payment start based on last collection?")
+        );
+
         // Membership type (membership_type_id)
         $membership_type_id_options = [ "" => ts("- none -") ] + $this->membership_types;
 
@@ -349,6 +356,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Payment frequency (frequency)
         $defaults["frequency"] = CRM_Contract_FormUtils::numberOfAnnualPayments($this->recurring_contribution);
+
+        // Defer payment start (defer_payment_start)
+        $defaults["defer_payment_start"] = $this->modify_action === "update";
 
         // Membership type (membership_type_id)
         $defaults["membership_type_id"] = $this->membership["membership_type_id"];
@@ -479,6 +489,8 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                 break;
 
             case "modify":
+                $contract_modify_params["membership_payment.defer_payment_start"] = $submitted["defer_payment_start"] ?? "0";
+
                 $pa_id = $submitted["payment_adapter"];
                 $contract_modify_params["payment_method.adapter"] = $pa_id;
                 $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($pa_id);
