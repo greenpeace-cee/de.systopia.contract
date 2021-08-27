@@ -314,6 +314,10 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
                 HTML_QuickForm::setElementError ("amount", "Please specify a payment amount");
             }
 
+            if (!preg_match('/^\d+((\.|,)\d+)?$/', $submitted["amount"])) {
+                HTML_QuickForm::setElementError ("amount", "Please enter a valid payment amount");
+            }
+
             if (empty($submitted["frequency"])) {
                 HTML_QuickForm::setElementError ("frequency", "Please specify a payment frequency");
             }
