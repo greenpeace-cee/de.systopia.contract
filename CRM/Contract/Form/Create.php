@@ -359,6 +359,9 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         // Payment (payment_option)
         $defaults["payment_option"] = "create";
 
+        // Payment adapter (payment_adapter)
+        $defaults["payment_adapter"] = "sepa_mandate";
+
         // Payment frequency (frequency)
         $defaults["frequency"] = "12"; // monthly
 
