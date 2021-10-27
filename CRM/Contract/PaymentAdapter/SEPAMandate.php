@@ -566,6 +566,14 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             self::cycleDays()
         );
 
+        // Get the creditor & payment currency
+        $creditor_id = CRM_Utils_Array::value("creditor_id", $params, $current_mandate_data["creditor_id"]);
+
+        $creditor_currency = civicrm_api3("SepaCreditor", "getvalue", [
+            "id"     => $creditor_id,
+            "return" => "currency",
+        ]);
+
         // Get bank account by ID
         $bank_account_id = CRM_Utils_Array::value("from_ba", $params);
         $bank_account = CRM_Contract_BankingLogic::getBankAccount($bank_account_id);
@@ -581,8 +589,8 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "campaign_id"        => !empty($params["campaign_id"]) ? $params["campaign_id"] : $current_campaign_id,
             "contact_id"         => $current_rc_data["contact_id"],
             "creation_date"      => date("Y-m-d H:i:s"),
-            "creditor_id"        => CRM_Utils_Array::value("creditor_id", $params, $current_mandate_data["creditor_id"]),
-            "currency"           => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),
+            "creditor_id"        => $creditor_id,
+            "currency"           => CRM_Utils_Array::value("currency", $params, $creditor_currency),
             "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
             "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
             "frequency_interval" => $new_recurring_amount["frequency_interval"],

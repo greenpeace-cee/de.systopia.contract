@@ -604,6 +604,14 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             (int) CRM_Utils_Array::value("frequency", $params, $current_rc_data["frequency"])
         );
 
+        // Get the creditor & payment currency
+        $creditor_id = CRM_Utils_Array::value("creditor_id", $params, $current_mandate_data["creditor_id"]);
+
+        $creditor_currency = civicrm_api3("SepaCreditor", "getvalue", [
+            "id"     => $creditor_id,
+            "return" => "currency",
+        ]);
+
         // Calculate the new start date
         $new_start_date = CRM_Contract_RecurringContribution::getUpdateStartDate(
             [ "membership_payment.membership_recurring_contribution" => $recurring_contribution_id ],
@@ -623,8 +631,8 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "campaign_id"           => CRM_Utils_Array::value("campaign_id", $params, $current_rc_data["campaign_id"]),
             "contact_id"            => $current_rc_data["contact_id"],
             "creation_date"         => date("Y-m-d H:i:s"),
-            "creditor_id"           => CRM_Utils_Array::value("creditor_id", $params, $current_mandate_data["creditor_id"]),
-            "currency"              => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),
+            "creditor_id"           => $creditor_id,
+            "currency"              => CRM_Utils_Array::value("currency", $params, $creditor_currency),
             "cycle_day"             => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
             "financial_type_id"     => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
             "frequency_interval"    => $new_recurring_amount["frequency_interval"],
