@@ -178,9 +178,7 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
 
   public function renderDefaultSubject($contract_after, $contract_before = null) {
     $contract_id = $this->getContractID();
-    $old_status = CRM_Utils_Array::value("status_id", $contract_before, "(null)");
-    $new_status = $contract_after["status_id"];
-    $subject = "id{$contract_id}: status_id $old_status to $new_status";
+    $subject = "id{$contract_id}:";
 
     return $subject;
   }
