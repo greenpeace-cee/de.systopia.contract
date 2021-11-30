@@ -347,6 +347,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
     function setDefaults ($defaultValues = null, $filter = null) {
         $defaults = [];
 
+        // Payment change (payment_change)
+        $defaults["payment_change"] = "modify";
+
         // Recurring contribution (recurring_contribution)
         $rc_id = $this->recurring_contribution["id"];
         $defaults["recurring_contribution"] = $rc_id;
