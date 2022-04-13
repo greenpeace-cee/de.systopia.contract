@@ -119,22 +119,15 @@ class CRM_Contract_DAO_ContractPaymentLink extends CRM_Core_DAO
     $this->__table = 'civicrm_contract_payment';
     parent::__construct();
   }
-  /**
-   * return foreign keys and entity references
-   *
-   * @static
-   * @access public
-   * @return array of CRM_Core_EntityReference
-   */
-  static function getReferenceColumns()
-  {
-    if (!self::$_links) {
-      self::$_links = array(
-          new CRM_Core_EntityReference(self::getTableName() , 'contract_id', 'civicrm_membership', 'id') ,
-          new CRM_Core_EntityReference(self::getTableName() , 'contribution_recur_id', 'civicrm_contribution_recur', 'id') ,
-      );
+
+  public static function getReferenceColumns() {
+    if (!isset(Civi::$statics[__CLASS__]['links'])) {
+      Civi::$statics[__CLASS__]['links'] = static::createReferenceColumns(__CLASS__);
+      Civi::$statics[__CLASS__]['links'][] = new CRM_Core_Reference_Basic(self::getTableName(), 'contract_id', 'civicrm_membership', 'id');
+      Civi::$statics[__CLASS__]['links'][] = new CRM_Core_Reference_Basic(self::getTableName(), 'contribution_recur_id', 'civicrm_contribution_recur', 'id');
+      CRM_Core_DAO_AllCoreTables::invoke(__CLASS__, 'links_callback', Civi::$statics[__CLASS__]['links']);
     }
-    return self::$_links;
+    return Civi::$statics[__CLASS__]['links'];
   }
 
   /**
