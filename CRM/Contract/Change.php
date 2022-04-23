@@ -31,7 +31,7 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
    * List of known changes,
    *  activity_type_name => change class
    */
-  protected static $type2class = [
+  public static $type2class = [
     'Contract_Signed'    => 'CRM_Contract_Change_Sign',
     'Contract_Cancelled' => 'CRM_Contract_Change_Cancel',
     'Contract_Updated'   => 'CRM_Contract_Change_Upgrade',
