@@ -51,6 +51,7 @@ class CRM_Contract_Handler_ModificationConflicts{
     $scheduledModifications = civicrm_api3('activity', 'get', [
       'option.limit' => 10000, // If we have more than 10,000 scheduled updates for this contract, probably time to review organisational proceedures
       'source_record_id' => $this->contractId,
+      'activity_type_id' => ['IN' => array_keys(CRM_Contract_Change::$type2class)],
       'status_id' => ['IN' => ['scheduled', 'needs review']]
     ])['values'];
     foreach($scheduledModifications as $k => &$scheduledModification){
