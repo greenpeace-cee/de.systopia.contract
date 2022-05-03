@@ -87,7 +87,7 @@ function civicrm_api3_Contract_modify($params) {
 
   // generate change (activity)
   $change = CRM_Contract_Change::getChangeForData($params);
-  $change->setParameter('source_contact_id', CRM_Contract_Configuration::getUserID());
+  $change->setParameter('source_contact_id', $params['source_contact_id'] ?? CRM_Contract_Configuration::getUserID());
   $change->setParameter('target_contact_id', $change->getContract()['contact_id']);
   $change->setStatus('Scheduled');
   $change->populateData();
