@@ -85,6 +85,9 @@ class CRM_Contract_FormUtils {
     $details = $this->form->get_template_vars('viewCustomData');
     $customGroupTableId = key($details[$result['custom_group_id']]);
     $recContributionId = $details[$result['custom_group_id']][$customGroupTableId]['fields'][$result['id']]['field_value'];
+
+    if (empty($recContributionId)) return;
+
     $recContribution = civicrm_api3('ContributionRecur', 'getsingle', ['id' => $recContributionId]);
     $customGroupTableId = key($details[$result['custom_group_id']]);
     $result = civicrm_api3('CustomField', 'getsingle', [
