@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4;
+
 class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAdapter {
 
     const ADAPTER_ID = "sepa_mandate";
@@ -182,9 +184,8 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      */
     public static function formFields ($recurring_contribution_id = null) {
         $defaults = [];
-        $payment_adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($recurring_contribution_id);
 
-        if (isset($recurring_contribution_id) && $payment_adapter === self::ADAPTER_ID) {
+        if (isset($recurring_contribution_id) && self::isInstance($recurring_contribution_id)) {
             $mandate_data = civicrm_api3("SepaMandate", "getsingle", [
                 "entity_table" => "civicrm_contribution_recur",
                 "entity_id"    => $recurring_contribution_id,
@@ -292,6 +293,22 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         }
 
         return in_array($iban, self::$organisation_ibans);
+    }
+
+    public static function isInstance($recurringContributionID) {
+      $sepaMandateResult = Api4\SepaMandate::get()
+        ->selectRowCount()
+        ->addSelect('creditor_id.creditor_type')
+        ->addWhere('entity_table', '=', 'civicrm_contribution_recur')
+        ->addWhere('entity_id',    '=', $recurringContributionID)
+        ->setLimit(1)
+        ->execute();
+
+      if ($sepaMandateResult->rowCount < 1) return FALSE;
+
+      $creditorType = $sepaMandateResult->first()['creditor_id.creditor_type'];
+
+      return $creditorType === 'SEPA';
     }
 
     /**

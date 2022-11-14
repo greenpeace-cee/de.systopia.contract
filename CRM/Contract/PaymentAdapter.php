@@ -65,6 +65,15 @@ interface CRM_Contract_PaymentAdapter {
     public static function formVars ($params = []);
 
     /**
+     * Determine if a recurring contribution is an instance of this payment method
+     *
+     * @param int $recurring_contribution_id
+     *
+     * @return bool
+     */
+    public static function isInstance ($recurring_contribution_id);
+
+    /**
      * Map submitted form values to paramters for a specific API call
      *
      * @param string $apiEndpoint

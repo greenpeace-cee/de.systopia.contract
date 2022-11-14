@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4;
+
 class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
 
     const ADAPTER_ID = "eft";
@@ -130,6 +132,17 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             "default_currency" => "EUR",
             "next_cycle_day"   => date("d"), // Today
         ];
+    }
+
+    public static function isInstance($recurringContributionID) {
+      $paymentInstrument = Api4\ContributionRecur::get()
+        ->addSelect('payment_instrument_id:name')
+        ->addWhere('id', '=', $recurringContributionID)
+        ->setLimit(1)
+        ->execute()
+        ->first()['payment_instrument_id:name'];
+
+      return $paymentInstrument === 'EFT';
     }
 
     /**

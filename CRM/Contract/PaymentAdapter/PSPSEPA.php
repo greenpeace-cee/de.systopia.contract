@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4;
+
 class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter {
 
     const ADAPTER_ID = "psp_sepa";
@@ -181,9 +183,8 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         }
 
         $defaults = [];
-        $payment_adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($recurring_contribution_id);
 
-        if (isset($recurring_contribution_id) && $payment_adapter === self::ADAPTER_ID) {
+        if (isset($recurring_contribution_id) && self::isInstance($recurring_contribution_id)) {
             $rc_data = civicrm_api3("ContributionRecur", "getsingle", [
                 "id" => $recurring_contribution_id,
             ]);
@@ -363,6 +364,22 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         }
 
         return $result;
+    }
+
+    public static function isInstance($recurringContributionID) {
+      $sepaMandateResult = Api4\SepaMandate::get()
+        ->selectRowCount()
+        ->addSelect('creditor_id.creditor_type')
+        ->addWhere('entity_table', '=', 'civicrm_contribution_recur')
+        ->addWhere('entity_id',    '=', $recurringContributionID)
+        ->setLimit(1)
+        ->execute();
+
+      if ($sepaMandateResult->rowCount < 1) return FALSE;
+
+      $creditorType = $sepaMandateResult->first()['creditor_id.creditor_type'];
+
+      return $creditorType === 'PSP';
     }
 
     /**
