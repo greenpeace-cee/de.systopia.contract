@@ -398,51 +398,19 @@ class CRM_Contract_Utils
   public static function getPaymentAdapterClass ($adapter_id) {
     if ($adapter_id === null) return null;
 
-    return [
-      "eft"          => "CRM_Contract_PaymentAdapter_EFT",
-      "psp_sepa"     => "CRM_Contract_PaymentAdapter_PSPSEPA",
-      "sepa_mandate" => "CRM_Contract_PaymentAdapter_SEPAMandate",
-    ][$adapter_id];
+    return CRM_Contract_Configuration::$paymentAdapters[$adapter_id];
   }
 
   public static function getPaymentAdapterForRecurringContribution ($recurring_contribution_id) {
-    if ($recurring_contribution_id === null) return null;
+    foreach (CRM_Contract_Configuration::$paymentAdapters as $paID => $paClass) {
+      if ($paClass::isInstance($recurring_contribution_id)) return $paID;
+    }
 
-    $payment_instrument_id = civicrm_api3("ContributionRecur", "getvalue", [
-      "id"     => $recurring_contribution_id,
-      "return" => "payment_instrument_id",
-    ]);
+    CRM_Core_Error::debug_log_message(
+      "No matching payment adapter found for recurring contribution with ID $recurring_contribution_id"
+    );
 
-    $payment_instrument_name = civicrm_api3("OptionValue", "getvalue", [
-      "option_group_id" => "payment_instrument",
-      "value"           => $payment_instrument_id,
-      "return"          => "name",
-    ]);
-
-    if ($payment_instrument_name === "EFT") return "eft";
-
-    // Get the payment method by looking at the SEPA creditor
-    $mandates_result = civicrm_api3("SepaMandate", "get", [
-      "entity_table" => "civicrm_contribution_recur",
-      "entity_id"    => $recurring_contribution_id,
-      "options"      => [ "sort" => "creation_date" ],
-      "sequential"   => 1,
-      "return"       => ["creditor_id"],
-    ]);
-
-    if ($mandates_result["count"] === 0) return "eft";
-
-    $creditor_id = end($mandates_result["values"])["creditor_id"];
-
-    $creditor_type = civicrm_api3("SepaCreditor", "getvalue", [
-      "id"     => $creditor_id,
-      "return" => "creditor_type",
-    ]);
-
-    if ($creditor_type === "SEPA") return "sepa_mandate";
-    if ($creditor_type === "PSP") return "psp_sepa";
-
-    return null;
+    return 'eft';
   }
 
   public static function calcAnnualAmount(float $amount, int $frequency_interval, string $frequency_unit) {
