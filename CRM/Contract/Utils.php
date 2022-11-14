@@ -8,6 +8,8 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
+
 class CRM_Contract_Utils
 {
 
@@ -469,4 +471,49 @@ class CRM_Contract_Utils
       ],
     ];
   }
+
+  public static function getFinancialTypeID(string $name) {
+    return Api4\FinancialType::get()
+      ->addSelect('id')
+      ->addWhere('name', '=', $name)
+      ->execute()
+      ->first()['id'];
+  }
+
+  public static function getOptionValue(string $optionGroup, string $name) {
+    return Api4\OptionValue::get()
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', $optionGroup)
+      ->addWhere('name', '=', $name)
+      ->execute()
+      ->first()['value'];
+  }
+
+  public static function nextCycleDate(int $cycleDay, string $offset = 'now') {
+    $result = new DateTime($offset);
+
+    if (is_null($cycleDay)) return $result->format('Y-m-d');
+
+    $oneDay = new DateInterval('P1D');
+    $month = $result->format('m');
+    $isNextMonth = $cycleDay <= (int) $result->format('d');
+    $turnOfMonth = 0;
+
+    while($result->format('d') !== "$cycleDay") {
+      $result->add($oneDay);
+
+      if ($result->format('m') !== $month) {
+        $month = $result->format('m');
+        $turnOfMonth++;
+      }
+
+      if ($turnOfMonth > ($isNextMonth ? 1 : 0)) {
+        $result->sub($oneDay);
+        break;
+      }
+    }
+
+    return $result->format('Y-m-d');
+  }
+
 }
