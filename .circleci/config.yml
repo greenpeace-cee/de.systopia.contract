@@ -4,7 +4,7 @@ commands:
     description: "Setup environment"
     steps:
       - run: |
-          composer self-update --1
+          composer self-update --stable
   install_civicrm:
     description: "Install CiviCRM"
     parameters:
@@ -39,10 +39,12 @@ commands:
           cd $EXT_DIR
           git clone https://github.com/Project60/org.project60.sepa.git
           git clone https://github.com/Project60/org.project60.banking.git banking-src
+          git clone https://lab.civicrm.org/extensions/mjwshared.git
+          git clone https://github.com/greenpeace-cee/adyen.git -b main
           mv banking-src/extension org.project60.banking
           rm -rf banking-src
-          chown buildkit:buildkit org.project60.sepa org.project60.banking -R
-          su - buildkit -c "cd /buildkit/build/<< parameters.build_name >>/web && cv en org.project60.sepa org.project60.banking"
+          chown buildkit:buildkit org.project60.sepa org.project60.banking mjwshared adyen -R
+          su - buildkit -c "cd /buildkit/build/<< parameters.build_name >>/web && cv en org.project60.sepa org.project60.banking mjwshared adyen"
   install_extension:
     description: "Install Extension"
     parameters:
@@ -74,7 +76,7 @@ commands:
       - run: |
           mkdir -p /phpunit
           chown buildkit:buildkit /phpunit
-          su - buildkit -c "cd /buildkit/build/<< parameters.build_name >>/web/sites/default/files/civicrm/ext/$CIRCLE_PROJECT_REPONAME && /buildkit/bin/phpunit5 --log-junit /phpunit/<< parameters.build_name >>/junit.xml"
+          su - buildkit -c "cd /buildkit/build/<< parameters.build_name >>/web/sites/default/files/civicrm/ext/$CIRCLE_PROJECT_REPONAME && /buildkit/bin/phpunit7 --log-junit /phpunit/<< parameters.build_name >>/junit.xml"
   run_all:
     description: "Run all steps"
     parameters:
