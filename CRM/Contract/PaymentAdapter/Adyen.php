@@ -28,20 +28,26 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'token'                 => [ 'stored_payment_method_id' , TRUE     , NULL    ],
     ];
 
-    $defaultPaymentProcessorID = NULL;
+    $paymentToken = NULL;
 
-    if (!isset($params['payment_token_id'])) {
+    if (isset($params['payment_token_id'])) {
+      $paymentToken = Api4\PaymentToken::get()
+        ->addWhere('id', '=', $params['payment_token_id'])
+        ->addSelect('payment_processor_id')
+        ->execute()
+        ->first();
+    } else {
       $paymentToken = civicrm_api4('PaymentToken', 'create', [
         'values' => self::mapParameters($paymentTokenParamMapping, $params),
       ])->first();
-
-      $params['payment_token_id'] = $paymentToken['id'];
-      $defaultPaymentProcessorID = $paymentToken['payment_processor_id'];
     }
+
+    $paymentProcessorID = $paymentToken['payment_processor_id'];
 
     $pendingOptVal = (int) CRM_Contract_Utils::getOptionValue('contribution_recur_status', 'Pending');
     $defaultCurrency = Civi::settings()->get('defaultCurrency');
     $memberDuesTypeID = CRM_Contract_Utils::getFinancialTypeID('Member Dues');
+
     $cycleDay = (int) CRM_Utils_Array::value('cycle_day', $params);
     $startDate = new DateTimeImmutable(CRM_Utils_Array::value('start_date', $params, 'now'));
     $nextSchedContribDate = CRM_Contract_Utils::nextCycleDate($cycleDay, $startDate->format('Y-m-d'));
@@ -49,8 +55,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $recurContribParamMapping = [
       //                                | original name            | required | default                     |
       'amount'                       => [ 'amount'                 , TRUE     , NULL                        ],
-      'contribution_status_id'       => [ 'contribution_status_id' , FALSE    , $pendingOptVal              ],
+      'campaign_id'                  => [ 'campaign_id'            , FALSE    , NULL                        ],
       'contact_id'                   => [ 'contact_id'             , TRUE     , NULL                        ],
+      'contribution_status_id'       => [ 'contribution_status_id' , FALSE    , $pendingOptVal              ],
       'currency'                     => [ 'currency'               , FALSE    , $defaultCurrency            ],
       'cycle_day'                    => [ 'cycle_day'              , FALSE    , 1                           ],
       'financial_type_id'            => [ 'financial_type_id'      , FALSE    , $memberDuesTypeID           ],
@@ -58,8 +65,8 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'frequency_unit:name'          => [ 'frequency_unit'         , FALSE    , 'month'                     ],
       'next_sched_contribution_date' => [ NULL                     , FALSE    , $nextSchedContribDate       ],
       'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE    , NULL                        ],
-      'payment_processor_id'         => [ 'payment_processor_id'   , FALSE    , $defaultPaymentProcessorID  ],
-      'payment_token_id'             => [ 'payment_token_id'       , TRUE     , NULL                        ],
+      'payment_processor_id'         => [ NULL                     , FALSE    , $paymentProcessorID         ],
+      'payment_token_id'             => [ NULL                     , FALSE    , $paymentToken['id']         ],
       'processor_id'                 => [ 'shopper_reference'      , FALSE    , NULL                        ],
       'start_date'                   => [ 'start_date'             , FALSE    , $startDate->format('Y-m-d') ],
     ];
@@ -78,14 +85,32 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function createFromUpdate(
-    $recurring_contribution_id,
+    $recurringContributionID,
     $current_adapter,
     $update,
     $activity_type_id = NULL
   ) {
-    // ...
+    $originalRC = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $recurringContributionID)
+      ->addSelect(
+        'amount',
+        'campaign_id',
+        'contact_id',
+        'contribution_status_id',
+        'currency',
+        'cycle_day', 
+        'financial_type_id',
+        'frequency_interval',
+        'frequency_unit',
+        'payment_instrument_id',
+        'start_date'
+      )
+      ->execute()
+      ->first();
 
-    return 0;
+    $createParams = array_merge($originalRC, $update);
+
+    return self::create($createParams);
   }
 
   public static function cycleDays($params = []) {
@@ -95,102 +120,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function formFields($recurring_contribution_id = NULL) {
-    $paymentProcessorOptions = [];
+    // ...
 
-    $paymentProcessorQuery = Api4\PaymentProcessor::get()
-      ->addSelect('title')
-      ->addWhere('payment_processor_type_id:name', '=', 'Adyen')
-      ->execute();
-
-    foreach ($paymentProcessorQuery as $paymentProcessor) {
-      $paymentProcessorOptions[$paymentProcessor['id']] = $paymentProcessor['title'];
-    }
-
-    $paymentInstrumentOptions = [];
-
-    $paymentInstrumentQuery = Api4\OptionValue::get()
-      ->addSelect('value', 'label')
-      ->addWhere('option_group_id:name', '=', 'payment_instrument')
-      ->execute();
-
-    foreach ($paymentInstrumentQuery as $pi) {
-      $paymentInstrumentOptions[$pi['value']] = $pi['label'];
-    }
-
-    return [
-      'payment_processor' => [
-        'default'      => NULL,
-        'display_name' => 'Payment processor',
-        'enabled'      => TRUE,
-        'name'         => 'payment_processor',
-        'options'      => $paymentProcessorOptions,
-        'required'     => TRUE,
-        'type'         => 'select',
-      ],
-      'payment_instrument' => [
-        'default'      => NULL,
-        'display_name' => 'Payment instrument',
-        'enabled'      => TRUE,
-        'name'         => 'payment_instrument',
-        'options'      => $paymentInstrumentOptions,
-        'required'     => TRUE,
-        'type'         => 'select',
-      ],
-      'billing_first_name' => [
-        'default'      => NULL,
-        'display_name' => 'Billing first name',
-        'enabled'      => TRUE,
-        'name'         => 'billing_first_name',
-        'required'     => FALSE,
-        'settings'     => [ 'class' => 'big' ],
-        'type'         => 'text',
-      ],
-      'billing_last_name' => [
-        'default'      => NULL,
-        'display_name' => 'Billing last name',
-        'enabled'      => TRUE,
-        'name'         => 'billing_last_name',
-        'required'     => FALSE,
-        'settings'     => [ 'class' => 'big' ],
-        'type'         => 'text',
-      ],
-      'email' => [
-        'default'      => NULL,
-        'display_name' => 'Billing Email',
-        'enabled'      => TRUE,
-        'name'         => 'email',
-        'required'     => FALSE,
-        'settings'     => [ 'class' => 'big' ],
-        'type'         => 'text',
-      ],
-      'stored_payment_method_id' => [
-        'default'      => NULL,
-        'display_name' => 'Stored payment method ID',
-        'enabled'      => TRUE,
-        'name'         => 'stored_payment_method_id',
-        'required'     => TRUE,
-        'settings'     => [ 'class' => 'big' ],
-        'type'         => 'text',
-      ],
-      'shopper_reference' => [
-        'default'      => NULL,
-        'display_name' => 'Shopper reference',
-        'enabled'      => TRUE,
-        'name'         => 'shopper_reference',
-        'required'     => FALSE,
-        'settings'     => [ 'class' => 'huge' ],
-        'type'         => 'text',
-      ],
-      'account_number' => [
-        'default'      => NULL,
-        'display_name' => 'Account number',
-        'enabled'      => TRUE,
-        'name'         => 'account_number',
-        'required'     => FALSE,
-        'settings'     => [ 'class' => 'huge' ],
-        'type'         => 'text',
-      ],
-    ];
+    return [];
   }
 
   public static function formVars($params = []) {
@@ -256,22 +188,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function mapSubmittedFormValues($apiEndpoint, $submitted) {
-    dump('$submitted:', $submitted);
+    // ...
 
-    switch ($apiEndpoint) {
-      case 'Contract.create': {
-        return [
-          'payment_method.amount'                   => CRM_Contract_Utils::formatMoney($submitted['amount']),
-          'payment_method.payment_processor_id'     => (int) $submitted['pa-adyen-payment_processor'],
-          'payment_method.shopper_reference'        => $submitted['pa-adyen-shopper_reference'],
-          'payment_method.stored_payment_method_id' => $submitted['pa-adyen-stored_payment_method_id'],
-        ];
-      }
-
-      default: {
-        return [];
-      }
-    }
+    return [];
   }
 
   public static function nextCycleDay() {

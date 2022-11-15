@@ -143,6 +143,97 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
   }
 
+  public function testCreateFromUpdate() {
+
+    // --- Create an EFT payment --- //
+
+    $memberDuesTypeID = CRM_Contract_Utils::getFinancialTypeID('Member Dues');
+
+    $originalRCID = CRM_Contract_PaymentAdapter_EFT::create([
+      'amount'             => 10.0,
+      'contact_id'         => $this->contact['id'],
+      'financial_type_id'  => $memberDuesTypeID,
+      'frequency_interval' => 1,
+      'frequency_unit'     => 'month',
+    ]);
+
+    // --- Assert recurring contribution has been created --- //
+
+    $originalRCResult = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $originalRCID)
+      ->addSelect(
+        'amount',
+        'contact_id',
+        'financial_type_id',
+        'frequency_interval',
+        'frequency_unit:name'
+      )
+      ->execute();
+
+    $this->assertEquals(1, $originalRCResult->rowCount);
+
+    $originalRecurContrib = $originalRCResult->first();
+
+    $this->assertEquals([
+      'amount'              => 10.0,
+      'contact_id'          => $this->contact['id'],
+      'financial_type_id'   => $memberDuesTypeID,
+      'frequency_interval'  => 1,
+      'frequency_unit:name' => 'month',
+      'id'                  => $originalRecurContrib['id'],
+    ], $originalRecurContrib);
+
+    // --- Change payment type to Adyen and update amount --- //
+
+    $newRCID = CRM_Contract_PaymentAdapter_Adyen::createFromUpdate($originalRCID, 'eft', [
+      'amount'           => 15.0,
+      'payment_token_id' => $this->paymentToken['id'],
+    ]);
+
+    // --- Assert a new recurring contribution has been created --- //
+
+    $this->assertNotEquals($originalRCID, $newRCID);
+
+    $newRCResult = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $newRCID)
+      ->addSelect(
+        'amount',
+        'contact_id',
+        'financial_type_id',
+        'frequency_interval',
+        'frequency_unit:name',
+        'payment_processor_id',
+        'payment_token_id'
+      )
+      ->execute();
+
+    $this->assertEquals(1, $newRCResult->rowCount);
+
+    $newRecurContrib = $newRCResult->first();
+
+    $this->assertEquals([
+      'amount'               => 15.0,
+      'contact_id'           => $this->contact['id'],
+      'financial_type_id'    => $memberDuesTypeID,
+      'frequency_interval'   => 1,
+      'frequency_unit:name'  => 'month',
+      'id'                   => $newRecurContrib['id'],
+      'payment_processor_id' => $newRecurContrib['payment_processor_id'],
+      'payment_token_id'     => $this->paymentToken['id'],
+    ], $newRecurContrib);
+
+    // --- Assert the new payment is linked to an Adyen payment processor --- //
+
+    $paymentProcessor = Api4\PaymentProcessor::get()
+      ->addWhere('id', '=', $newRecurContrib['payment_processor_id'])
+      ->addSelect('payment_processor_type_id:name')
+      ->execute()
+      ->first();
+
+    $this->assertEquals('Adyen', $paymentProcessor['payment_processor_type_id:name']);
+
+  }
+
   public function testRevive() {
 
     // --- Create a payment --- //
