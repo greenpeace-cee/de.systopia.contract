@@ -146,11 +146,11 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     /**
      * Get payment specific form field specifications
      *
-     * @param int|null $recurring_contribution_id
+     * @param array $params - Optional parameters, depending on the implementation
      *
      * @return array - List of form field specifications
      */
-    public static function formFields ($recurring_contribution_id = null) {
+    public static function formFields ($params = []) {
         $psp_creditors = civicrm_api3("SepaCreditor", "get", [
             "creditor_type" => "PSP",
             "sequential"    => 1,
@@ -183,6 +183,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         }
 
         $defaults = [];
+        $recurring_contribution_id = CRM_Utils_Array::value("recurring_contribution_id", $params, NULL);
 
         if (isset($recurring_contribution_id) && self::isInstance($recurring_contribution_id)) {
             $rc_data = civicrm_api3("ContributionRecur", "getsingle", [

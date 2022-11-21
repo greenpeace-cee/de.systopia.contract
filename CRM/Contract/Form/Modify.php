@@ -378,7 +378,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Payment-adapter-specific defaults
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            foreach ($pa_class::formFields($rc_id) as $field_name => $field) {
+            $form_fields = $pa_class::formFields([ 'recurring_contribution_id' => $rc_id ]);
+
+            foreach ($form_fields as $field_name => $field) {
                 if (!$field["enabled"] || empty($field["default"])) continue;
 
                 $defaults["pa-$pa_name-$field_name"] = $field["default"];

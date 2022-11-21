@@ -132,8 +132,9 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
             $pa_form_template_var[$pa_name] = [];
+            $form_fields = $pa_class::formFields([ "contact_id" => $this->contact["id"] ]);
 
-            foreach ($pa_class::formFields() as $field) {
+            foreach ($form_fields as $field) {
                 if (!$field["enabled"]) continue;
 
                 $field_name = $field["name"];

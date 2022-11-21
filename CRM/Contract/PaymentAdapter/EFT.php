@@ -109,11 +109,11 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     /**
      * Get payment specific form field specifications
      *
-     * @param int|null $recurring_contribution_id
+     * @param array $params - Optional parameters, depending on the implementation
      *
      * @return array - List of form field specifications
      */
-    public static function formFields ($recurring_contribution_id = null) {
+    public static function formFields ($params = []) {
         return [];
     }
 

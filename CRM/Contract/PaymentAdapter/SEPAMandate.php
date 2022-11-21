@@ -178,12 +178,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     /**
      * Get payment specific form field specifications
      *
-     * @param int|null $recurring_contribution_id
+     * @param array $params - Optional parameters, depending on the implementation
      *
      * @return array - List of form field specifications
      */
-    public static function formFields ($recurring_contribution_id = null) {
+    public static function formFields ($params = []) {
         $defaults = [];
+        $recurring_contribution_id = CRM_Utils_Array::value('recurring_contribution_id', $params, NULL);
 
         if (isset($recurring_contribution_id) && self::isInstance($recurring_contribution_id)) {
             $mandate_data = civicrm_api3("SepaMandate", "getsingle", [

@@ -119,7 +119,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     return [];
   }
 
-  public static function formFields($recurring_contribution_id = NULL) {
+  public static function formFields($params = []) {
     // ...
 
     return [];
