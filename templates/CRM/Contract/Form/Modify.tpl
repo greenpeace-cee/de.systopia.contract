@@ -11,14 +11,22 @@
 {literal}
 
 <script>
-    window.PaymentAdapters = {};
+    (async () => {
+        const EXT_VARS = CRM.vars["de.systopia.contract"];
+        const extBaseURL = EXT_VARS.ext_base_url;
+        const paymentAdapters = Object.keys(EXT_VARS.payment_adapters);
+
+        await Promise.all(paymentAdapters.map(
+            adapter => import(`${extBaseURL}/js/Form/PaymentAdapter/${adapter}.js`)
+        ));
+
+        const { initForm } = await import(`${extBaseURL}/js/Form/modify.js`);
+
+        initForm();
+    })();
 </script>
 
 {/literal}
-
-{foreach from=$payment_adapter_fields key=pa_name item=_}
-    {include file="CRM/Contract/Form/PaymentAdapters/$pa_name.tpl"}
-{/foreach}
 
 <div class="crm-block crm-form-block">
 
@@ -164,103 +172,3 @@
         {include file="CRM/common/formButtons.tpl" location="bottom"}
     </div>
 </div>
-
-{literal}
-    <script>
-        const formFields = {};
-        let PaymentAdapter = {};
-
-        function initForm () {
-            const paymentAdapterFields = {/literal}{$payment_adapter_fields_json}{literal};
-
-            const paFieldIds = Object.entries(paymentAdapterFields).reduce(
-                (result, [pa, ids]) => [ ...result, ...ids ],
-                []
-            );
-
-            const formFieldIds = [
-                "activity_date",
-                "amount",
-                "campaign_id",
-                "cycle_day",
-                "defer_payment_start",
-                "frequency",
-                "membership_type_id",
-                "payment_change",
-                "payment_adapter",
-                ...paFieldIds,
-            ];
-
-            for (const fieldId of formFieldIds) {
-                formFields[fieldId] = cj(`div.form-field div.content *[name=${fieldId}]`);
-
-                formFields[fieldId].change(() => {
-                    setPaymentAdapter();
-                    updateForm();
-                });
-            }
-
-            const selectedPaymentAdapter =
-                formFields["payment_adapter"].val()
-                || CRM.vars["de.systopia.contract"].current_payment_adapter;
-
-            formFields["payment_adapter"].val(selectedPaymentAdapter);
-
-            setPaymentAdapter();
-            updateForm();
-        }
-
-        function setPaymentAdapter () {
-            const selectedPaymentAdapter = formFields["payment_adapter"].val();
-
-            if (
-                window.PaymentAdapters
-                && window.PaymentAdapters[selectedPaymentAdapter]
-            ) {
-                PaymentAdapter = window.PaymentAdapters[selectedPaymentAdapter];
-            }
-        }
-
-        function updateForm () {
-            // Show only fields relevant to the currently selected payment change mode / adapter
-            const selectedPaymentChange = formFields["payment_change"].val();
-            const selectedPaymentAdapter = formFields["payment_adapter"].val();
-
-            cj("*[data-payment-change], *[data-payment-adapter]").each((_, element) => {
-                const change =
-                    element.hasAttribute("data-payment-change")
-                    ? element.getAttribute("data-payment-change")
-                    : undefined;
-
-                const adapters =
-                    element.hasAttribute("data-payment-adapter")
-                    ? element.getAttribute("data-payment-adapter").split(" ")
-                    : [];
-
-                if (change !== undefined && change !== selectedPaymentChange) {
-                    cj(element).hide(300);
-                    return;
-                }
-
-                if (adapters.length > 0 && !adapters.includes(selectedPaymentAdapter)) {
-                    cj(element).hide(300);
-                    return;
-                }
-
-                cj(element).show(300);
-            });
-
-            // Call update callbacks of payment adapters
-            if (PaymentAdapter.onUpdate) {
-                PaymentAdapter.onUpdate(formFields);
-            }
-
-            // Update payment preview
-            if (PaymentAdapter.updatePaymentPreview) {
-                PaymentAdapter.updatePaymentPreview(formFields);
-            }
-        }
-
-        cj(document).ready(initForm);
-    </script>
-{/literal}

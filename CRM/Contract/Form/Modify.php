@@ -142,14 +142,25 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->recurring_contribution = civicrm_api3("ContributionRecur", "getsingle", [ "id" => $rc_id ]);
 
         // Payment adapters
-        $this->payment_adapters = CRM_Contract_FormUtils::getPaymentAdapters();
-
+        $this->payment_adapters = CRM_Contract_Configuration::$paymentAdapters;
         $resources = CRM_Core_Resources::singleton();
+        $paymentAdapterFields = [];
 
-        foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            $resources->addVars("de.systopia.contract/$pa_name", $pa_class::formVars([
+        foreach ($this->payment_adapters as $paName => $paClass) {
+            $resources->addVars("de.systopia.contract/$paName", $paClass::formVars([
                 "recurring_contribution_id" => $rc_id,
             ]));
+
+            $paymentAdapterFields[$paName] = [];
+
+            foreach ($paClass::formFields() as $field) {
+                if (!$field["enabled"]) continue;
+
+                $fieldName = $field["name"];
+                $fieldID = "pa-$paName-$fieldName";
+
+                $paymentAdapterFields[$paName][] = $fieldID;
+            }
         }
 
         $current_contract = CRM_Contract_RecurringContribution::getCurrentContract($contact_id, $rc_id);
@@ -158,17 +169,20 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $recurring_contributions = CRM_Contract_RecurringContribution::getAllForContact($contact_id, true);
 
         $resources->addVars("de.systopia.contract", [
-            "action"                     => $this->modify_action,
-            "cid"                        => $contact_id,
-            "current_amount"             => $this->recurring_contribution["amount"],
-            "current_contract"           => $current_contract,
-            "current_cycle_day"          => (int) $this->recurring_contribution["cycle_day"],
-            "current_payment_adapter"    => CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id),
-            "current_recurring"          => $rc_id,
-            "debitor_name"               => $this->contact["display_name"],
-            "default_currency"           => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
-            "frequencies"                => $frequencies,
-            "recurring_contributions"    => $recurring_contributions,
+            "action"                  => $this->modify_action,
+            "cid"                     => $contact_id,
+            "current_amount"          => $this->recurring_contribution["amount"],
+            "current_contract"        => $current_contract,
+            "current_cycle_day"       => (int) $this->recurring_contribution["cycle_day"],
+            "current_payment_adapter" => CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id),
+            "current_recurring"       => $rc_id,
+            "debitor_name"            => $this->contact["display_name"],
+            "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
+            "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
+            "frequencies"             => $frequencies,
+            "payment_adapter_fields"  => $paymentAdapterFields,
+            "payment_adapters"        => CRM_Contract_Configuration::$paymentAdapters,
+            "recurring_contributions" => $recurring_contributions,
         ]);
     }
 
@@ -238,7 +252,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         }
 
         $this->assign("payment_adapter_fields", $paf_template_var);
-        $this->assign("payment_adapter_fields_json", json_encode($paf_template_var));
 
         // Recurring contribution (recurring_contribution)
         $formUtils = new CRM_Contract_FormUtils($this, "Membership");
@@ -378,9 +391,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Payment-adapter-specific defaults
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            $form_fields = $pa_class::formFields([ 'recurring_contribution_id' => $rc_id ]);
-
-            foreach ($form_fields as $field_name => $field) {
+            foreach ($pa_class::formFields($rc_id) as $field_name => $field) {
                 if (!$field["enabled"] || empty($field["default"])) continue;
 
                 $defaults["pa-$pa_name-$field_name"] = $field["default"];
