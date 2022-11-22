@@ -8,6 +8,8 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
+
 class CRM_Contract_FormUtils {
 
   public function __construct($form, $entity) {
@@ -223,4 +225,19 @@ class CRM_Contract_FormUtils {
     return 1;
   }
 
+  public static function getPaymentInstruments() {
+    $paymentInstruments = [];
+
+    $piResult = Api4\OptionValue::get()
+      ->addWhere('option_group_id:name', '=', 'payment_instrument')
+      ->addSelect('label', 'value')
+      ->execute();
+
+    foreach ($piResult as $optValue) {
+      $paymentInstruments[$optValue['value']] = $optValue['label'];
+    }
+
+    return $paymentInstruments;
+  }
+  
 }

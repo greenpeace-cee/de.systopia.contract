@@ -120,9 +120,118 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function formFields($params = []) {
-    // ...
+    $contactID = CRM_Utils_Array::value('contact_id', $params, NULL);
 
-    return [];
+    return [
+      'payment_instrument' => [
+        'default'      => NULL,
+        'display_name' => 'Payment instrument',
+        'enabled'      => TRUE,
+        'name'         => 'payment_instrument',
+        'options'      => CRM_Contract_FormUtils::getPaymentInstruments(),
+        'required'     => FALSE,
+        'type'         => 'select',
+      ],
+      'use_existing_token' => [
+        'default'      => NULL,
+        'display_name' => 'Create or reuse payment token?',
+        'enabled'      => TRUE,
+        'name'         => 'use_existing_token',
+        'options'      => ['Use existing token', 'Create new token'],
+        'required'     => FALSE,
+        'type'         => 'select',
+      ],
+      'payment_token_id' => [
+        'default'      => NULL,
+        'display_name' => 'Payment token ID',
+        'enabled'      => TRUE,
+        'name'         => 'payment_token_id',
+        'options'      => self::getPaymentTokensForContact($contactID),
+        'required'     => FALSE,
+        'type'         => 'select',
+      ],
+      'payment_processor' => [
+        'default'      => NULL,
+        'display_name' => 'Payment processor',
+        'enabled'      => TRUE,
+        'name'         => 'payment_processor',
+        'options'      => self::getPaymentProcessors(),
+        'required'     => TRUE,
+        'type'         => 'select',
+      ],
+      'stored_payment_method_id' => [
+        'default'      => NULL,
+        'display_name' => 'Stored payment method ID',
+        'enabled'      => TRUE,
+        'name'         => 'stored_payment_method_id',
+        'required'     => TRUE,
+        'settings'     => [],
+        'type'         => 'text',
+      ],
+      'shopper_reference' => [
+        'default'      => NULL,
+        'display_name' => 'Shopper reference',
+        'enabled'      => TRUE,
+        'name'         => 'shopper_reference',
+        'required'     => FALSE,
+        'settings'     => [ 'class' => 'huge' ],
+        'type'         => 'text',
+      ],
+      'billing_first_name' => [
+        'default'      => NULL,
+        'display_name' => 'Billing first name',
+        'enabled'      => TRUE,
+        'name'         => 'billing_first_name',
+        'required'     => FALSE,
+        'settings'     => [],
+        'type'         => 'text',
+      ],
+      'billing_last_name' => [
+        'default'      => NULL,
+        'display_name' => 'Billing last name',
+        'enabled'      => TRUE,
+        'name'         => 'billing_last_name',
+        'required'     => FALSE,
+        'settings'     => [],
+        'type'         => 'text',
+      ],
+      'email' => [
+        'default'      => NULL,
+        'display_name' => 'E-Mail',
+        'enabled'      => TRUE,
+        'name'         => 'email',
+        'required'     => FALSE,
+        'settings'     => [ 'class' => 'big' ],
+        'type'         => 'text',
+      ],
+      'account_number' => [
+        'default'      => NULL,
+        'display_name' => 'Account number',
+        'enabled'      => TRUE,
+        'name'         => 'account_number',
+        'required'     => FALSE,
+        'settings'     => [ 'class' => 'big' ],
+        'type'         => 'text',
+      ],
+      'expiry_date' => [
+        'default'      => NULL,
+        'display_name' => 'Expiry date',
+        'enabled'      => TRUE,
+        'name'         => 'expiry_date',
+        'required'     => FALSE,
+        'settings'     => [],
+        'type'         => 'date',
+      ],
+      'ip_address' => [
+        'default'      => NULL,
+        'display_name' => 'IP address',
+        'enabled'      => TRUE,
+        'name'         => 'ip_address',
+        'required'     => FALSE,
+        'settings'     => [],
+        'type'         => 'text',
+      ],
+    ];
   }
 
   public static function formVars($params = []) {
@@ -316,6 +425,43 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     }
 
     return $result;
+  }
+
+  private static function getPaymentProcessors() {
+    $paymentProcessors = [];
+
+    $ppResult = Api4\PaymentProcessor::get()
+      ->addSelect('title')
+      ->addWhere('payment_processor_type_id:name', '=', 'Adyen')
+      ->execute();
+
+    foreach ($ppResult as $processor) {
+      $paymentProcessors[$processor['id']] = $processor['title'];
+    }
+
+    return $paymentProcessors;
+  }
+
+  private static function getPaymentTokensForContact($contactID) {
+    if (is_null($contactID)) return [];
+
+    $paymentTokens = [];
+
+    $ptResult = Api4\PaymentToken::get()
+      ->addWhere('contact_id', '=', $contactID)
+      ->addSelect(
+        'payment_processor_id.name',
+        'masked_account_number'
+      )
+      ->execute();
+
+    foreach ($ptResult as $token) {
+      $processorName = $token['payment_processor_id.name'];
+      $accountNumber = $token['masked_account_number'];
+      $paymentTokens[$token['id']] = "$processorName: $accountNumber";
+    }
+
+    return $paymentTokens;
   }
 
 }
