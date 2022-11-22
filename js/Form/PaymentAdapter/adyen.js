@@ -1,4 +1,4 @@
-import { registerPaymentAdapter } from "../utils.js";
+import { parseMoney, registerPaymentAdapter } from "../utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/adyen"];
@@ -35,7 +35,33 @@ class Adyen {
     }
 
     updatePaymentPreview (formFields) {
-        // ...
+        const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=adyen]");
+
+        // Payment instrument
+        const piField = formFields["pa-adyen-payment_instrument"];
+        const selectedPIValue = piField.val();
+        const selectedPILabel = piField.find(`option[value=${selectedPIValue}]`).text();
+        paymentPreviewContainer.find("span#payment_instrument").text(selectedPILabel);
+
+        // Installment amount
+        const amount = parseMoney(formFields["amount"].val());
+        const currency = this.defaultCurrency;
+        const installment = `${amount.toFixed(2)} ${currency}`;
+        paymentPreviewContainer.find("span#installment").text(installment);
+
+        // Frequency
+        const freqField = formFields["frequency"];
+        const selectedFreqValue = freqField.val();
+        const selectedFreqLabel = freqField.find(`option[value=${selectedFreqValue}]`).text();
+        paymentPreviewContainer.find("span#frequency").text(selectedFreqLabel);
+
+        // Annual amount
+        const annualAmount = amount * Number(selectedFreqValue);
+        paymentPreviewContainer.find("span#annual").text(`${annualAmount.toFixed(2)} ${currency}`);
+
+        // Cycle day
+        const cycleDay = formFields["cycle_day"].val();
+        paymentPreviewContainer.find("span#cycle_day").text(cycleDay);
     }
 }
 
