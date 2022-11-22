@@ -112,31 +112,10 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         }
 
         // Medium IDs
-        $this->medium_ids = civicrm_api3("Activity", "getoptions", [
-            "field" => "activity_medium_id",
-            "options" => [
-            "limit" => 0,
-            "sort" => "weight",
-            ],
-        ])["values"];
+        $this->medium_ids = CRM_Contract_FormUtils::getOptionValueLabels("encounter_medium");
 
         // Membership types
-        $this->membership_types = [];
-
-        $membership_types_result = civicrm_api3(
-            "MembershipType",
-            "get",
-            [
-            "options" => [
-                "limit" => 0,
-                "sort" => "weight",
-            ],
-            ]
-        )["values"];
-
-        foreach ($membership_types_result as $mem_type) {
-            $this->membership_types[$mem_type["id"]] = $mem_type["name"];
-        }
+        $this->membership_types = CRM_Contract_FormUtils::getMembershipTypes();
 
         // Recurring contribution
         $this->recurring_contribution = civicrm_api3("ContributionRecur", "getsingle", [ "id" => $rc_id ]);

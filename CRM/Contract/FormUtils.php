@@ -225,19 +225,34 @@ class CRM_Contract_FormUtils {
     return 1;
   }
 
-  public static function getPaymentInstruments() {
-    $paymentInstruments = [];
+  public static function getMembershipTypes() {
+    $types = [];
 
-    $piResult = Api4\OptionValue::get()
-      ->addWhere('option_group_id:name', '=', 'payment_instrument')
-      ->addSelect('label', 'value')
+    $mtResult = Api4\MembershipType::get()
+      ->addSelect('name')
       ->execute();
 
-    foreach ($piResult as $optValue) {
-      $paymentInstruments[$optValue['value']] = $optValue['label'];
+    foreach ($mtResult as $type) {
+      $types[$type['id']] = $type['name'];
     }
 
-    return $paymentInstruments;
+    return $types;
+  }
+
+  public static function getOptionValueLabels(string $optionGroup) {
+    $mapping = [];
+
+    $ovResult = Api4\OptionValue::get()
+      ->addWhere('option_group_id:name', '=', $optionGroup)
+      ->addSelect('label', 'value')
+      ->addOrderBy('weight', 'ASC')
+      ->execute();
+
+    foreach ($ovResult as $optVal) {
+      $mapping[$optVal['value']] = $optVal['label'];
+    }
+
+    return $mapping;
   }
   
 }

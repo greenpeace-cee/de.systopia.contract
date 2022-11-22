@@ -47,31 +47,13 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $this->contact = civicrm_api3("Contact", "getsingle", [ "id" => $contact_id ]);
 
         // Mediums
-        $this->mediums = civicrm_api3("Activity", "getoptions", [
-            "field"   => "activity_medium_id",
-            "options" => [
-                "limit" => 0,
-                "sort"  => "weight",
-            ],
-        ])["values"];
+        $this->mediums = CRM_Contract_FormUtils::getOptionValueLabels("encounter_medium");
 
         // Membership channels
-        $this->membership_channels = civicrm_api3("OptionValue", "get", [
-            "is_active"       => 1,
-            "option_group_id" => "contact_channel",
-            "options"         => [
-                "limit" => 0,
-                "sort"  => "weight",
-            ],
-        ])["values"];
+        $this->membership_channels = CRM_Contract_FormUtils::getOptionValueLabels("contact_channel");
 
         // Membership types
-        $this->membership_types = civicrm_api3("MembershipType", "get", [
-            "options" => [
-                "limit" => 0,
-                "sort"  => "weight",
-            ],
-        ])["values"];
+        $this->membership_types = CRM_Contract_FormUtils::getMembershipTypes();
 
         // Payment adapters
         $this->payment_adapters = CRM_Contract_Configuration::$paymentAdapters;
@@ -254,11 +236,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         );
 
         // Membership type (membership_type_id)
-        $membership_type_options = [ "" => "- none -" ];
-
-        foreach($this->membership_types as $membership_type){
-            $membership_type_options[$membership_type["id"]] = $membership_type["name"];
-        }
+        $membership_type_options = [ "" => "- none -" ] + $this->membership_types;
 
         $this->add(
             "select",
@@ -302,11 +280,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         );
 
         // Membership channel (membership_channel)
-        $membership_channel_options = [ "" => "- none -" ];
-
-        foreach($this->membership_channels as $mc){
-            $membership_channel_options[$mc["value"]] = $mc["label"];
-        }
+        $membership_channel_options = [ "" => "- none -" ] + $this->membership_channels;
 
         $this->add(
             "select",

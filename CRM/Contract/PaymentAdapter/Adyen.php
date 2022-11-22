@@ -128,7 +128,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'display_name' => 'Payment instrument',
         'enabled'      => TRUE,
         'name'         => 'payment_instrument',
-        'options'      => CRM_Contract_FormUtils::getPaymentInstruments(),
+        'options'      => CRM_Contract_FormUtils::getOptionValueLabels('payment_instrument'),
         'required'     => FALSE,
         'type'         => 'select',
       ],
