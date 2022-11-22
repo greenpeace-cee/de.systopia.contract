@@ -121,6 +121,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
   public static function formFields($params = []) {
     $contactID = CRM_Utils_Array::value('contact_id', $params, NULL);
+    $paymentTokenOptions = is_null($contactID) ? [] : self::getPaymentTokensForContact($contactID);
 
     return [
       'payment_instrument' => [
@@ -146,7 +147,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'display_name' => 'Payment token ID',
         'enabled'      => TRUE,
         'name'         => 'payment_token_id',
-        'options'      => self::getPaymentTokensForContact($contactID),
+        'options'      => $paymentTokenOptions,
         'required'     => FALSE,
         'type'         => 'select',
       ],
@@ -443,22 +444,28 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   private static function getPaymentTokensForContact($contactID) {
-    if (is_null($contactID)) return [];
-
     $paymentTokens = [];
 
     $ptResult = Api4\PaymentToken::get()
       ->addWhere('contact_id', '=', $contactID)
       ->addSelect(
+        'expiry_date',
+        'masked_account_number',
         'payment_processor_id.name',
-        'masked_account_number'
+        'payment_processor_id.payment_instrument_id:label'
       )
       ->execute();
 
     foreach ($ptResult as $token) {
       $processorName = $token['payment_processor_id.name'];
       $accountNumber = $token['masked_account_number'];
-      $paymentTokens[$token['id']] = "$processorName: $accountNumber";
+      $paymentInstrument = $token['payment_processor_id.payment_instrument_id:label'];
+      $paymentTokens[$token['id']] = "$processorName: $paymentInstrument $accountNumber";
+
+      if ($paymentInstrument !== 'Credit Card') continue;
+
+      $expiryDate = (new Datetime($token['expiry_date']))->format('m/Y'); 
+      $paymentTokens[$token['id']] .= " ($expiryDate)";
     }
 
     return $paymentTokens;
