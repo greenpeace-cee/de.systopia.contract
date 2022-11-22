@@ -154,22 +154,43 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
                 $field_name = $field["name"];
                 $field_id = "pa-$pa_name-$field_name";
                 $field_settings = isset($field["settings"]) ? $field["settings"] : [];
+                $field_required = isset($field["required"]) && $field["required"];
 
                 array_push($pa_form_template_var[$pa_name], $field_id);
 
                 switch ($field["type"]) {
+                    case "date":
+                        $this->add(
+                            "datepicker",
+                            $field_id,
+                            ts($field["display_name"]),
+                            $field_settings,
+                            $field_required,
+                            [ 'time' => false ]
+                        );
+
+                        break;
+
                     case "select":
                         $this->add(
                             "select",
                             $field_id,
                             ts($field["display_name"]),
-                            $field["options"]
+                            $field["options"],
+                            $field_required
                         );
 
                         break;
 
                     case "text":
-                        $this->add("text", $field_id, ts($field["display_name"]), $field_settings);
+                        $this->add(
+                            "text",
+                            $field_id,
+                            ts($field["display_name"]),
+                            $field_settings,
+                            $field_required
+                        );
+
                         break;
                 }
             }
