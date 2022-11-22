@@ -109,7 +109,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             ]
         );
 
-        // Payment instrument (payment_instrument)
+        // Payment adapter (payment_adapter)
         $payment_adapter_options = [];
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
@@ -123,7 +123,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             $payment_adapter_options
         );
 
-        // Payment-instrument-specific fields
+        // Payment-adapter-specific fields
         $pa_form_template_var = [];
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
@@ -136,7 +136,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
                 $field_name = $field["name"];
                 $field_id = "pa-$pa_name-$field_name";
                 $field_settings = isset($field["settings"]) ? $field["settings"] : [];
-                $field_required = isset($field["required"]) && $field["required"];
 
                 array_push($pa_form_template_var[$pa_name], $field_id);
 
@@ -147,7 +146,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
                             $field_id,
                             ts($field["display_name"]),
                             $field_settings,
-                            $field_required,
+                            FALSE,
                             [ 'time' => false ]
                         );
 
@@ -159,7 +158,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
                             $field_id,
                             ts($field["display_name"]),
                             $field["options"],
-                            $field_required
+                            FALSE
                         );
 
                         break;
@@ -170,7 +169,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
                             $field_id,
                             ts($field["display_name"]),
                             $field_settings,
-                            $field_required
+                            FALSE
                         );
 
                         break;

@@ -18,18 +18,18 @@ class Adyen {
             'email',
             'expiry_date',
             'ip_address',
-            'payment_processor',
+            'payment_processor_id',
             'shopper_reference',
             'stored_payment_method_id',
         ];
 
         paymentTokenFields.forEach(fieldID => {
             const container = cj(`div.form-field#pa-adyen-${fieldID}`);
-            useExistingToken ? container.hide() : container.show(200);
+            useExistingToken ? container.hide() : container.show();
         });
 
         const tokenIDContainer = cj(`div.form-field#pa-adyen-payment_token_id`);
-        useExistingToken ? tokenIDContainer.show() : tokenIDContainer.hide(200);
+        useExistingToken ? tokenIDContainer.show() : tokenIDContainer.hide();
 
         this.updatePaymentPreview(formFields);
     }
@@ -38,7 +38,7 @@ class Adyen {
         const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=adyen]");
 
         // Payment instrument
-        const piField = formFields["pa-adyen-payment_instrument"];
+        const piField = formFields["pa-adyen-payment_instrument_id"];
         const selectedPIValue = piField.val();
         const selectedPILabel = piField.find(`option[value=${selectedPIValue}]`).text();
         paymentPreviewContainer.find("span#payment_instrument").text(selectedPILabel);

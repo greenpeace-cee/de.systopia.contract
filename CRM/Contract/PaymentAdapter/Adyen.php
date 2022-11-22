@@ -124,11 +124,11 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $paymentTokenOptions = is_null($contactID) ? [] : self::getPaymentTokensForContact($contactID);
 
     return [
-      'payment_instrument' => [
+      'payment_instrument_id' => [
         'default'      => NULL,
         'display_name' => 'Payment instrument',
         'enabled'      => TRUE,
-        'name'         => 'payment_instrument',
+        'name'         => 'payment_instrument_id',
         'options'      => CRM_Contract_FormUtils::getOptionValueLabels('payment_instrument'),
         'required'     => FALSE,
         'type'         => 'select',
@@ -151,11 +151,11 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'required'     => FALSE,
         'type'         => 'select',
       ],
-      'payment_processor' => [
+      'payment_processor_id' => [
         'default'      => NULL,
         'display_name' => 'Payment processor',
         'enabled'      => TRUE,
-        'name'         => 'payment_processor',
+        'name'         => 'payment_processor_id',
         'options'      => self::getPaymentProcessors(),
         'required'     => TRUE,
         'type'         => 'select',
@@ -298,9 +298,44 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function mapSubmittedFormValues($apiEndpoint, $submitted) {
-    // ...
+    switch ($apiEndpoint) {
+      case 'Contract.create': {
+        $startDate = CRM_Utils_Date::processDate($submitted['start_date'], NULL, NULL, 'Y-m-d H:i:s');
 
-    return [];
+        $apiParams = [
+          'payment_method.amount'                => CRM_Contract_Utils::formatMoney($submitted['amount']),
+          'payment_method.campaign_id'           => $submitted['campaign_id'],
+          'payment_method.cycle_day'             => $submitted['cycle_day'],
+          'payment_method.frequency_interval'    => 12 / (int) $submitted['frequency'],
+          'payment_method.frequency_unit'        => 'month',
+          'payment_method.payment_instrument_id' => $submitted['pa-adyen-payment_instrument_id'],
+          'payment_method.start_date'            => $startDate,
+        ];
+
+        if ($submitted['pa-adyen-use_existing_token'] === '0') {
+          $apiParams['payment_method.payment_token_id'] = $submitted['pa-adyen-payment_token_id'];
+          return $apiParams;
+        }
+
+        $apiParams += [
+          'payment_method.account_number'           => $submitted['pa-adyen-account_number'],
+          'payment_method.billing_first_name'       => $submitted['pa-adyen-billing_first_name'],
+          'payment_method.billing_last_name'        => $submitted['pa-adyen-billing_last_name'],
+          'payment_method.email'                    => $submitted['pa-adyen-email'],
+          'payment_method.expiry_date'              => $submitted['pa-adyen-expiry_date'],
+          'payment_method.ip_address'               => $submitted['pa-adyen-ip_address'],
+          'payment_method.payment_processor_id'     => $submitted['pa-adyen-payment_processor_id'],
+          'payment_method.shopper_reference'        => $submitted['pa-adyen-shopper_reference'],
+          'payment_method.stored_payment_method_id' => $submitted['pa-adyen-stored_payment_method_id'],
+        ];
+
+        return $apiParams;
+      }
+
+      default: {
+        return [];
+      }
+    }
   }
 
   public static function nextCycleDay() {
