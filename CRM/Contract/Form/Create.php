@@ -133,47 +133,11 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             foreach ($form_fields as $field) {
                 if (!$field["enabled"]) continue;
 
-                $field_name = $field["name"];
-                $field_id = "pa-$pa_name-$field_name";
-                $field_settings = isset($field["settings"]) ? $field["settings"] : [];
+                $field["id"] = "pa-$pa_name-" . $field["name"];
 
-                array_push($pa_form_template_var[$pa_name], $field_id);
+                array_push($pa_form_template_var[$pa_name], $field["id"]);
 
-                switch ($field["type"]) {
-                    case "date":
-                        $this->add(
-                            "datepicker",
-                            $field_id,
-                            ts($field["display_name"]),
-                            $field_settings,
-                            FALSE,
-                            [ 'time' => false ]
-                        );
-
-                        break;
-
-                    case "select":
-                        $this->add(
-                            "select",
-                            $field_id,
-                            ts($field["display_name"]),
-                            $field["options"],
-                            FALSE
-                        );
-
-                        break;
-
-                    case "text":
-                        $this->add(
-                            "text",
-                            $field_id,
-                            ts($field["display_name"]),
-                            $field_settings,
-                            FALSE
-                        );
-
-                        break;
-                }
+                CRM_Contract_FormUtils::addFormField($this, $field);
             }
         }
 

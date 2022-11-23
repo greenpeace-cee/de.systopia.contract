@@ -198,39 +198,24 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         );
 
         // Payment-adapter-specific fields
-        $paf_template_var = [];
+        $pa_form_template_var = [];
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            $paf_template_var[$pa_name] = [];
+            $pa_form_template_var[$pa_name] = [];
+            $form_fields = $pa_class::formFields([ "contact_id" => $this->contact["id"] ]);
 
-            foreach ($pa_class::formFields() as $field) {
+            foreach ($form_fields as $field) {
                 if (!$field["enabled"]) continue;
 
-                $field_name = $field["name"];
-                $field_id = "pa-$pa_name-$field_name";
-                $field_settings = isset($field["settings"]) ? $field["settings"] : [];
+                $field["id"] = "pa-$pa_name-" . $field["name"];
 
-                array_push($paf_template_var[$pa_name], $field_id);
+                array_push($pa_form_template_var[$pa_name], $field["id"]);
 
-                switch ($field["type"]) {
-                    case "select":
-                        $this->add(
-                            "select",
-                            $field_id,
-                            ts($field["display_name"]),
-                            $field["options"]
-                        );
-
-                        break;
-
-                    case "text":
-                        $this->add("text", $field_id, ts($field["display_name"]), $field_settings);
-                        break;
-                }
+                CRM_Contract_FormUtils::addFormField($this, $field);
             }
         }
 
-        $this->assign("payment_adapter_fields", $paf_template_var);
+        $this->assign("payment_adapter_fields", $pa_form_template_var);
 
         // Recurring contribution (recurring_contribution)
         $formUtils = new CRM_Contract_FormUtils($this, "Membership");

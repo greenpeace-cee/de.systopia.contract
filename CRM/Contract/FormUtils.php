@@ -9,6 +9,7 @@
 +--------------------------------------------------------------*/
 
 use Civi\Api4;
+use CRM_Contract_ExtensionUtil as ExtUtil;
 
 class CRM_Contract_FormUtils {
 
@@ -253,6 +254,53 @@ class CRM_Contract_FormUtils {
     }
 
     return $mapping;
+  }
+
+  public static function addFormField($form, $params) {
+    $displayName = CRM_Utils_Array::value('display_name', $params, '');
+    $id          = CRM_Utils_Array::value('id',           $params, '');
+    $options     = CRM_Utils_Array::value('options',      $params, []);
+    $settings    = CRM_Utils_Array::value('settings',     $params, []);
+    $type        = CRM_Utils_Array::value('type',         $params, NULL);
+
+    switch ($type) {
+      case 'date': {
+        $form->add(
+          'datepicker',
+          $id,
+          ExtUtil::ts($displayName),
+          $settings,
+          FALSE,
+          [ 'time' => FALSE ]
+        );
+
+        break;
+      }
+
+      case 'select': {
+        $form->add(
+          'select',
+          $id,
+          ExtUtil::ts($displayName),
+          $options,
+          FALSE
+        );
+
+        break;
+      }
+
+      case 'text': {
+        $form->add(
+          'text',
+          $id,
+          ExtUtil::ts($displayName),
+          $settings,
+          FALSE
+        );
+
+        break;
+      }
+    }
   }
   
 }
