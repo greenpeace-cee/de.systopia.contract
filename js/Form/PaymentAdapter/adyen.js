@@ -9,19 +9,13 @@ class Adyen {
     }
 
     onFormChange (formFields) {
-        const useExistingToken = formFields["pa-adyen-use_existing_token"].val() === '0';
+        if (EXT_VARS.action !== "sign") {
+            this.updatePaymentPreview(formFields);
+            return;
+        }
 
-        const paymentTokenFields = [
-            'account_number',
-            'billing_first_name',
-            'billing_last_name',
-            'email',
-            'expiry_date',
-            'ip_address',
-            'payment_processor_id',
-            'shopper_reference',
-            'stored_payment_method_id',
-        ];
+        const useExistingToken = formFields["pa-adyen-use_existing_token"].val() === '0';
+        const paymentTokenFields = ADAPTER_VARS.payment_token_fields;
 
         paymentTokenFields.forEach(fieldID => {
             const container = cj(`div.form-field#pa-adyen-${fieldID}`);

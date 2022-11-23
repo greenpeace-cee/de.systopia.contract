@@ -131,8 +131,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             ]));
 
             $paymentAdapterFields[$paName] = [];
+            $formFields = $paClass::formFields([ "form" => "modify" ]);
 
-            foreach ($paClass::formFields() as $field) {
+            foreach ($formFields as $field) {
                 if (!$field["enabled"]) continue;
 
                 $fieldName = $field["name"];
@@ -202,7 +203,11 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
             $pa_form_template_var[$pa_name] = [];
-            $form_fields = $pa_class::formFields([ "contact_id" => $this->contact["id"] ]);
+
+            $form_fields = $pa_class::formFields([
+              "contact_id" => $this->contact["id"],
+              "form"       => "modify",
+            ]);
 
             foreach ($form_fields as $field) {
                 if (!$field["enabled"]) continue;
@@ -355,7 +360,12 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Payment-adapter-specific defaults
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            foreach ($pa_class::formFields($rc_id) as $field_name => $field) {
+            $form_fields = $pa_class::formFields([
+              "form"                      => "modify",
+              "recurring_contribution_id" => $rc_id,
+            ]);
+
+            foreach ($form_fields as $field_name => $field) {
                 if (!$field["enabled"] || empty($field["default"])) continue;
 
                 $defaults["pa-$pa_name-$field_name"] = $field["default"];
@@ -418,7 +428,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                     HTML_QuickForm::setElementError("cycle_day", "Please select a cycle day");
                 }
 
-                foreach ($pa_class::formFields() as $field_name => $field) {
+                $form_fields = $pa_class::formFields([ "form" => "modify" ]);
+
+                foreach ($form_fields as $field_name => $field) {
                     if (!$field["enabled"] || empty($field["validate"])) continue;
 
                     $field_id = "pa-$pa_name-$field_name";

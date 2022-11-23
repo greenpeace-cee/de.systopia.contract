@@ -64,8 +64,9 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             $resources->addVars("de.systopia.contract/$paName", $paClass::formVars());
 
             $paymentAdapterFields[$paName] = [];
+            $formFields = $paClass::formFields([ "form" => "sign" ]);
 
-            foreach ($paClass::formFields() as $field) {
+            foreach ($formFields as $field) {
                 if (!$field["enabled"]) continue;
 
                 $fieldName = $field["name"];
@@ -128,7 +129,11 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
             $pa_form_template_var[$pa_name] = [];
-            $form_fields = $pa_class::formFields([ "contact_id" => $this->contact["id"] ]);
+
+            $form_fields = $pa_class::formFields([
+              "contact_id" => $this->contact["id"],
+              "form"       => "sign",
+            ]);
 
             foreach ($form_fields as $field) {
                 if (!$field["enabled"]) continue;
@@ -296,8 +301,9 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
             $pa_name = $submitted["payment_adapter"];
             $pa_class = $this->payment_adapters[$pa_name];
+            $form_fields = $pa_class::formFields([ "form" => "sign" ]);
 
-            foreach ($pa_class::formFields() as $field_name => $field) {
+            foreach ($form_fields as $field_name => $field) {
                 if (!$field["enabled"] || empty($field["validate"])) continue;
 
                 $field_id = "pa-$pa_name-$field_name";
@@ -349,7 +355,9 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
         // Payment-adapter-specific defaults
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            foreach ($pa_class::formFields() as $field_name => $field) {
+            $form_fields = $pa_class::formFields([ "form" => "sign" ]);
+
+            foreach ($form_fields as $field_name => $field) {
                 if (!$field["enabled"] || empty($field["default"])) continue;
 
                 $defaults["pa-$pa_name-$field_name"] = $field["default"];

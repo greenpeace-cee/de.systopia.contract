@@ -120,6 +120,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function formFields($params = []) {
+    $form = CRM_Utils_Array::value('form', $params, NULL);
     $contactID = CRM_Utils_Array::value('contact_id', $params, NULL);
     $paymentTokenOptions = is_null($contactID) ? [] : self::getPaymentTokensForContact($contactID);
 
@@ -136,7 +137,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'use_existing_token' => [
         'default'      => NULL,
         'display_name' => 'Create or reuse payment token?',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'use_existing_token',
         'options'      => ['Use existing token', 'Create new token'],
         'required'     => FALSE,
@@ -154,7 +155,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'payment_processor_id' => [
         'default'      => NULL,
         'display_name' => 'Payment processor',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'payment_processor_id',
         'options'      => self::getPaymentProcessors(),
         'required'     => TRUE,
@@ -163,7 +164,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'stored_payment_method_id' => [
         'default'      => NULL,
         'display_name' => 'Stored payment method ID',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'stored_payment_method_id',
         'required'     => TRUE,
         'settings'     => [],
@@ -172,7 +173,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'shopper_reference' => [
         'default'      => NULL,
         'display_name' => 'Shopper reference',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'shopper_reference',
         'required'     => FALSE,
         'settings'     => [ 'class' => 'huge' ],
@@ -181,7 +182,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'billing_first_name' => [
         'default'      => NULL,
         'display_name' => 'Billing first name',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'billing_first_name',
         'required'     => FALSE,
         'settings'     => [],
@@ -190,7 +191,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'billing_last_name' => [
         'default'      => NULL,
         'display_name' => 'Billing last name',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'billing_last_name',
         'required'     => FALSE,
         'settings'     => [],
@@ -199,7 +200,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'email' => [
         'default'      => NULL,
         'display_name' => 'E-Mail',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'email',
         'required'     => FALSE,
         'settings'     => [ 'class' => 'big' ],
@@ -208,7 +209,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'account_number' => [
         'default'      => NULL,
         'display_name' => 'Account number',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'account_number',
         'required'     => FALSE,
         'settings'     => [ 'class' => 'big' ],
@@ -217,7 +218,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'expiry_date' => [
         'default'      => NULL,
         'display_name' => 'Expiry date',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'expiry_date',
         'required'     => FALSE,
         'settings'     => [],
@@ -226,7 +227,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'ip_address' => [
         'default'      => NULL,
         'display_name' => 'IP address',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'ip_address',
         'required'     => FALSE,
         'settings'     => [],
@@ -240,6 +241,17 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
     return [
       'default_currency' => Civi::settings()->get('defaultCurrency'),
+      'payment_token_fields' => [
+        'account_number',
+        'billing_first_name',
+        'billing_last_name',
+        'email',
+        'expiry_date',
+        'ip_address',
+        'payment_processor_id',
+        'shopper_reference',
+        'stored_payment_method_id',
+      ],
     ];
   }
 
@@ -327,6 +339,14 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
           'payment_method.payment_processor_id'     => $submitted['pa-adyen-payment_processor_id'],
           'payment_method.shopper_reference'        => $submitted['pa-adyen-shopper_reference'],
           'payment_method.stored_payment_method_id' => $submitted['pa-adyen-stored_payment_method_id'],
+        ];
+
+        return $apiParams;
+      }
+
+      case 'Contract.modify': {
+        $apiParams = [
+          // ...
         ];
 
         return $apiParams;
