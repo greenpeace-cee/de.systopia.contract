@@ -345,8 +345,15 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       }
 
       case 'Contract.modify': {
+        $frequency = (int) $submitted['frequency'];
+        $amount = (float) CRM_Contract_Utils::formatMoney($submitted['amount']);
+
         $apiParams = [
-          // ...
+          'membership_payment.cycle_day'            => $submitted['cycle_day'],
+          'membership_payment.membership_annual'    => $frequency * $amount,
+          'membership_payment.membership_frequency' => $frequency,
+          'payment_method.payment_instrument_id'    => $submitted['pa-adyen-payment_instrument_id'],
+          'payment_method.payment_token_id'         => $submitted['pa-adyen-payment_token_id'],
         ];
 
         return $apiParams;
