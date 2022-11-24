@@ -61,18 +61,6 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         $current_adapter_class = CRM_Contract_Utils::getPaymentAdapterClass($current_adapter);
         $current_adapter_class::terminate($recurring_contribution_id);
 
-        $current_annual = CRM_Contract_Utils::calcAnnualAmount(
-            (float) $current_rc_data["amount"],
-            (int) $current_rc_data["frequency_interval"],
-            (string) $current_rc_data["frequency_unit"]
-        );
-
-        // Calculate the new contribution amount & frequency
-        $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
-            (float) CRM_Utils_Array::value("annual", $update, $current_annual["annual"]),
-            (int) CRM_Utils_Array::value("frequency", $update, $current_annual["frequency"])
-        );
-
         // Get the current campaign ID
         $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
@@ -80,15 +68,15 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         $now = date("Y-m-d H:i:s");
 
         $create_params = [
-            "amount"             => $new_recurring_amount["amount"],
+            "amount"             => CRM_Utils_Array::value("amount", $update, $current_rc_data["amount"]),
             "campaign_id"        => !empty($update["campaign_id"]) ? $update["campaign_id"] : $current_campaign_id,
             "contact_id"         => $current_rc_data["contact_id"],
             "create_date"        => date("Y-m-d H:i:s"),
             "currency"           => CRM_Utils_Array::value("currency", $update, "EUR"),
             "cycle_day"          => CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]),
             "financial_type_id"  => $current_rc_data["financial_type_id"],
-            "frequency_interval" => $new_recurring_amount["frequency_interval"],
-            "frequency_unit"     => $new_recurring_amount["frequency_unit"],
+            "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $update, $current_rc_data["frequency_interval"]),
+            "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $update, $current_rc_data["frequency_unit"]),
             "start_date"         => $now,
         ];
 
@@ -296,21 +284,6 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             "id" => $recurring_contribution_id,
         ]);
 
-        $current_annual_amount = CRM_Contract_Utils::calcAnnualAmount(
-            (float) $current_rc_data["amount"],
-            (int) $current_rc_data["frequency_interval"],
-            (string) $current_rc_data["frequency_unit"]
-        );
-
-        $current_rc_data["annual"] = $current_annual_amount["annual"];
-        $current_rc_data["frequency"] = $current_annual_amount["frequency"];
-
-        // Calculate the new contribution amount & frequency
-        $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
-            (float) CRM_Utils_Array::value("annual", $params, $current_rc_data["annual"]),
-            (int) CRM_Utils_Array::value("frequency", $params, $current_rc_data["frequency"])
-        );
-
         // Get the current campaign ID
         $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
@@ -322,15 +295,15 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
 
         // Create a new EFT payment
         $create_params = [
-            "amount"             => $new_recurring_amount["amount"],
+            "amount"             => CRM_Utils_Array::value("amount", $update, $current_rc_data["amount"]),
             "campaign_id"        => CRM_Utils_Array::value("campaign_id", $params, $current_campaign_id),
             "contact_id"         => $current_rc_data["contact_id"],
             "create_date"        => $now,
             "currency"           => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),
             "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
             "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
-            "frequency_interval" => $new_recurring_amount["frequency_interval"],
-            "frequency_unit"     => $new_recurring_amount["frequency_unit"],
+            "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $update, $current_rc_data["frequency_interval"]),
+            "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $update, $current_rc_data["frequency_unit"]),
             "start_date"         => $now,
         ];
 

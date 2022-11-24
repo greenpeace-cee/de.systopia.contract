@@ -416,24 +416,17 @@ class CRM_Contract_Utils
   }
 
   public static function calcAnnualAmount(float $amount, int $frequency_interval, string $frequency_unit) {
-    $annual = $frequency_unit === "year" ? $amount : (12 / $frequency_interval) * $amount;
-    $frequency = $frequency_unit === "year" ? 1 : 12 / $frequency_interval;
-
     return [
-      "annual"    => $annual,
-      "frequency" => $frequency,
+      "annual"    => $frequency_unit === "year" ? $amount : (12 / $frequency_interval) * $amount,
+      "frequency" => $frequency_unit === "year" ? 1 : 12 / $frequency_interval,
     ];
   }
 
   public static function calcRecurringAmount(float $annual, int $frequency) {
-    $amount = $annual / $frequency;
-    $frequency_interval = $frequency === 1 ? 1 : 12 / $frequency;
-    $frequency_unit = $frequency === 1 ? "year" : "month";
-
     return [
-      "amount"             => $amount,
-      "frequency_interval" => $frequency_interval,
-      "frequency_unit"     => $frequency_unit,
+      "amount"             => $annual / $frequency,
+      "frequency_interval" => $frequency === 1 ? 1 : 12 / $frequency,
+      "frequency_unit"     => $frequency === 1 ? "year" : "month",
     ];
   }
 

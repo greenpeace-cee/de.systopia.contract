@@ -6,6 +6,7 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
 use CRM_Contract_ExtensionUtil as E;
 
 /**
@@ -323,6 +324,30 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
     // Skip the update if nothing changes
     if (count($payment_changes["parameters"]) === 0) return $current_rc_id;
 
+    $params = $payment_changes["parameters"];
+
+    // Calculate the new amount & frequency
+    $current_rc = Api4\ContributionRecur::get()
+      ->addWhere("id", "=", $current_rc_id)
+      ->addSelect("amount", "frequency_interval", "frequency_unit")
+      ->execute()
+      ->first();
+
+    $current_annual = CRM_Contract_Utils::calcAnnualAmount(
+      (float) $current_rc["amount"],
+      (int) $current_rc["frequency_interval"],
+      (string) $current_rc["frequency_unit"]
+    );
+
+    $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
+      (float) CRM_Utils_Array::value("annual", $params, $current_annual["annual"]),
+      (int) CRM_Utils_Array::value("frequency", $params, $current_annual["frequency"])
+    );
+
+    unset($params["annual"]);
+    unset($params["frequency"]);
+    $params = array_merge($params, $new_recurring_amount);
+
     // If a different payment adapter is set,
     // create a new contribution/payment and terminate the old one
     if ($payment_changes["adapter"] !== $current_pa_id) {
@@ -331,7 +356,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
       $new_rc_id = $new_payment_adapter::createFromUpdate(
         $current_rc_id,
         $current_pa_id,
-        $payment_changes["parameters"],
+        $params,
         $payment_changes["activity_type_id"]
       );
 
@@ -343,13 +368,13 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
     if (isset($current_payment_adapter)) {
       $new_rc_id = $current_payment_adapter::update(
         $current_rc_id,
-        $payment_changes["parameters"],
+        $params,
         $payment_changes["activity_type_id"]
       );
     } else {
       $new_rc_id = CRM_Contract_PaymentAdapter_EFT::update(
         $current_rc_id,
-        $payment_changes["parameters"],
+        $params,
         $payment_changes["activity_type_id"]
       );
     }
