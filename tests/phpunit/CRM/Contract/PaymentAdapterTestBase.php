@@ -31,6 +31,7 @@ class CRM_Contract_PaymentAdapterTestBase
     parent::setUp();
 
     $this->createContact();
+    $this->createRequiredOptionValues();
   }
 
   public function tearDown() {
@@ -49,6 +50,39 @@ class CRM_Contract_PaymentAdapterTestBase
     $contact['email'] = $contactEmail;
 
     $this->contact = $contact;
+  }
+
+  private function createRequiredOptionValues() {
+    $expectedRCStatuses = [
+      'Cancelled',
+      'Completed',
+      'Failed',
+      'Failing',
+      'In Progress',
+      'Overdue',
+      'Paused',
+      'Pending',
+      'Processing',
+    ];
+
+    $optValResult = Api4\OptionValue::get()
+      ->addWhere('option_group_id:name', '=', 'contribution_recur_status')
+      ->addSelect('label')
+      ->execute();
+
+    $actualRCStatuses = [];
+
+    foreach ($optValResult as $optVal) {
+      $actualRCStatuses[] = $optVal['label'];
+    }
+
+    foreach (array_diff($expectedRCStatuses, $actualRCStatuses) as $missingStatus) {
+      Api4\OptionValue::create()
+        ->addValue('option_group_id.name', 'contribution_recur_status')
+        ->addValue('name', $missingStatus)
+        ->addValue('label', $missingStatus)
+        ->execute();
+    }
   }
 
   protected function getOptionValue(string $optionGroup, string $name, bool $useCache = TRUE) {

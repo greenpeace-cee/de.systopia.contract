@@ -372,21 +372,26 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function pause($recurring_contribution_id) {
-    // ...
-
-    return;
+    Api4\ContributionRecur::update()
+      ->addWhere('id', '=', $recurring_contribution_id)
+      ->addValue('contribution_status_id:name', 'Paused')
+      ->execute();
   }
 
-  public static function resume($recurring_contribution_id, $update = []) {
-    // ...
+  public static function resume($recurringContributionID, $update = []) {
+    if (count($update) < 1) {
+      Api4\ContributionRecur::update()
+        ->addWhere('id', '=', $recurringContributionID)
+        ->addValue('contribution_status_id:name', 'Pending')
+        ->execute();
 
-    return $recurring_contribution_id;
-  }
+      return $recurringContributionID;
+    }
 
-  public static function revive($recurringContributionID, $update = []) {
-    $pendingOptVal = (int) CRM_Contract_Utils::getOptionValue('contribution_recur_status', 'Pending');
-    $update['cancel_date'] = NULL;
-    $update['cancel_reason'] = NULL;
+    $pendingOptVal = (int) CRM_Contract_Utils::getOptionValue(
+      'contribution_recur_status',
+      'Pending'
+    );
 
     $update['contribution_status_id'] = CRM_Utils_Array::value(
       'contribution_status_id',
@@ -394,9 +399,25 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       $pendingOptVal
     );
 
-    $newRecurContribID = self::update($recurringContributionID, $update);
+    return self::update($recurringContributionID, $update);
+  }
 
-    return $newRecurContribID;
+  public static function revive($recurringContributionID, $update = []) {
+    $update['cancel_date'] = NULL;
+    $update['cancel_reason'] = NULL;
+
+    $pendingOptVal = (int) CRM_Contract_Utils::getOptionValue(
+      'contribution_recur_status',
+      'Pending'
+    );
+
+    $update['contribution_status_id'] = CRM_Utils_Array::value(
+      'contribution_status_id',
+      $update,
+      $pendingOptVal
+    );
+
+    return self::update($recurringContributionID, $update);
   }
 
   public static function terminate($recurringContributionID, $reason = "CHNG") {

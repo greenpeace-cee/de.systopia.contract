@@ -234,6 +234,54 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
   }
 
+  public function testPauseAndResume() {
+
+    // --- Create a payment --- //
+
+    CRM_Contract_PaymentAdapter_Adyen::create([
+      'amount'                   => 10.0,
+      'contact_id'               => $this->contact['id'],
+      'payment_processor_id'     => $this->paymentProcessor['id'],
+      'payment_token_id'         => $this->paymentToken['id'],
+    ]);
+
+    $recurContribQuery = Api4\ContributionRecur::get()
+      ->addSelect('contribution_status_id:name')
+      ->execute();
+
+    $recurringContribution = $recurContribQuery->first();
+    $this->assertEquals('Pending', $recurringContribution['contribution_status_id:name']);
+
+    // --- Pause the payment --- //
+
+    CRM_Contract_PaymentAdapter_Adyen::pause($recurringContribution['id']);
+
+    // --- Assert the payment has been paused --- //
+
+    $recurringContribution = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $recurringContribution['id'])
+      ->addSelect('contribution_status_id:name')
+      ->execute()
+      ->first();
+
+    $this->assertEquals('Paused', $recurringContribution['contribution_status_id:name']);
+
+    // --- Resume the payment --- //
+
+    CRM_Contract_PaymentAdapter_Adyen::resume($recurringContribution['id']);
+
+    // --- Assert the payment has been resumed --- //
+
+    $recurringContribution = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $recurringContribution['id'])
+      ->addSelect('contribution_status_id:name')
+      ->execute()
+      ->first();
+
+    $this->assertEquals('Pending', $recurringContribution['contribution_status_id:name']);
+
+  }
+
   public function testRevive() {
 
     // --- Create a payment --- //
@@ -548,6 +596,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $this->paymentToken = $createPaymentTokenResult->first();
   }
+
 }
 
 ?>
