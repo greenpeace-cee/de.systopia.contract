@@ -441,13 +441,28 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
   public static function update($recurringContributionID, $params, $activityTypeID = NULL) {
     $oldRC = Api4\ContributionRecur::get()
-      ->addSelect('*')
+      ->addSelect(
+        'amount',
+        'campaign_id',
+        'contact_id',
+        'contribution_status_id',
+        'currency',
+        'cycle_day',
+        'financial_type_id',
+        'frequency_interval',
+        'frequency_unit',
+        'payment_instrument_id',
+        'payment_processor_id',
+        'payment_token_id',
+        'start_date'
+      )
       ->addWhere('id', '=', $recurringContributionID)
       ->execute()
       ->first();
 
     self::terminate($recurringContributionID);
 
+    $defaultCampaign = CRM_Utils_Array::value('campaign_id', $oldRC, NULL);
     $cycleDay = CRM_Utils_Array::value('cycle_day', $params, $oldRC['cycle_day']);
     $startDate = new DateTime(CRM_Utils_Array::value('start_date', $params, 'now'));
 
@@ -460,6 +475,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $recurContribParamMapping = [
       //                                | original name            | required | default                          |
       'amount'                       => [ 'amount'                 , FALSE    , $oldRC['amount']                 ],
+      'campaign_id'                  => [ 'campaign_id'            , FALSE    , $defaultCampaign                 ],
       'contact_id'                   => [ NULL                     , FALSE    , $oldRC['contact_id']             ],
       'contribution_status_id'       => [ 'contribution_status_id' , FALSE    , $oldRC['contribution_status_id'] ],
       'currency'                     => [ 'currency'               , FALSE    , $oldRC['currency']               ],
