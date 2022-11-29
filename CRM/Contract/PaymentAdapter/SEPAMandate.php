@@ -574,7 +574,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         // Create a new mandate
         $create_params = [
-            "amount"             => CRM_Utils_Array::value("amount", $update, $current_rc_data["amount"]),
+            "amount"             => CRM_Utils_Array::value("amount", $params, $current_rc_data["amount"]),
             "bic"                => CRM_Utils_Array::value("bic", $bank_account, $current_bic),
             "campaign_id"        => !empty($params["campaign_id"]) ? $params["campaign_id"] : $current_campaign_id,
             "contact_id"         => $current_rc_data["contact_id"],
@@ -583,8 +583,8 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "currency"           => CRM_Utils_Array::value("currency", $params, $creditor_currency),
             "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
             "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
-            "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $update, $current_rc_data["frequency_interval"]),
-            "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $update, $current_rc_data["frequency_unit"]),
+            "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $params, $current_rc_data["frequency_interval"]),
+            "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $params, $current_rc_data["frequency_unit"]),
             "iban"               => CRM_Utils_Array::value("iban", $bank_account, $current_mandate_data["iban"]),
             "reference"          => CRM_Utils_Array::value("reference", $params),
             "start_date"         => $new_start_date,

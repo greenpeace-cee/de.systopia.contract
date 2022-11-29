@@ -295,15 +295,15 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
 
         // Create a new EFT payment
         $create_params = [
-            "amount"             => CRM_Utils_Array::value("amount", $update, $current_rc_data["amount"]),
+            "amount"             => CRM_Utils_Array::value("amount", $params, $current_rc_data["amount"]),
             "campaign_id"        => CRM_Utils_Array::value("campaign_id", $params, $current_campaign_id),
             "contact_id"         => $current_rc_data["contact_id"],
             "create_date"        => $now,
             "currency"           => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),
             "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
             "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
-            "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $update, $current_rc_data["frequency_interval"]),
-            "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $update, $current_rc_data["frequency_unit"]),
+            "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $params, $current_rc_data["frequency_interval"]),
+            "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $params, $current_rc_data["frequency_unit"]),
             "start_date"         => $now,
         ];
 

@@ -6,6 +6,7 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
 use CRM_Contract_ExtensionUtil as E;
 
 /**
@@ -240,6 +241,29 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
     }
 
     $payment_changes = json_decode($change_data["contract_updates.ch_payment_changes"], true);
+    $params = $payment_changes['parameters'];
+
+    // Calculate the new amount & frequency
+    $current_rc = Api4\ContributionRecur::get()
+      ->addWhere("id", "=", $current_rc_id)
+      ->addSelect("amount", "frequency_interval", "frequency_unit")
+      ->execute()
+      ->first();
+
+    $current_annual = CRM_Contract_Utils::calcAnnualAmount(
+      (float) $current_rc["amount"],
+      (int) $current_rc["frequency_interval"],
+      (string) $current_rc["frequency_unit"]
+    );
+
+    $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
+      (float) CRM_Utils_Array::value("annual", $params, $current_annual["annual"]),
+      (int) CRM_Utils_Array::value("frequency", $params, $current_annual["frequency"])
+    );
+
+    unset($params["annual"]);
+    unset($params["frequency"]);
+    $params = array_merge($params, $new_recurring_amount);
 
     // If a different payment adapter is set,
     // create a new contribution/payment and terminate the old one
@@ -249,7 +273,7 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
       $new_rc_id =  $new_payment_adapter::createFromUpdate(
         $current_rc_id,
         $current_pa_id,
-        $payment_changes["parameters"],
+        $params,
         $payment_changes["activity_type_id"]
       );
 
@@ -259,9 +283,9 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
     }
 
     if (isset($current_payment_adapter)) {
-      $new_rc_id = $current_payment_adapter::resume($current_rc_id, $payment_changes["parameters"]);
+      $new_rc_id = $current_payment_adapter::resume($current_rc_id, $params);
     } else {
-      $update_params = array_merge($payment_changes["parameters"], [ "id" => $current_rc_id ]);
+      $update_params = array_merge($params, [ "id" => $current_rc_id ]);
       civicrm_api3("ContributionRecur", "create", $update_params);
       $new_rc_id = $current_rc_id;
     }
