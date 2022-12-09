@@ -243,27 +243,29 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
     $payment_changes = json_decode($change_data["contract_updates.ch_payment_changes"], true);
     $params = $payment_changes['parameters'];
 
-    // Calculate the new amount & frequency
-    $current_rc = Api4\ContributionRecur::get()
-      ->addWhere("id", "=", $current_rc_id)
-      ->addSelect("amount", "frequency_interval", "frequency_unit")
-      ->execute()
-      ->first();
+    if (count($params) > 0) {
+      // Calculate the new amount & frequency
+      $current_rc = Api4\ContributionRecur::get()
+        ->addWhere("id", "=", $current_rc_id)
+        ->addSelect("amount", "frequency_interval", "frequency_unit")
+        ->execute()
+        ->first();
 
-    $current_annual = CRM_Contract_Utils::calcAnnualAmount(
-      (float) $current_rc["amount"],
-      (int) $current_rc["frequency_interval"],
-      (string) $current_rc["frequency_unit"]
-    );
+      $current_annual = CRM_Contract_Utils::calcAnnualAmount(
+        (float) $current_rc["amount"],
+        (int) $current_rc["frequency_interval"],
+        (string) $current_rc["frequency_unit"]
+      );
 
-    $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
-      (float) CRM_Utils_Array::value("annual", $params, $current_annual["annual"]),
-      (int) CRM_Utils_Array::value("frequency", $params, $current_annual["frequency"])
-    );
+      $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
+        (float) CRM_Utils_Array::value("annual", $params, $current_annual["annual"]),
+        (int) CRM_Utils_Array::value("frequency", $params, $current_annual["frequency"])
+      );
 
-    unset($params["annual"]);
-    unset($params["frequency"]);
-    $params = array_merge($params, $new_recurring_amount);
+      unset($params["annual"]);
+      unset($params["frequency"]);
+      $params = array_merge($params, $new_recurring_amount);
+    }
 
     // If a different payment adapter is set,
     // create a new contribution/payment and terminate the old one
