@@ -14,6 +14,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
     private $change_class;
     private $contact_id;
+    private $current_cycle_day;
     private $medium_ids;
     private $membership;
     private $membership_types;
@@ -87,6 +88,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->contact_id = $contact_id;
         $this->assign("cid", $contact_id);
         $this->contact = civicrm_api3("Contact", "getsingle", [ "id" => $contact_id ]);
+        $this->assign("contact", $this->contact);
 
         // Destination
         $this->controller->_destination = CRM_Utils_System::url(
@@ -97,8 +99,8 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         // Current cycle day
         $rc_custom_field_id = CRM_Contract_Utils::getCustomFieldId("membership_payment.membership_recurring_contribution");
         $rc_id = $this->membership[$rc_custom_field_id];
-        $current_cycle_day = CRM_Contract_RecurringContribution::getCycleDay($rc_id);
-        $this->assign("current_cycle_day", $current_cycle_day);
+        $this->current_cycle_day = CRM_Contract_RecurringContribution::getCycleDay($rc_id);
+        $this->assign("current_cycle_day", $this->current_cycle_day);
 
         // Validate membership status
         $status_id = $this->membership["status_id"];
@@ -335,6 +337,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         // Recurring contribution (recurring_contribution)
         $rc_id = $this->recurring_contribution["id"];
         $defaults["recurring_contribution"] = $rc_id;
+
+        // Cycle day
+        $defaults["cycle_day"] = $this->current_cycle_day;
 
         // Installment amount (amount)
         $defaults["amount"] = $this->recurring_contribution["amount"];
