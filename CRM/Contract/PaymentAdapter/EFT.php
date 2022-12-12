@@ -205,7 +205,10 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      * @return void
      */
     public static function pause ($recurring_contribution_id) {
-        // Nothing to do here
+        Api4\ContributionRecur::update()
+            ->addWhere('id', '=', $recurring_contribution_id)
+            ->addValue('contribution_status_id:name', 'Paused')
+            ->execute();
     }
 
     /**
@@ -222,6 +225,11 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         if (count($update) > 0) {
             return self::update($recurring_contribution_id, $update);
         }
+
+        Api4\ContributionRecur::update()
+            ->addWhere('id', '=', $recurring_contribution_id)
+            ->addValue('contribution_status_id:name', 'Pending')
+            ->execute();
 
         return $recurring_contribution_id;
     }

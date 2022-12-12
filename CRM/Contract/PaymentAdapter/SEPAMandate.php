@@ -429,6 +429,11 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             $error_message = $update_result["error_message"];
             throw new Exception("SEPA mandate cannot be paused: $error_message");
         }
+
+        Api4\ContributionRecur::update()
+            ->addWhere('id', '=', $recurring_contribution_id)
+            ->addValue('contribution_status_id:name', 'Paused')
+            ->execute();
     }
 
     /**
@@ -467,6 +472,11 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             $error_message = $update_result["error_message"];
             throw new Exception("SEPA mandate cannot be resumed: $error_message");
         }
+
+        Api4\ContributionRecur::update()
+            ->addWhere('id', '=', $recurring_contribution_id)
+            ->addValue('contribution_status_id:name', 'Pending')
+            ->execute();
 
         return $recurring_contribution_id;
     }
