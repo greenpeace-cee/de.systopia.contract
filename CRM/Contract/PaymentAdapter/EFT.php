@@ -304,7 +304,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         // Create a new EFT payment
         $create_params = [
             "amount"             => CRM_Utils_Array::value("amount", $params, $current_rc_data["amount"]),
-            "campaign_id"        => CRM_Utils_Array::value("campaign_id", $params, $current_campaign_id),
+            "campaign_id"        => empty($params["campaign_id"]) ? $current_campaign_id : $params["campaign_id"],
             "contact_id"         => $current_rc_data["contact_id"],
             "create_date"        => $now,
             "currency"           => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),

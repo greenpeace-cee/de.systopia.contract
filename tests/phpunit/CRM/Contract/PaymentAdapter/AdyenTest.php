@@ -459,6 +459,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $recurContribID = CRM_Contract_PaymentAdapter_Adyen::create([
       'amount'                => 10.0,
+      'campaign_id'           => $this->campaign['id'],
       'contact_id'            => $this->contact['id'],
       'currency'              => 'EUR',
       'cycle_day'             => 13,
@@ -474,6 +475,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $recurringContribution = Api4\ContributionRecur::get()
       ->addSelect(
         'amount',
+        'campaign_id',
         'contribution_status_id:name',
         'currency',
         'cycle_day',
@@ -491,6 +493,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $this->assertEquals([
       'amount'                       => 10.0,
+      'campaign_id'                  => $this->campaign['id'],
       'contribution_status_id:name'  => 'Pending',
       'currency'                     => 'EUR',
       'cycle_day'                    => 13,
@@ -510,6 +513,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $newRecurContribID = CRM_Contract_PaymentAdapter_Adyen::update($recurringContribution['id'], [
       'amount'                 => 20.0,
+      'campaign_id'            => NULL,
       'contribution_status_id' => $inProgressOptVal,
       'currency'               => 'USD',
       'cycle_day'              => 17,
@@ -528,6 +532,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $newRecurringContribution = Api4\ContributionRecur::get()
       ->addSelect(
         'amount',
+        'campaign_id',
         'contribution_status_id:name',
         'currency',
         'cycle_day',
@@ -544,6 +549,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $this->assertEquals([
       'amount'                       => 20.0,
+      'campaign_id'                  => $this->campaign['id']
       'contribution_status_id:name'  => 'In Progress',
       'currency'                     => 'USD',
       'cycle_day'                    => 17,

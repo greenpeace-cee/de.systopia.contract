@@ -13,6 +13,7 @@ class CRM_Contract_PaymentAdapterTestBase
   extends TestCase
   implements HeadlessInterface, HookInterface, TransactionalInterface {
 
+  protected $campaign;
   protected $contact;
 
   private $optionValueCache = [];
@@ -30,12 +31,30 @@ class CRM_Contract_PaymentAdapterTestBase
   public function setUp() {
     parent::setUp();
 
+    $this->createCampaign();
     $this->createContact();
     $this->createRequiredOptionValues();
   }
 
   public function tearDown() {
     parent::tearDown();
+  }
+
+  private function createCampaign() {
+    $settingsResult = Api4\Setting::get()
+      ->addSelect('enable_components')
+      ->execute()
+      ->first();
+
+    Api4\Setting::set()
+      ->addValue('enable_components', array_merge($settingsResult['value'], ['CiviCampaign']))
+      ->execute();
+
+    $createCampaignResult = Api4\Campaign::create()
+      ->addValue('title', 'DD')
+      ->execute();
+
+    $this->campaign = $createCampaignResult->first();
   }
 
   private function createContact() {

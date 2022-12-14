@@ -604,6 +604,9 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
 
         $current_mandate_data = end($mandates_result["values"]);
 
+        // Get the current campaign ID
+        $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
+
         // Get the creditor & payment currency
         $creditor_id = CRM_Utils_Array::value("creditor_id", $params, $current_mandate_data["creditor_id"]);
 
@@ -628,7 +631,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "account_name"          => CRM_Utils_Array::value("account_name", $params, $current_mandate_data["bic"]),
             "account_reference"     => CRM_Utils_Array::value("account_reference", $params, $current_mandate_data["iban"]),
             "amount"                => CRM_Utils_Array::value("amount", $params, $current_rc_data["amount"]),
-            "campaign_id"           => CRM_Utils_Array::value("campaign_id", $params, $current_rc_data["campaign_id"]),
+            "campaign_id"           => empty($params["campaign_id"]) ? $current_campaign_id : $params["campaign_id"],
             "contact_id"            => $current_rc_data["contact_id"],
             "creation_date"         => date("Y-m-d H:i:s"),
             "creditor_id"           => $creditor_id,
