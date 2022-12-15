@@ -304,12 +304,19 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             $form_fields = $pa_class::formFields([ "form" => "sign" ]);
 
             foreach ($form_fields as $field_name => $field) {
-                if (!$field["enabled"] || empty($field["validate"])) continue;
+                if (!$field["enabled"]) continue;
 
                 $field_id = "pa-$pa_name-$field_name";
+                $value = $submitted[$field_id];
 
                 try {
-                    call_user_func($field["validate"], $submitted[$field_id], $field["required"]);
+                    if ($field["required"] && empty($value)) {
+                        throw new Exception("This field is required");
+                    }
+
+                    if (empty($field["validate"])) continue;
+
+                    call_user_func($field["validate"], $value, $field["required"]);
                 } catch (Exception $exception) {
                     HTML_QuickForm::setElementError($field_id, $exception->getMessage());
                 }

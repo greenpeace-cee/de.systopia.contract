@@ -175,7 +175,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'display_name' => 'Shopper reference',
         'enabled'      => $form === 'sign',
         'name'         => 'shopper_reference',
-        'required'     => FALSE,
+        'required'     => TRUE,
         'settings'     => [ 'class' => 'huge' ],
         'type'         => 'text',
       ],
