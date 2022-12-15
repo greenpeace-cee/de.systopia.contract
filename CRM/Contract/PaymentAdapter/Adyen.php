@@ -114,9 +114,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function cycleDays($params = []) {
-    // ...
-
-    return [];
+    return range(1, 28);
   }
 
   public static function formFields($params = []) {
