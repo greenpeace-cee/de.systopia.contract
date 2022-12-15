@@ -18,6 +18,7 @@ class Adyen {
         const paymentTokenFields = ADAPTER_VARS.payment_token_fields;
 
         paymentTokenFields.forEach(fieldID => {
+            if (fieldID === "shopper_reference") return;
             const container = cj(`div.form-field#pa-adyen-${fieldID}`);
             useExistingToken ? container.hide() : container.show();
         });

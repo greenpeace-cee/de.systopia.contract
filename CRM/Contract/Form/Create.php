@@ -301,7 +301,11 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
             $pa_name = $submitted["payment_adapter"];
             $pa_class = $this->payment_adapters[$pa_name];
-            $form_fields = $pa_class::formFields([ "form" => "sign" ]);
+
+            $form_fields = $pa_class::formFields([
+                "form"      => "sign",
+                "submitted" => $submitted,
+            ]);
 
             foreach ($form_fields as $field_name => $field) {
                 if (!$field["enabled"]) continue;

@@ -188,6 +188,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $newRCID = CRM_Contract_PaymentAdapter_Adyen::createFromUpdate($originalRCID, 'eft', [
       'amount'           => 15.0,
       'payment_token_id' => $this->paymentToken['id'],
+      'shopper_reference' => self::SHOPPER_REFERENCE,
     ]);
 
     // --- Assert a new recurring contribution has been created --- //
@@ -243,6 +244,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'contact_id'               => $this->contact['id'],
       'payment_processor_id'     => $this->paymentProcessor['id'],
       'payment_token_id'         => $this->paymentToken['id'],
+      'shopper_reference'        => self::SHOPPER_REFERENCE,
     ]);
 
     $recurContribQuery = Api4\ContributionRecur::get()
@@ -296,6 +298,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'frequency_unit'       => 'month',
       'payment_processor_id' => $this->paymentProcessor['id'],
       'payment_token_id'     => $this->paymentToken['id'],
+      'shopper_reference'    => self::SHOPPER_REFERENCE,
       'start_date'           => $oldStartDate->format('Y-m-d'),
     ]);
 
@@ -395,10 +398,11 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     // --- Create a payment --- //
 
     CRM_Contract_PaymentAdapter_Adyen::create([
-      'amount'                   => 10.0,
-      'contact_id'               => $this->contact['id'],
-      'payment_processor_id'     => $this->paymentProcessor['id'],
-      'payment_token_id'         => $this->paymentToken['id'],
+      'amount'               => 10.0,
+      'contact_id'           => $this->contact['id'],
+      'payment_processor_id' => $this->paymentProcessor['id'],
+      'payment_token_id'     => $this->paymentToken['id'],
+      'shopper_reference'    => self::SHOPPER_REFERENCE,
     ]);
 
     $recurContribQuery = Api4\ContributionRecur::get()
@@ -469,6 +473,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'payment_instrument_id' => $creditCardOptVal,
       'payment_processor_id'  => $this->paymentProcessor['id'],
       'payment_token_id'      => $this->paymentToken['id'],
+      'shopper_reference'     => self::SHOPPER_REFERENCE,
       'start_date'            => $startDate->format('Y-m-d'),
     ]);
 
@@ -549,7 +554,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $this->assertEquals([
       'amount'                       => 20.0,
-      'campaign_id'                  => $this->campaign['id']
+      'campaign_id'                  => $this->campaign['id'],
       'contribution_status_id:name'  => 'In Progress',
       'currency'                     => 'USD',
       'cycle_day'                    => 17,

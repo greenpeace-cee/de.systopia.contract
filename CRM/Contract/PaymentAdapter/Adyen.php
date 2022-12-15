@@ -67,8 +67,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE    , NULL                        ],
       'payment_processor_id'         => [ NULL                     , FALSE    , $paymentProcessorID         ],
       'payment_token_id'             => [ NULL                     , FALSE    , $paymentToken['id']         ],
-      'processor_id'                 => [ 'shopper_reference'      , FALSE    , NULL                        ],
+      'processor_id'                 => [ 'shopper_reference'      , TRUE     , NULL                        ],
       'start_date'                   => [ 'start_date'             , FALSE    , $startDate->format('Y-m-d') ],
+      'trxn_id'                      => [ NULL                     , FALSE    , NULL                        ],
     ];
 
     $recurContribID = civicrm_api4('ContributionRecur', 'create', [
@@ -120,11 +121,32 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   public static function formFields($params = []) {
     $form = CRM_Utils_Array::value('form', $params, NULL);
     $contactID = CRM_Utils_Array::value('contact_id', $params, NULL);
+    $submitted = CRM_Utils_Array::value('submitted', $params, []);
+
+    $useExistingToken =
+      isset($submitted['pa-adyen-use_existing_token'])
+      && $submitted['pa-adyen-use_existing_token'] === '0';
+
     $paymentTokenOptions = is_null($contactID) ? [] : self::getPaymentTokensForContact($contactID);
+
+    $defaults = [];
+
+    if (isset($params['recurring_contribution_id'])) {
+      $defaults= Api4\ContributionRecur::get()
+        ->addWhere('id', '=', $params['recurring_contribution_id'])
+        ->addSelect(
+          'payment_instrument_id',
+          'payment_token_id',
+          'payment_processor_id',
+          'processor_id'
+        )
+        ->execute()
+        ->first();
+    }
 
     return [
       'payment_instrument_id' => [
-        'default'      => NULL,
+        'default'      => CRM_Utils_Array::value('payment_instrument_id', $defaults),
         'display_name' => 'Payment instrument',
         'enabled'      => TRUE,
         'name'         => 'payment_instrument_id',
@@ -142,7 +164,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'type'         => 'select',
       ],
       'payment_token_id' => [
-        'default'      => NULL,
+        'default'      => CRM_Utils_Array::value('payment_token_id', $defaults),
         'display_name' => 'Payment token ID',
         'enabled'      => TRUE,
         'name'         => 'payment_token_id',
@@ -151,12 +173,12 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'type'         => 'select',
       ],
       'payment_processor_id' => [
-        'default'      => NULL,
+        'default'      => CRM_Utils_Array::value('payment_processor_id', $defaults),
         'display_name' => 'Payment processor',
         'enabled'      => $form === 'sign',
         'name'         => 'payment_processor_id',
         'options'      => self::getPaymentProcessors(),
-        'required'     => TRUE,
+        'required'     => !$useExistingToken,
         'type'         => 'select',
       ],
       'stored_payment_method_id' => [
@@ -164,14 +186,14 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'display_name' => 'Stored payment method ID',
         'enabled'      => $form === 'sign',
         'name'         => 'stored_payment_method_id',
-        'required'     => TRUE,
+        'required'     => !$useExistingToken,
         'settings'     => [],
         'type'         => 'text',
       ],
       'shopper_reference' => [
-        'default'      => NULL,
+        'default'      => CRM_Utils_Array::value('processor_id', $defaults),
         'display_name' => 'Shopper reference',
-        'enabled'      => $form === 'sign',
+        'enabled'      => TRUE,
         'name'         => 'shopper_reference',
         'required'     => TRUE,
         'settings'     => [ 'class' => 'huge' ],
@@ -319,6 +341,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
           'payment_method.frequency_interval'    => 12 / (int) $submitted['frequency'],
           'payment_method.frequency_unit'        => 'month',
           'payment_method.payment_instrument_id' => $submitted['pa-adyen-payment_instrument_id'],
+          'payment_method.shopper_reference'     => $submitted['pa-adyen-shopper_reference'],
           'payment_method.start_date'            => $startDate,
         ];
 
@@ -335,7 +358,6 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
           'payment_method.expiry_date'              => $submitted['pa-adyen-expiry_date'],
           'payment_method.ip_address'               => $submitted['pa-adyen-ip_address'],
           'payment_method.payment_processor_id'     => $submitted['pa-adyen-payment_processor_id'],
-          'payment_method.shopper_reference'        => $submitted['pa-adyen-shopper_reference'],
           'payment_method.stored_payment_method_id' => $submitted['pa-adyen-stored_payment_method_id'],
         ];
 
@@ -352,6 +374,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
           'membership_payment.membership_frequency' => $frequency,
           'payment_method.payment_instrument_id'    => $submitted['pa-adyen-payment_instrument_id'],
           'payment_method.payment_token_id'         => $submitted['pa-adyen-payment_token_id'],
+          'payment_method.shopper_reference'        => $submitted['pa-adyen-shopper_reference'],
         ];
 
         return $apiParams;
@@ -452,6 +475,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'payment_instrument_id',
         'payment_processor_id',
         'payment_token_id',
+        'processor_id',
         'start_date'
       )
       ->addWhere('id', '=', $recurringContributionID)
@@ -485,7 +509,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE    , $oldRC['payment_instrument_id']  ],
       'payment_processor_id'         => [ 'payment_processor_id'   , FALSE    , $oldRC['payment_processor_id']   ],
       'payment_token_id'             => [ 'payment_token_id'       , FALSE    , $oldRC['payment_token_id']       ],
+      'processor_id'                 => [ 'shopper_reference'      , FALSE    , $oldRC['processor_id']           ],
       'start_date'                   => [ 'start_date'             , FALSE    , $oldRC['start_date']             ],
+      'trxn_id'                      => [ NULL                     , FALSE    , NULL                             ],
     ];
 
     $updateParams = self::mapParameters($recurContribParamMapping, $params);

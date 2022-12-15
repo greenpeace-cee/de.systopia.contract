@@ -353,6 +353,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         // Membership type (membership_type_id)
         $defaults["membership_type_id"] = $this->membership["membership_type_id"];
 
+        // Campaign (campaign_id)
+        $defaults["campaign_id"] = $this->membership["campaign_id"];
+
         // Schedule date (activity_date)
         $tomorrow = date("Y-m-d 00:00:00", strtotime("+1 day"));
         $default_change_date = CRM_Contract_Utils::getDefaultContractChangeDate($tomorrow);
@@ -433,7 +436,10 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                     HTML_QuickForm::setElementError("cycle_day", "Please select a cycle day");
                 }
 
-                $form_fields = $pa_class::formFields([ "form" => "modify" ]);
+                $form_fields = $pa_class::formFields([
+                    "form"      => "modify",
+                    "submitted" => $submitted,
+                ]);
 
                 foreach ($form_fields as $field_name => $field) {
                     if (!$field["enabled"]) continue;
