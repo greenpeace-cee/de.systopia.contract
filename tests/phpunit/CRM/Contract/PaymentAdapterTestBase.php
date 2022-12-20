@@ -16,6 +16,7 @@ class CRM_Contract_PaymentAdapterTestBase
   protected $campaign;
   protected $contact;
 
+  private $defaultErrorHandler;
   private $optionValueCache = [];
 
   public function setUpHeadless() {
@@ -31,12 +32,18 @@ class CRM_Contract_PaymentAdapterTestBase
   public function setUp() {
     parent::setUp();
 
+    $this->defaultErrorHandler = set_error_handler(function ($errno, $errstr) {
+      return TRUE;
+    }, E_USER_DEPRECATED);
+
     $this->createCampaign();
     $this->createContact();
     $this->createRequiredOptionValues();
   }
 
   public function tearDown() {
+    set_error_handler($this->defaultErrorHandler, E_USER_DEPRECATED);
+
     parent::tearDown();
   }
 

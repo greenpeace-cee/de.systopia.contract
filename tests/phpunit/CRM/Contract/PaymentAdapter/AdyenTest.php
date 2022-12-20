@@ -86,7 +86,8 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
         'next_sched_contribution_date',
         'payment_token_id',
         'processor_id',
-        'start_date'
+        'start_date',
+        'trxn_id'
       )
       ->execute();
 
@@ -106,6 +107,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'payment_token_id'             => $recurringContribution['payment_token_id'],
       'processor_id'                 => self::SHOPPER_REFERENCE,
       'start_date'                   => $startDate->format('Y-m-d H:i:s'),
+      'trxn_id'                      => NULL,
     ], $recurringContribution);
 
     // --- Assert payment token has been created --- //
@@ -490,7 +492,8 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
         'next_sched_contribution_date',
         'payment_instrument_id',
         'payment_token_id',
-        'start_date'
+        'start_date',
+        'trxn_id'
       )
       ->addWhere('id', '=', $recurContribID)
       ->execute()
@@ -510,6 +513,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'payment_instrument_id'        => $creditCardOptVal,
       'payment_token_id'             => $recurringContribution['payment_token_id'],
       'start_date'                   => $startDate->format('Y-m-d H:i:s'),
+      'trxn_id'                      => NULL,
     ], $recurringContribution);
 
     // --- Update the payment --- //
@@ -546,7 +550,8 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
         'frequency_unit',
         'next_sched_contribution_date',
         'payment_instrument_id',
-        'start_date'
+        'start_date',
+        'trxn_id'
       )
       ->addWhere('id', '=', $newRecurContribID)
       ->execute()
@@ -565,6 +570,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'next_sched_contribution_date' => '2022-02-17 00:00:00',
       'payment_instrument_id'        => $debitCardOptVal,
       'start_date'                   => '2022-02-01 00:00:00',
+      'trxn_id'                      => NULL,
     ], $newRecurringContribution);
 
     // --- Assert the old payment has been terminated --- //
