@@ -29,13 +29,21 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     ];
 
     $paymentToken = NULL;
+    $useExistingToken = isset($params['payment_token_id']);
 
-    if (isset($params['payment_token_id'])) {
+    if ($useExistingToken) {
       $paymentToken = Api4\PaymentToken::get()
         ->addWhere('id', '=', $params['payment_token_id'])
-        ->addSelect('payment_processor_id')
+        ->addSelect('payment_processor_id', 'cr.processor_id')
+        ->addJoin(
+          'ContributionRecur AS cr',
+          'LEFT',
+          ['cr.payment_token_id', '=', 'id']
+        )
         ->execute()
         ->first();
+
+        unset($params['shopper_reference']);
     } else {
       $paymentToken = civicrm_api4('PaymentToken', 'create', [
         'values' => self::mapParameters($paymentTokenParamMapping, $params),
@@ -43,6 +51,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     }
 
     $paymentProcessorID = $paymentToken['payment_processor_id'];
+    $defaultShopperReference = CRM_Utils_Array::value('cr.processor_id', $paymentToken);
 
     $pendingOptVal = (int) CRM_Contract_Utils::getOptionValue('contribution_recur_status', 'Pending');
     $defaultCurrency = Civi::settings()->get('defaultCurrency');
@@ -53,23 +62,23 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $nextSchedContribDate = CRM_Contract_Utils::nextCycleDate($cycleDay, $startDate->format('Y-m-d'));
 
     $recurContribParamMapping = [
-      //                                | original name            | required | default                     |
-      'amount'                       => [ 'amount'                 , TRUE     , NULL                        ],
-      'campaign_id'                  => [ 'campaign_id'            , FALSE    , NULL                        ],
-      'contact_id'                   => [ 'contact_id'             , TRUE     , NULL                        ],
-      'contribution_status_id'       => [ 'contribution_status_id' , FALSE    , $pendingOptVal              ],
-      'currency'                     => [ 'currency'               , FALSE    , $defaultCurrency            ],
-      'cycle_day'                    => [ 'cycle_day'              , FALSE    , 1                           ],
-      'financial_type_id'            => [ 'financial_type_id'      , FALSE    , $memberDuesTypeID           ],
-      'frequency_interval'           => [ 'frequency_interval'     , FALSE    , 1                           ],
-      'frequency_unit:name'          => [ 'frequency_unit'         , FALSE    , 'month'                     ],
-      'next_sched_contribution_date' => [ NULL                     , FALSE    , $nextSchedContribDate       ],
-      'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE    , NULL                        ],
-      'payment_processor_id'         => [ NULL                     , FALSE    , $paymentProcessorID         ],
-      'payment_token_id'             => [ NULL                     , FALSE    , $paymentToken['id']         ],
-      'processor_id'                 => [ 'shopper_reference'      , TRUE     , NULL                        ],
-      'start_date'                   => [ 'start_date'             , FALSE    , $startDate->format('Y-m-d') ],
-      'trxn_id'                      => [ NULL                     , FALSE    , NULL                        ],
+      //                                | original name            | required          | default                     |
+      'amount'                       => [ 'amount'                 , TRUE              , NULL                        ],
+      'campaign_id'                  => [ 'campaign_id'            , FALSE             , NULL                        ],
+      'contact_id'                   => [ 'contact_id'             , TRUE              , NULL                        ],
+      'contribution_status_id'       => [ 'contribution_status_id' , FALSE             , $pendingOptVal              ],
+      'currency'                     => [ 'currency'               , FALSE             , $defaultCurrency            ],
+      'cycle_day'                    => [ 'cycle_day'              , FALSE             , 1                           ],
+      'financial_type_id'            => [ 'financial_type_id'      , FALSE             , $memberDuesTypeID           ],
+      'frequency_interval'           => [ 'frequency_interval'     , FALSE             , 1                           ],
+      'frequency_unit:name'          => [ 'frequency_unit'         , FALSE             , 'month'                     ],
+      'next_sched_contribution_date' => [ NULL                     , FALSE             , $nextSchedContribDate       ],
+      'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE             , NULL                        ],
+      'payment_processor_id'         => [ NULL                     , FALSE             , $paymentProcessorID         ],
+      'payment_token_id'             => [ NULL                     , FALSE             , $paymentToken['id']         ],
+      'processor_id'                 => [ 'shopper_reference'      , !$useExistingToken, $defaultShopperReference    ],
+      'start_date'                   => [ 'start_date'             , FALSE             , $startDate->format('Y-m-d') ],
+      'trxn_id'                      => [ NULL                     , FALSE             , NULL                        ],
     ];
 
     $recurContribID = civicrm_api4('ContributionRecur', 'create', [
@@ -137,8 +146,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         ->addSelect(
           'payment_instrument_id',
           'payment_token_id',
-          'payment_processor_id',
-          'processor_id'
+          'payment_processor_id'
         )
         ->execute()
         ->first();
@@ -191,11 +199,11 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'type'         => 'text',
       ],
       'shopper_reference' => [
-        'default'      => CRM_Utils_Array::value('processor_id', $defaults),
+        'default'      => NULL,
         'display_name' => 'Shopper reference',
-        'enabled'      => TRUE,
+        'enabled'      => $form === 'sign',
         'name'         => 'shopper_reference',
-        'required'     => TRUE,
+        'required'     => !$useExistingToken,
         'settings'     => [ 'class' => 'huge' ],
         'type'         => 'text',
       ],
@@ -341,7 +349,6 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
           'payment_method.frequency_interval'    => 12 / (int) $submitted['frequency'],
           'payment_method.frequency_unit'        => 'month',
           'payment_method.payment_instrument_id' => $submitted['pa-adyen-payment_instrument_id'],
-          'payment_method.shopper_reference'     => $submitted['pa-adyen-shopper_reference'],
           'payment_method.start_date'            => $startDate,
         ];
 
@@ -358,6 +365,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
           'payment_method.expiry_date'              => $submitted['pa-adyen-expiry_date'],
           'payment_method.ip_address'               => $submitted['pa-adyen-ip_address'],
           'payment_method.payment_processor_id'     => $submitted['pa-adyen-payment_processor_id'],
+          'payment_method.shopper_reference'        => $submitted['pa-adyen-shopper_reference'],
           'payment_method.stored_payment_method_id' => $submitted['pa-adyen-stored_payment_method_id'],
         ];
 
@@ -374,7 +382,6 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
           'membership_payment.membership_frequency' => $frequency,
           'payment_method.payment_instrument_id'    => $submitted['pa-adyen-payment_instrument_id'],
           'payment_method.payment_token_id'         => $submitted['pa-adyen-payment_token_id'],
-          'payment_method.shopper_reference'        => $submitted['pa-adyen-shopper_reference'],
         ];
 
         return $apiParams;
@@ -494,6 +501,20 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       $startDate->format('Y-m-d')
     );
 
+    $defaultShopperReference = $oldRC['processor_id'];
+
+    if (
+      isset($params['payment_token_id'])
+      && $params['payment_token_id'] !== $oldRC['payment_token_id']
+    ) {
+      $defaultShopperReference = Api4\ContributionRecur::get()
+        ->addWhere('payment_token_id', '=', $params['payment_token_id'])
+        ->addSelect('processor_id')
+        ->setLimit(1)
+        ->execute()
+        ->first()['processor_id'];
+    }
+
     $recurContribParamMapping = [
       //                                | original name            | required | default                          |
       'amount'                       => [ 'amount'                 , FALSE    , $oldRC['amount']                 ],
@@ -509,7 +530,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE    , $oldRC['payment_instrument_id']  ],
       'payment_processor_id'         => [ 'payment_processor_id'   , FALSE    , $oldRC['payment_processor_id']   ],
       'payment_token_id'             => [ 'payment_token_id'       , FALSE    , $oldRC['payment_token_id']       ],
-      'processor_id'                 => [ 'shopper_reference'      , FALSE    , $oldRC['processor_id']           ],
+      'processor_id'                 => [ NULL                     , FALSE    , $defaultShopperReference         ],
       'start_date'                   => [ 'start_date'             , FALSE    , $oldRC['start_date']             ],
       'trxn_id'                      => [ NULL                     , FALSE    , NULL                             ],
     ];
