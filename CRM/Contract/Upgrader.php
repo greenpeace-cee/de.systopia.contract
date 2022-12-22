@@ -137,4 +137,11 @@ class CRM_Contract_Upgrader extends CRM_Contract_Upgrader_Base {
     $this->convertLegacyUpdates();
     return TRUE;
   }
+
+  public function upgrade_1510() {
+    $this->ctx->log->info('Applying update 1510');
+    $customData = new CRM_Contract_CustomData('de.systopia.contract');
+    $customData->syncOptionGroup(__DIR__ . '/../../resources/option_group_contribution_recur_status.json');
+    return TRUE;
+  }
 }
