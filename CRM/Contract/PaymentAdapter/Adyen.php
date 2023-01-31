@@ -291,7 +291,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $recurringContribution = Api4\ContributionRecur::get()
       ->addSelect(
         'contribution.receive_date',
-        'cylce_day',
+        'cycle_day',
         'frequency_interval',
         'frequency_unit:name',
         'start_date',
