@@ -39,7 +39,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $creditCardOptVal = self::getOptionValue('payment_instrument', 'Credit Card');
     $inProgressOptVal = self::getOptionValue('contribution_recur_status', 'In Progress');
 
-    $memberDuesTypeID = Api4\FinancialType::get()
+    $memberDuesTypeID = Api4\FinancialType::get(FALSE)
       ->addSelect('id')
       ->addWhere('name', '=', 'Member Dues')
       ->execute()
@@ -69,7 +69,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert recurring contribution has been created --- //
 
-    $recurContribQuery = Api4\ContributionRecur::get()
+    $recurContribQuery = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recurContribID)
       ->addSelect(
         'amount',
@@ -108,7 +108,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert payment token has been created --- //
 
-    $paymentTokenQuery = Api4\PaymentToken::get()
+    $paymentTokenQuery = Api4\PaymentToken::get(FALSE)
       ->addSelect(
         'billing_first_name',
         'billing_last_name',
@@ -157,7 +157,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert recurring contribution has been created --- //
 
-    $originalRCResult = Api4\ContributionRecur::get()
+    $originalRCResult = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $originalRCID)
       ->addSelect(
         'amount',
@@ -192,7 +192,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $this->assertNotEquals($originalRCID, $newRCID);
 
-    $newRCResult = Api4\ContributionRecur::get()
+    $newRCResult = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $newRCID)
       ->addSelect(
         'amount',
@@ -222,7 +222,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert the new payment is linked to an Adyen payment processor --- //
 
-    $paymentProcessor = Api4\PaymentProcessor::get()
+    $paymentProcessor = Api4\PaymentProcessor::get(FALSE)
       ->addWhere('id', '=', $newRecurContrib['payment_processor_id'])
       ->addSelect('payment_processor_type_id:name')
       ->execute()
@@ -243,7 +243,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'payment_token_id'         => $this->paymentToken['id'],
     ]);
 
-    $recurContribQuery = Api4\ContributionRecur::get()
+    $recurContribQuery = Api4\ContributionRecur::get(FALSE)
       ->addSelect('contribution_status_id:name')
       ->execute();
 
@@ -256,7 +256,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert the payment has been paused --- //
 
-    $recurringContribution = Api4\ContributionRecur::get()
+    $recurringContribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recurringContribution['id'])
       ->addSelect('contribution_status_id:name')
       ->execute()
@@ -270,7 +270,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert the payment has been resumed --- //
 
-    $recurringContribution = Api4\ContributionRecur::get()
+    $recurringContribution = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recurringContribution['id'])
       ->addSelect('contribution_status_id:name')
       ->execute()
@@ -301,7 +301,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $firstContribDate = new DateTimeImmutable('2021-12-15');
 
-    Api4\Contribution::create()
+    Api4\Contribution::create(FALSE)
       ->addValue('contact_id',             $this->contact['id'])
       ->addValue('contribution_recur_id',  $recurContribID)
       ->addValue('financial_type_id.name', 'Member Dues')
@@ -315,7 +315,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert the payment has been terminated --- //
 
-    $cancelledRC = Api4\ContributionRecur::get()
+    $cancelledRC = Api4\ContributionRecur::get(FALSE)
       ->addSelect(
         'amount',
         'cancel_date',
@@ -359,7 +359,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     // Should have created a new recurring contribution
     $this->assertNotEquals($recurContribID, $newRecurContribID);
 
-    $revivedRC = Api4\ContributionRecur::get()
+    $revivedRC = Api4\ContributionRecur::get(FALSE)
       ->addSelect(
         'amount',
         'cancel_date',
@@ -399,7 +399,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'payment_token_id'     => $this->paymentToken['id'],
     ]);
 
-    $recurContribQuery = Api4\ContributionRecur::get()
+    $recurContribQuery = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recurContribID)
       ->addSelect('contribution_status_id:name')
       ->execute();
@@ -415,7 +415,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert recurring contribution has been cancelled --- //
 
-    $recurringContribution = Api4\ContributionRecur::get()
+    $recurringContribution = Api4\ContributionRecur::get(FALSE)
       ->addSelect(
         'cancel_date',
         'cancel_reason',
@@ -471,7 +471,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'start_date'            => $startDate->format('Y-m-d'),
     ]);
 
-    $recurringContribution = Api4\ContributionRecur::get()
+    $recurringContribution = Api4\ContributionRecur::get(FALSE)
       ->addSelect(
         'amount',
         'campaign_id',
@@ -532,7 +532,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert the payment has been updated --- //
 
-    $newRecurringContribution = Api4\ContributionRecur::get()
+    $newRecurringContribution = Api4\ContributionRecur::get(FALSE)
       ->addSelect(
         'amount',
         'campaign_id',
@@ -569,7 +569,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Assert the old payment has been terminated --- //
 
-    $oldRCStatus = Api4\ContributionRecur::get()
+    $oldRCStatus = Api4\ContributionRecur::get(FALSE)
       ->addSelect('contribution_status_id:name')
       ->addWhere('id', '=', $recurringContribution['id'])
       ->execute()
@@ -580,7 +580,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
   }
 
   private function createPaymentProcessor() {
-    $createPaymentProcResult = Api4\PaymentProcessor::create()
+    $createPaymentProcResult = Api4\PaymentProcessor::create(FALSE)
       ->addValue('financial_account_id.name',      'Payment Processor Account')
       ->addValue('name',                           'adyen')
       ->addValue('payment_processor_type_id:name', 'Adyen')
@@ -593,7 +593,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
   private function createPaymentToken() {
     $expiryDate = new DateTime('+1 year');
 
-    $createPaymentTokenResult = Api4\PaymentToken::create()
+    $createPaymentTokenResult = Api4\PaymentToken::create(FALSE)
       ->addValue('billing_first_name',    $this->contact['first_name'])
       ->addValue('billing_last_name',     $this->contact['last_name'])
       ->addValue('contact_id',            $this->contact['id'])
@@ -607,7 +607,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $this->paymentToken = $createPaymentTokenResult->first();
 
-    Api4\ContributionRecur::create()
+    Api4\ContributionRecur::create(FALSE)
       ->addValue('amount',                 0.0)
       ->addValue('contact_id',             $this->contact['id'])
       ->addValue('financial_type_id.name', 'Member Dues')

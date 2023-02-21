@@ -223,7 +223,7 @@ class CRM_Contract_Change_Revive extends CRM_Contract_Change {
     $params = $payment_changes['parameters'];
 
     // Calculate the new amount & frequency
-    $current_rc = Api4\ContributionRecur::get()
+    $current_rc = Api4\ContributionRecur::get(FALSE)
       ->addWhere("id", "=", $current_rc_id)
       ->addSelect("amount", "frequency_interval", "frequency_unit")
       ->execute()

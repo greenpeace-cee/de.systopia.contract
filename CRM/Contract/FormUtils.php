@@ -229,7 +229,7 @@ class CRM_Contract_FormUtils {
   public static function getMembershipTypes() {
     $types = [];
 
-    $mtResult = Api4\MembershipType::get()
+    $mtResult = Api4\MembershipType::get(FALSE)
       ->addSelect('name')
       ->execute();
 
@@ -243,7 +243,7 @@ class CRM_Contract_FormUtils {
   public static function getOptionValueLabels(string $optionGroup) {
     $mapping = [];
 
-    $ovResult = Api4\OptionValue::get()
+    $ovResult = Api4\OptionValue::get(FALSE)
       ->addWhere('option_group_id:name', '=', $optionGroup)
       ->addSelect('label', 'value')
       ->addOrderBy('weight', 'ASC')

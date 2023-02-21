@@ -32,7 +32,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $useExistingToken = isset($params['payment_token_id']);
 
     if ($useExistingToken) {
-      $paymentToken = Api4\PaymentToken::get()
+      $paymentToken = Api4\PaymentToken::get(FALSE)
         ->addWhere('id', '=', $params['payment_token_id'])
         ->addSelect('payment_processor_id', 'cr.processor_id')
         ->addJoin(
@@ -46,7 +46,8 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         unset($params['shopper_reference']);
     } else {
       $paymentToken = civicrm_api4('PaymentToken', 'create', [
-        'values' => self::mapParameters($paymentTokenParamMapping, $params),
+        'checkPermissions' => FALSE,
+        'values'           => self::mapParameters($paymentTokenParamMapping, $params),
       ])->first();
     }
 
@@ -82,7 +83,8 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     ];
 
     $recurContribID = civicrm_api4('ContributionRecur', 'create', [
-      'values' => self::mapParameters($recurContribParamMapping, $params),
+      'checkPermissions' => FALSE,
+      'values'           => self::mapParameters($recurContribParamMapping, $params),
     ])->first()['id'];
 
     CRM_Core_Session::setStatus(
@@ -100,7 +102,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $update,
     $activity_type_id = NULL
   ) {
-    $originalRC = Api4\ContributionRecur::get()
+    $originalRC = Api4\ContributionRecur::get(FALSE)
       ->addWhere('id', '=', $recurringContributionID)
       ->addSelect(
         'amount',
@@ -141,7 +143,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $defaults = [];
 
     if (isset($params['recurring_contribution_id'])) {
-      $defaults= Api4\ContributionRecur::get()
+      $defaults= Api4\ContributionRecur::get(FALSE)
         ->addWhere('id', '=', $params['recurring_contribution_id'])
         ->addSelect(
           'payment_instrument_id',
@@ -288,7 +290,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     int $cycleDay = NULL,
     string $offset = NULL
   ): string {
-    $recurringContribution = Api4\ContributionRecur::get()
+    $recurringContribution = Api4\ContributionRecur::get(FALSE)
       ->addSelect(
         'contribution.receive_date',
         'cycle_day',
@@ -327,7 +329,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function isInstance($recurringContributionID) {
-    $paymentProcessorType = Api4\ContributionRecur::get()
+    $paymentProcessorType = Api4\ContributionRecur::get(FALSE)
       ->addSelect('payment_processor_id.payment_processor_type_id.name')
       ->addWhere('id', '=', $recurringContributionID)
       ->setLimit(1)
@@ -400,7 +402,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function pause($recurring_contribution_id) {
-    Api4\ContributionRecur::update()
+    Api4\ContributionRecur::update(FALSE)
       ->addWhere('id', '=', $recurring_contribution_id)
       ->addValue('contribution_status_id:name', 'Paused')
       ->execute();
@@ -408,7 +410,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
   public static function resume($recurringContributionID, $update = []) {
     if (count($update) < 1) {
-      Api4\ContributionRecur::update()
+      Api4\ContributionRecur::update(FALSE)
         ->addWhere('id', '=', $recurringContributionID)
         ->addValue('contribution_status_id:name', 'Pending')
         ->execute();
@@ -451,7 +453,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   public static function terminate($recurringContributionID, $reason = "CHNG") {
     $now = date('Y-m-d H:i:s');
 
-    Api4\ContributionRecur::update()
+    Api4\ContributionRecur::update(FALSE)
       ->addValue('cancel_date',                 $now)
       ->addValue('cancel_reason',               $reason)
       ->addValue('contribution_status_id:name', 'Completed')
@@ -468,7 +470,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function update($recurringContributionID, $params, $activityTypeID = NULL) {
-    $oldRC = Api4\ContributionRecur::get()
+    $oldRC = Api4\ContributionRecur::get(FALSE)
       ->addSelect(
         'amount',
         'campaign_id',
@@ -507,7 +509,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       isset($params['payment_token_id'])
       && $params['payment_token_id'] !== $oldRC['payment_token_id']
     ) {
-      $defaultShopperReference = Api4\ContributionRecur::get()
+      $defaultShopperReference = Api4\ContributionRecur::get(FALSE)
         ->addWhere('payment_token_id', '=', $params['payment_token_id'])
         ->addSelect('processor_id')
         ->setLimit(1)
@@ -537,11 +539,10 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
     $updateParams = self::mapParameters($recurContribParamMapping, $params);
 
-    $newRecurringContribution = civicrm_api4(
-      'ContributionRecur',
-      'create',
-      [ 'values' => $updateParams ]
-    )->first();
+    $newRecurringContribution = civicrm_api4('ContributionRecur', 'create', [
+      'checkPermissions' => FALSE,
+      'values'           => $updateParams
+    ])->first();
 
     return $newRecurringContribution['id'];
   }
@@ -575,7 +576,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   private static function getPaymentProcessors() {
     $paymentProcessors = [];
 
-    $ppResult = Api4\PaymentProcessor::get()
+    $ppResult = Api4\PaymentProcessor::get(FALSE)
       ->addSelect('title')
       ->addWhere('payment_processor_type_id:name', '=', 'Adyen')
       ->execute();
@@ -590,7 +591,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   private static function getPaymentTokensForContact($contactID) {
     $paymentTokens = [];
 
-    $ptResult = Api4\PaymentToken::get()
+    $ptResult = Api4\PaymentToken::get(FALSE)
       ->addWhere('contact_id', '=', $contactID)
       ->addSelect(
         'expiry_date',

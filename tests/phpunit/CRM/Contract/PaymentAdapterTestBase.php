@@ -48,16 +48,16 @@ class CRM_Contract_PaymentAdapterTestBase
   }
 
   private function createCampaign() {
-    $settingsResult = Api4\Setting::get()
+    $settingsResult = Api4\Setting::get(FALSE)
       ->addSelect('enable_components')
       ->execute()
       ->first();
 
-    Api4\Setting::set()
+    Api4\Setting::set(FALSE)
       ->addValue('enable_components', array_merge($settingsResult['value'], ['CiviCampaign']))
       ->execute();
 
-    $createCampaignResult = Api4\Campaign::create()
+    $createCampaignResult = Api4\Campaign::create(FALSE)
       ->addValue('title', 'DD')
       ->execute();
 
@@ -65,7 +65,7 @@ class CRM_Contract_PaymentAdapterTestBase
   }
 
   private function createContact() {
-    $createContactResult = Api4\Contact::create()
+    $createContactResult = Api4\Contact::create(FALSE)
       ->addValue('contact_type:name', 'Individual')
       ->addValue('first_name',        'Contact_1')
       ->addValue('last_name',         'Test')
@@ -91,7 +91,7 @@ class CRM_Contract_PaymentAdapterTestBase
       return $this->optionValueCache[$optionGroup][$name];
     }
 
-    $optionValueQuery = Api4\OptionValue::get()
+    $optionValueQuery = Api4\OptionValue::get(FALSE)
       ->addSelect('value')
       ->addWhere('option_group_id:name', '=', $optionGroup)
       ->addWhere('name',                 '=', $name)
@@ -105,7 +105,7 @@ class CRM_Contract_PaymentAdapterTestBase
   }
 
   protected static function getFinancialTypeID(string $name) {
-    return Api4\FinancialType::get()
+    return Api4\FinancialType::get(FALSE)
       ->addSelect('id')
       ->addWhere('name', '=', $name)
       ->execute()

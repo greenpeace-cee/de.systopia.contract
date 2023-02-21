@@ -356,7 +356,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     }
 
     public static function isInstance($recurringContributionID) {
-      $sepaMandateResult = Api4\SepaMandate::get()
+      $sepaMandateResult = Api4\SepaMandate::get(FALSE)
         ->selectRowCount()
         ->addSelect('creditor_id.creditor_type')
         ->addWhere('entity_table', '=', 'civicrm_contribution_recur')
@@ -485,7 +485,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             throw new Exception("PSP SEPA mandate cannot be paused: $error_message");
         }
 
-        Api4\ContributionRecur::update()
+        Api4\ContributionRecur::update(FALSE)
             ->addWhere('id', '=', $recurring_contribution_id)
             ->addValue('contribution_status_id:name', 'Paused')
             ->execute();
@@ -528,7 +528,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             throw new Exception("PSP SEPA mandate cannot be resumed: $error_message");
         }
 
-        Api4\ContributionRecur::update()
+        Api4\ContributionRecur::update(FALSE)
             ->addWhere('id', '=', $recurring_contribution_id)
             ->addValue('contribution_status_id:name', 'Pending')
             ->execute();

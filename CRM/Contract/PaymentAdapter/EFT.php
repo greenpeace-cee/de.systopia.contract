@@ -123,7 +123,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     }
 
     public static function isInstance($recurringContributionID) {
-      $paymentInstrument = Api4\ContributionRecur::get()
+      $paymentInstrument = Api4\ContributionRecur::get(FALSE)
         ->addSelect('payment_instrument_id:name')
         ->addWhere('id', '=', $recurringContributionID)
         ->setLimit(1)
@@ -205,7 +205,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      * @return void
      */
     public static function pause ($recurring_contribution_id) {
-        Api4\ContributionRecur::update()
+        Api4\ContributionRecur::update(FALSE)
             ->addWhere('id', '=', $recurring_contribution_id)
             ->addValue('contribution_status_id:name', 'Paused')
             ->execute();
@@ -226,7 +226,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             return self::update($recurring_contribution_id, $update);
         }
 
-        Api4\ContributionRecur::update()
+        Api4\ContributionRecur::update(FALSE)
             ->addWhere('id', '=', $recurring_contribution_id)
             ->addValue('contribution_status_id:name', 'Pending')
             ->execute();

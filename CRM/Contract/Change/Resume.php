@@ -245,7 +245,7 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
 
     if (count($params) > 0) {
       // Calculate the new amount & frequency
-      $current_rc = Api4\ContributionRecur::get()
+      $current_rc = Api4\ContributionRecur::get(FALSE)
         ->addWhere("id", "=", $current_rc_id)
         ->addSelect("amount", "frequency_interval", "frequency_unit")
         ->execute()

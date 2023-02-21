@@ -466,7 +466,7 @@ class CRM_Contract_Utils
   }
 
   public static function getFinancialTypeID(string $name) {
-    return Api4\FinancialType::get()
+    return Api4\FinancialType::get(FALSE)
       ->addSelect('id')
       ->addWhere('name', '=', $name)
       ->execute()
@@ -474,7 +474,7 @@ class CRM_Contract_Utils
   }
 
   public static function getOptionValue(string $optionGroup, string $name) {
-    return Api4\OptionValue::get()
+    return Api4\OptionValue::get(FALSE)
       ->addSelect('value')
       ->addWhere('option_group_id:name', '=', $optionGroup)
       ->addWhere('name', '=', $name)
