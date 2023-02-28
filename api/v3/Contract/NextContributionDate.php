@@ -17,17 +17,34 @@ function civicrm_api3_Contract_next_contribution_date($params) {
 function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params) {
   $now = strtotime(CRM_Utils_Array::value('_today', $params, 'now'));
 
+  // Payment adapter
+
+  $adapter = CRM_Utils_Array::value('payment_adapter', $params);
+  $params['payment_adapter'] = CRM_Contract_Utils::resolvePaymentAdapterAlias($adapter);
+
+  if (empty($params['payment_adapter'])) {
+    throw new API_Exception("Missing parameter 'payment_adapter'");
+  }
+
+  // PSP creditor ID
+
+  if ($params['payment_adapter'] === 'psp_sepa' && empty($params['creditor_id'])) {
+    throw new Exception("Missing parameter 'creditor_id'");
+  }
+
   // Start date
 
   $params['start_date'] = CRM_Utils_Array::value('start_date', $params, date('Y-m-d', $now));
-
-  // Cycle day
-
-  $default_cycle_day = date('d', strtotime($params['start_date']));
-  $params['cycle_day'] = (int) CRM_Utils_Array::value('cycle_day', $params, $default_cycle_day);
 }
 
 function _civicrm_api3_Contract_next_contribution_date_spec(&$params) {
+  $params['creditor_id'] = [
+    'api.required' => FALSE,
+    'description'  => 'ID of the PSP creditor',
+    'name'         => 'creditor_id',
+    'title'        => 'Creditor ID (PSP)',
+    'type'         => CRM_Utils_Type::T_INT,
+  ];
   $params['cycle_day'] = [
     'api.required' => FALSE,
     'description'  => 'Expected day of the month',

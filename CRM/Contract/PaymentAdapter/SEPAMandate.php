@@ -377,10 +377,22 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
     public static function nextContributionDate($params, $today = 'now') {
         $today = new DateTimeImmutable($today);
-        $cycle_day = $params['cycle_day'];
         $start_date = new DateTimeImmutable($params['start_date']);
 
         $min_date = DateTime::createFromImmutable($today);
+
+        // Creditor settings
+
+        $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
+
+        $notice_setting = (int) CRM_Sepa_Logic_Settings::getSetting(
+            "batching.RCUR.notice",
+            $creditor->id
+        );
+
+        $notice_days = new DateInterval("P{$notice_setting}D");
+
+        $min_date->add($notice_days);
 
         // Start date
 
@@ -390,6 +402,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         // Find next date for expected cycle day
 
+        $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $min_date->format('d'));
         $ncd = CRM_Contract_DateHelper::findNextDate($cycle_day, $min_date->format('Y-m-d'));
 
         return is_null($ncd) ? $ncd : $ncd->format('Y-m-d');

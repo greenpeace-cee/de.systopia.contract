@@ -12,7 +12,8 @@ extends TestCase
 implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterface {
   use Test\Api3TestTrait;
 
-  protected $defaultCreditor;
+  protected $pspCreditor;
+  protected $sepaCreditor;
 
   public function setUpHeadless() {
     return Test::headless()
@@ -24,6 +25,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
   public function setUp() {
     parent::setUp();
 
+    $this->setDefaultPspCreditor();
     $this->setDefaultSepaCreditor();
   }
 
@@ -31,17 +33,27 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
     parent::tearDown();
   }
 
+  private function setDefaultPspCreditor() {
+    $this->pspCreditor = Api4\SepaCreditor::create()
+      ->addValue('creditor_type' , 'PSP')
+      ->addValue('currency'      , 'EUR')
+      ->addValue('iban'          , 'AT613200000000005678')
+      ->addValue('mandate_active', TRUE)
+      ->execute()
+      ->first();
+  }
+
   private function setDefaultSepaCreditor() {
     $creditor_id = CRM_Sepa_Logic_Settings::getSetting('batching_default_creditor');
 
     if (isset($creditor_id)) {
-      $this->defaultCreditor = Api4\SepaCreditor::get()
+      $this->sepaCreditor = Api4\SepaCreditor::get()
         ->addWhere('id', '=', $creditor_id)
         ->addSelect('*')
         ->execute()
         ->first();
     } else {
-      $this->defaultCreditor = Api4\SepaCreditor::create()
+      $this->sepaCreditor = Api4\SepaCreditor::create()
         ->addValue('creditor_type' , 'SEPA')
         ->addValue('currency'      , 'EUR')
         ->addValue('iban'          , 'AT483200000012345864')
@@ -50,7 +62,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
         ->first();
     }
 
-    CRM_Sepa_Logic_Settings::setSetting($this->defaultCreditor['id'], 'batching_default_creditor');
+    CRM_Sepa_Logic_Settings::setSetting($this->sepaCreditor['id'], 'batching_default_creditor');
   }
 }
 

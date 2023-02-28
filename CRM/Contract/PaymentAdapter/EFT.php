@@ -188,7 +188,6 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
 
     public static function nextContributionDate($params, $today = 'now') {
         $today = new DateTimeImmutable($today);
-        $cycle_day = $params['cycle_day'];
         $start_date = new DateTimeImmutable($params['start_date']);
 
         $min_date = DateTime::createFromImmutable($today);
@@ -201,6 +200,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
 
         // Find next date for expected cycle day
 
+        $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $min_date->format('d'));
         $ncd = CRM_Contract_DateHelper::findNextDate($cycle_day, $min_date->format('Y-m-d'));
 
         return is_null($ncd) ? $ncd : $ncd->format('Y-m-d');

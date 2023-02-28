@@ -509,4 +509,27 @@ class CRM_Contract_Utils
     return $result->format('Y-m-d');
   }
 
+  public static function resolvePaymentAdapterAlias($adapter) {
+    if (empty($adapter)) return NULL;
+
+    switch ($adapter) {
+      case 'adyen':
+        return 'adyen';
+
+      case 'eft':
+        return 'eft';
+
+      case 'psp':
+      case 'psp_sepa':
+        return 'psp_sepa';
+
+      case 'sepa':
+      case 'sepa_mandate':
+        return 'sepa_mandate';
+
+      default:
+        return NULL;
+    }
+  }
+
 }

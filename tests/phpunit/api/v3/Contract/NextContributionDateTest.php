@@ -74,20 +74,23 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
   }
 
   public function testNextContributionDatePSP() {
+    CRM_Sepa_Logic_Settings::setSetting(7, 'batching.RCUR.notice', $this->pspCreditor['id']);
 
     // Case 1
 
     $ncd_params = [
       '_today'          => '2023-01-15',
+      'creditor_id'     => $this->pspCreditor['id'],
       'payment_adapter' => 'psp_sepa',
     ];
 
-    $this->assertEquals('2023-01-15', $this->getNextContributionDate($ncd_params));
+    $this->assertEquals('2023-01-22', $this->getNextContributionDate($ncd_params));
 
     // Case 2
 
     $ncd_params = [
       '_today'          => '2023-01-15',
+      'creditor_id'     => $this->pspCreditor['id'],
       'cycle_day'       => 13,
       'payment_adapter' => 'psp_sepa',
     ];
@@ -98,6 +101,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     $ncd_params = [
       '_today'          => '2023-01-15',
+      'creditor_id'     => $this->pspCreditor['id'],
       'cycle_day'       => 13,
       'payment_adapter' => 'psp_sepa',
       'start_date'      => '2023-03-01',
@@ -108,6 +112,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
   }
 
   public function testNextContributionDateSEPA() {
+    CRM_Sepa_Logic_Settings::setSetting(3, 'batching.RCUR.notice', $this->sepaCreditor['id']);
 
     // Case 1
 
@@ -116,28 +121,28 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       'payment_adapter' => 'sepa_mandate',
     ];
 
-    $this->assertEquals('2023-01-15', $this->getNextContributionDate($ncd_params));
+    $this->assertEquals('2023-01-18', $this->getNextContributionDate($ncd_params));
 
     // Case 2
 
     $ncd_params = [
       '_today'          => '2023-01-15',
-      'cycle_day'       => 13,
+      'cycle_day'       => 17,
       'payment_adapter' => 'sepa_mandate',
     ];
 
-    $this->assertEquals('2023-02-13', $this->getNextContributionDate($ncd_params));
+    $this->assertEquals('2023-02-17', $this->getNextContributionDate($ncd_params));
 
     // Case 3
 
     $ncd_params = [
       '_today'          => '2023-01-15',
-      'cycle_day'       => 13,
+      'cycle_day'       => 17,
       'payment_adapter' => 'sepa_mandate',
       'start_date'      => '2023-03-01',
     ];
 
-    $this->assertEquals('2023-03-13', $this->getNextContributionDate($ncd_params));
+    $this->assertEquals('2023-03-17', $this->getNextContributionDate($ncd_params));
 
   }
 
