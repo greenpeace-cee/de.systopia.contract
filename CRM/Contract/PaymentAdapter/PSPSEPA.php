@@ -448,7 +448,23 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     }
 
     public static function nextContributionDate($params, $today = 'now') {
-        return date('Y-m-d');
+        $today = new DateTimeImmutable($today);
+        $cycle_day = $params['cycle_day'];
+        $start_date = new DateTimeImmutable($params['start_date']);
+
+        $min_date = DateTime::createFromImmutable($today);
+
+        // Start date
+
+        if ($min_date->getTimestamp() < $start_date->getTimestamp()) {
+            $min_date = DateTime::createFromImmutable($start_date);
+        }
+
+        // Find next date for expected cycle day
+
+        $ncd = CRM_Contract_DateHelper::findNextDate($cycle_day, $min_date->format('Y-m-d'));
+
+        return is_null($ncd) ? $ncd : $ncd->format('Y-m-d');
     }
 
     /**
