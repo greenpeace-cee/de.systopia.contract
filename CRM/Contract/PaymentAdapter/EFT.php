@@ -186,6 +186,10 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         }
     }
 
+    public static function nextContributionDate($params, $today = 'now') {
+        return date('Y-m-d');
+    }
+
     /**
      * Get the next possible cycle day
      *

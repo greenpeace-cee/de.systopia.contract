@@ -395,6 +395,10 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     }
   }
 
+  public static function nextContributionDate($params, $today = 'now') {
+    return date('Y-m-d');
+  }
+
   public static function nextCycleDay() {
     // ...
 

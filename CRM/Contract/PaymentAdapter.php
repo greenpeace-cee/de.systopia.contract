@@ -86,6 +86,16 @@ interface CRM_Contract_PaymentAdapter {
     public static function mapSubmittedFormValues ($apiEndpoint, $submitted);
 
     /**
+     * Get the next contribution date for a contract
+     * 
+     * @param array $params - Necessary parameters, depending on implementation
+     * @param string $today - Optional parameter to simulate a different current time
+     *
+     * @return string - Next contribution date (YYYY-MM-DD)
+     **/
+    public static function nextContributionDate ($params, $today = 'now');
+ 
+    /**
      * Get the next possible cycle day
      *
      * @return int - the next cycle day

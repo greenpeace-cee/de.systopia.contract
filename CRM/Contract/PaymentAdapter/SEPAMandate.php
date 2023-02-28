@@ -375,6 +375,10 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         }
     }
 
+    public static function nextContributionDate($params, $today = 'now') {
+        date('Y-m-d');
+    }
+
     /**
      * Get the next possible cycle day
      *
