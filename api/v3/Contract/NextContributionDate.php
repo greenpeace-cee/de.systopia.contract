@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4;
+
 function civicrm_api3_Contract_next_contribution_date($params) {
   try {
     _civicrm_api3_Contract_next_contribution_date_validate_params($params);
@@ -28,8 +30,22 @@ function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params)
 
   // PSP creditor ID
 
-  if ($params['payment_adapter'] === 'psp_sepa' && empty($params['creditor_id'])) {
-    throw new Exception("Missing parameter 'creditor_id'");
+  if ($params['payment_adapter'] === 'psp_sepa') {
+    if (empty($params['creditor_id'])) {
+      throw new Exception("Missing parameter 'creditor_id'");
+    }
+
+    $creditor_id = $params['creditor_id'];
+
+    $creditor_count = Api4\SepaCreditor::get()
+      ->selectRowCount()
+      ->addWhere('id', '=', $creditor_id)
+      ->execute()
+      ->rowCount;
+
+    if ($creditor_count < 1) {
+      throw new Exception("PSP creditor with ID $creditor_id not found");
+    }
   }
 
   // Start date

@@ -160,7 +160,14 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      */
     public static function cycleDays ($params = []) {
         $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
-        return CRM_Sepa_Logic_Settings::getListSetting("cycledays", range(1, 28), $creditor->id);
+
+        $cycle_days_setting = CRM_Sepa_Logic_Settings::getListSetting(
+            'cycledays',
+            range(1, 28),
+            $creditor->id
+        );
+
+        return array_map(fn($n) => (int) $n, $cycle_days_setting);
     }
 
     /**
@@ -381,7 +388,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         $min_date = DateTime::createFromImmutable($today);
 
-        // Creditor settings
+        // Creditor notice days
 
         $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
 
@@ -391,7 +398,6 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         );
 
         $notice_days = new DateInterval("P{$notice_setting}D");
-
         $min_date->add($notice_days);
 
         // Start date
@@ -400,10 +406,24 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             $min_date = DateTime::createFromImmutable($start_date);
         }
 
-        // Find next date for expected cycle day
+        // Allowed cycle days
+
+        $allowed_cycle_days = self::cycleDays();
+
+        $min_date = CRM_Contract_DateHelper::findNextOfDays(
+            $allowed_cycle_days,
+            $min_date->format('Y-m-d')
+        );
 
         $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $min_date->format('d'));
-        $ncd = CRM_Contract_DateHelper::findNextDate($cycle_day, $min_date->format('Y-m-d'));
+
+        if (!in_array($cycle_day, $allowed_cycle_days, TRUE)) {
+            throw new Exception("Cycle day $cycle_day is not allowed for this SEPA creditor");
+        }
+
+        // Find next date for expected cycle day
+
+        $ncd = CRM_Contract_DateHelper::findNextOfDays([$cycle_day], $min_date->format('Y-m-d'));
 
         return is_null($ncd) ? $ncd : $ncd->format('Y-m-d');
     }

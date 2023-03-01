@@ -407,10 +407,24 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       $min_date = DateTime::createFromImmutable($start_date);
     }
 
-    // Find next date for expected cycle day
+    // Allowed cycle days
+
+    $allowed_cycle_days = self::cycleDays();
+
+    $min_date = CRM_Contract_DateHelper::findNextOfDays(
+      $allowed_cycle_days,
+      $min_date->format('Y-m-d')
+    );
 
     $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $min_date->format('d'));
-    $ncd = CRM_Contract_DateHelper::findNextDate($cycle_day, $min_date->format('Y-m-d'));
+
+    if (!in_array($cycle_day, $allowed_cycle_days, TRUE)) {
+      throw new Exception("Cycle day $cycle_day is not allowed for Adyen payments");
+    }
+
+    // Find next date for expected cycle day
+
+    $ncd = CRM_Contract_DateHelper::findNextOfDays([$cycle_day], $min_date->format('Y-m-d'));
 
     return is_null($ncd) ? $ncd : $ncd->format('Y-m-d');
   }
