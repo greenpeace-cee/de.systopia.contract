@@ -83,6 +83,10 @@ function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params)
     }
   }
 
+  // Cycle day
+
+  if (empty($params['cycle_day'])) unset($params['cycle_day']);
+
   // Start date
 
   $params['start_date'] = CRM_Utils_Array::value('start_date', $params, $now->format('Y-m-d'));

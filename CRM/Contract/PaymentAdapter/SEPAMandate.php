@@ -231,31 +231,11 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         // Cycle days
         $result["cycle_days"] = self::cycleDays();
 
-        // Default creditor grace
-        $result["default_creditor_grace"] = (int) CRM_Sepa_Logic_Settings::getSetting(
-            "batching.RCUR.grace",
-            $default_creditor->creditor_id
-        );
-
-        // Default creditor notice
-        $result["default_creditor_notice"] = (int) CRM_Sepa_Logic_Settings::getSetting(
-            "batching.RCUR.notice",
-            $default_creditor->creditor_id
-        );
-
         // Default currency
         $result["default_currency"] = $default_creditor->currency;
 
         // Next cycle day
         $result["next_cycle_day"] = self::nextCycleDay();
-
-        if (empty($params["recurring_contribution_id"])) return $result;
-
-        // Next installment date
-        $result["next_installment_date"] = CRM_Contract_RecurringContribution::getNextInstallmentDate(
-            $params["recurring_contribution_id"],
-            self::cycleDays()
-        );
 
         return $result;
     }
