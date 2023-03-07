@@ -17,7 +17,42 @@ function civicrm_api3_Contract_next_contribution_date($params) {
 }
 
 function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params) {
-  $now = strtotime(CRM_Utils_Array::value('_today', $params, 'now'));
+  $now = new DateTimeImmutable(CRM_Utils_Array::value('_today', $params, 'now'));
+
+  // Recurring contribution
+
+  if (isset($params['recurring_contribution_id'])) {
+    $rc_id = $params['recurring_contribution_id'];
+
+    $rc_result = Api4\ContributionRecur::get()
+      ->addWhere('id', '=', $rc_id)
+      ->addSelect('*')
+      ->setLimit(1)
+      ->execute();
+
+    if ($rc_result->count() < 1) {
+      throw new API_Exception("Recurring contribution with ID $rc_id not found");
+    }
+
+    $rc = $rc_result->first();
+    $adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id);
+
+    $params['cycle_day'] = CRM_Utils_Array::value('cycle_day', $params, $rc['cycle_day']);
+    $params['payment_adapter'] = CRM_Utils_Array::value('payment_adapter', $params, $adapter);
+    $params['start_date'] = CRM_Utils_Array::value('start_date', $params, $rc['start_date']);
+
+    if ($adapter === 'psp_sepa' && empty($params['creditor_id'])) {
+      $sepa_mandate = Api4\SepaMandate::get()
+        ->addWhere('entity_id'   , '=', $rc_id)
+        ->addWhere('entity_table', '=', 'civicrm_contribution_recur')
+        ->addSelect('creditor_id')
+        ->setLimit(1)
+        ->execute()
+        ->first();
+
+      $params['creditor_id'] = $sepa_mandate['creditor_id'];
+    }
+  }
 
   // Payment adapter
 
@@ -50,7 +85,7 @@ function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params)
 
   // Start date
 
-  $params['start_date'] = CRM_Utils_Array::value('start_date', $params, date('Y-m-d', $now));
+  $params['start_date'] = CRM_Utils_Array::value('start_date', $params, $now->format('Y-m-d'));
 }
 
 function _civicrm_api3_Contract_next_contribution_date_spec(&$params) {
@@ -74,6 +109,13 @@ function _civicrm_api3_Contract_next_contribution_date_spec(&$params) {
     'name'         => 'payment_adapter',
     'title'        => 'Payment adapter',
     'type'         => CRM_Utils_Type::T_STRING,
+  ];
+  $params['recurring_contribution_id'] = [
+    'api.required' => FALSE,
+    'description'  => 'ID of an existing recurring contribution',
+    'name'         => 'recurring_contribution_id',
+    'title'        => 'Recurring contribution ID',
+    'type'         => CRM_Utils_Type::T_INT,
   ];
   $params['start_date'] = [
     'api.required' => FALSE,

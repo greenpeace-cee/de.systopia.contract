@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4;
+
 /**
  * @group headless
  */
@@ -69,6 +71,22 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       $ncd_result['error_message']
     );
 
+    // Case 6
+
+    $recur_contrib_id = self::createRecurringContribution([
+      '_today'          => '2023-01-15',
+      'cycle_day'       => 17,
+      'payment_adapter' => 'adyen',
+      'start_date'      => '2023-02-01',
+    ]);
+
+    $ncd_params = [
+      '_today'                    => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ];
+
+    $this->assertEquals('2023-02-17', $this->getNextContributionDate($ncd_params));
+
   }
 
   public function testNextContributionDateEFT() {
@@ -134,6 +152,22 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       'Cycle day 33 is not allowed for EFT payments',
       $ncd_result['error_message']
     );
+
+    // Case 6
+
+    $recur_contrib_id = self::createRecurringContribution([
+      '_today'          => '2023-01-15',
+      'cycle_day'       => 05,
+      'payment_adapter' => 'eft',
+      'start_date'      => '2023-03-01',
+    ]);
+
+    $ncd_params = [
+      '_today'                    => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ];
+
+    $this->assertEquals('2023-03-05', $this->getNextContributionDate($ncd_params));
 
   }
 
@@ -212,6 +246,22 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       $ncd_result['error_message']
     );
 
+    // Case 6
+
+    $recur_contrib_id = self::createRecurringContribution([
+      '_today'          => '2023-01-15',
+      'cycle_day'       => 20,
+      'payment_adapter' => 'psp_sepa',
+      'start_date'      => '2023-02-01',
+    ]);
+
+    $ncd_params = [
+      '_today'                    => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ];
+
+    $this->assertEquals('2023-02-20', $this->getNextContributionDate($ncd_params));
+
   }
 
   public function testNextContributionDateSEPA() {
@@ -284,6 +334,90 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       $ncd_result['error_message']
     );
 
+    // Case 6
+
+    $recur_contrib_id = self::createRecurringContribution([
+      '_today'          => '2023-01-15',
+      'cycle_day'       => 28,
+      'payment_adapter' => 'sepa_mandate',
+      'start_date'      => '2023-02-01',
+    ]);
+
+    $ncd_params = [
+      '_today'                    => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ];
+
+    $this->assertEquals('2023-02-28', $this->getNextContributionDate($ncd_params));
+
+  }
+
+  private function createRecurringContribution(array $params) {
+    $api_call = Api4\ContributionRecur::create(FALSE)
+      ->addValue('amount'      , 10.0)
+      ->addValue('contact_id'  , $this->contact['id'])
+      ->addValue('create_date' , $params['_today'])
+      ->addValue('cycle_day'   , $params['cycle_day'])
+      ->addValue('start_date'  , $params['start_date']);
+
+    switch ($params['payment_adapter']) {
+      case 'adyen': {
+        $recurring_contribution = $api_call
+          ->addValue('payment_processor_id', $this->adyenProcessor['id'])
+          ->execute()
+          ->first();
+
+        return $recurring_contribution['id'];
+      }
+
+      case 'eft': {
+        $recurring_contribution = $api_call
+          ->addValue('payment_instrument_id:name', 'EFT')
+          ->execute()
+          ->first();
+
+        return $recurring_contribution['id'];
+      }
+
+      case 'psp_sepa': {
+        $recurring_contribution = $api_call
+          ->addValue('payment_instrument_id:name', 'RCUR')
+          ->execute()
+          ->first();
+
+        $sepa_mandate = Api4\SepaMandate::create()
+          ->addValue('creditor_id' , $this->pspCreditor['id'])
+          ->addValue('date'        , $params['_today'])
+          ->addValue('entity_id'   , $recurring_contribution['id'])
+          ->addValue('entity_table', 'civicrm_contribution_recur')
+          ->addValue('reference'   , bin2hex(random_bytes(8)))
+          ->execute()
+          ->first();
+
+        return $recurring_contribution['id'];
+      }
+
+      case 'sepa_mandate': {
+        $recurring_contribution = $api_call
+          ->addValue('payment_instrument_id:name', 'RCUR')
+          ->execute()
+          ->first();
+
+        $sepa_mandate = Api4\SepaMandate::create()
+          ->addValue('creditor_id' , $this->sepaCreditor['id'])
+          ->addValue('date'        , $params['_today'])
+          ->addValue('entity_id'   , $recurring_contribution['id'])
+          ->addValue('entity_table', 'civicrm_contribution_recur')
+          ->addValue('reference'   , bin2hex(random_bytes(8)))
+          ->execute()
+          ->first();
+
+        return $recurring_contribution['id'];
+      }
+
+      default:
+        return NULL;
+    }
   }
 
   private function getNextContributionDate(array $params) {
