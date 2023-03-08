@@ -32,8 +32,8 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     $ncd_params = [
       '_today'          => '2023-01-15',
+      'min_date'        => '2023-03-01',
       'payment_adapter' => 'adyen',
-      'start_date'      => '2023-03-01',
     ];
 
     $this->assertEquals('2023-03-01', $this->getNextContributionDate($ncd_params));
@@ -43,8 +43,8 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
     $ncd_params = [
       '_today'          => '2023-01-15',
       'cycle_day'       => 13,
+      'min_date'        => '2023-03-01',
       'payment_adapter' => 'adyen',
-      'start_date'      => '2023-03-01',
     ];
 
     $this->assertEquals('2023-03-13', $this->getNextContributionDate($ncd_params));
@@ -73,7 +73,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     // Case 6
 
-    $recur_contrib_id = self::createRecurringContribution([
+    $recur_contrib_id = $this->createRecurringContribution([
       '_today'          => '2023-01-15',
       'cycle_day'       => 17,
       'payment_adapter' => 'adyen',
@@ -86,6 +86,29 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
     ];
 
     $this->assertEquals('2023-02-17', $this->getNextContributionDate($ncd_params));
+
+    // Case 7
+
+    $recur_contrib_id = $this->createRecurringContribution([
+      '_today'             => '2023-01-15',
+      'cycle_day'          => 1,
+      'frequency_interval' => 2,
+      'frequency_unit'     => 'month',
+      'payment_adapter'    => 'adyen',
+      'start_date'         => '2023-02-01',
+    ]);
+
+    $this->createContribution([
+      'date'                      => '2022-12-31',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ]);
+
+    $ncd_params = [
+      '_today'                    => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ];
+
+    $this->assertEquals('2023-03-01', $this->getNextContributionDate($ncd_params));
 
   }
 
@@ -114,8 +137,8 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     $ncd_params = [
       '_today'          => '2023-01-15',
+      'min_date'        => '2023-03-01',
       'payment_adapter' => 'eft',
-      'start_date'      => '2023-03-01',
     ];
 
     $this->assertEquals('2023-03-01', $this->getNextContributionDate($ncd_params));
@@ -125,8 +148,8 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
     $ncd_params = [
       '_today'          => '2023-01-15',
       'cycle_day'       => 13,
+      'min_date'        => '2023-03-01',
       'payment_adapter' => 'eft',
-      'start_date'      => '2023-03-01',
     ];
 
     $this->assertEquals('2023-03-13', $this->getNextContributionDate($ncd_params));
@@ -155,7 +178,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     // Case 6
 
-    $recur_contrib_id = self::createRecurringContribution([
+    $recur_contrib_id = $this->createRecurringContribution([
       '_today'          => '2023-01-15',
       'cycle_day'       => 05,
       'payment_adapter' => 'eft',
@@ -169,6 +192,29 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     $this->assertEquals('2023-03-05', $this->getNextContributionDate($ncd_params));
 
+    // Case 7
+
+    $recur_contrib_id = $this->createRecurringContribution([
+      '_today'             => '2023-01-15',
+      'cycle_day'          => 20,
+      'frequency_interval' => 1,
+      'frequency_unit'     => 'year',
+      'payment_adapter'    => 'eft',
+      'start_date'         => '2023-01-20',
+    ]);
+
+    $this->createContribution([
+      'date'                      => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ]);
+
+    $ncd_params = [
+      '_today'                    => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ];
+
+    $this->assertEquals('2024-01-20', $this->getNextContributionDate($ncd_params));
+
   }
 
   public function testNextContributionDatePSP() {
@@ -178,9 +224,6 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       $this->pspCreditor['id']
     );
 
-    CRM_Sepa_Logic_Settings::setSetting(3, 'batching.RCUR.grace', $this->pspCreditor['id']);
-    CRM_Sepa_Logic_Settings::setSetting(7, 'batching.RCUR.notice', $this->pspCreditor['id']);
-
     // Case 1
 
     $ncd_params = [
@@ -189,7 +232,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       'payment_adapter' => 'psp_sepa',
     ];
 
-    $this->assertEquals('2023-01-20', $this->getNextContributionDate($ncd_params));
+    $this->assertEquals('2023-01-15', $this->getNextContributionDate($ncd_params));
 
     // Case 2
 
@@ -207,8 +250,8 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
     $ncd_params = [
       '_today'          => '2023-01-15',
       'creditor_id'     => $this->pspCreditor['id'],
+      'min_date'        => '2023-03-01',
       'payment_adapter' => 'psp_sepa',
-      'start_date'      => '2023-03-01',
     ];
 
     $this->assertEquals('2023-03-05', $this->getNextContributionDate($ncd_params));
@@ -219,8 +262,8 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       '_today'          => '2023-01-15',
       'creditor_id'     => $this->pspCreditor['id'],
       'cycle_day'       => 10,
+      'min_date'        => '2023-03-01',
       'payment_adapter' => 'psp_sepa',
-      'start_date'      => '2023-03-01',
     ];
 
     $this->assertEquals('2023-03-10', $this->getNextContributionDate($ncd_params));
@@ -249,7 +292,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     // Case 6
 
-    $recur_contrib_id = self::createRecurringContribution([
+    $recur_contrib_id = $this->createRecurringContribution([
       '_today'          => '2023-01-15',
       'cycle_day'       => 20,
       'payment_adapter' => 'psp_sepa',
@@ -263,6 +306,29 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     $this->assertEquals('2023-02-20', $this->getNextContributionDate($ncd_params));
 
+    // Case 7
+
+    $recur_contrib_id = $this->createRecurringContribution([
+      '_today'             => '2023-01-15',
+      'cycle_day'          => 5,
+      'frequency_interval' => 3,
+      'frequency_unit'     => 'month',
+      'payment_adapter'    => 'psp_sepa',
+      'start_date'         => '2023-01-16',
+    ]);
+
+    $this->createContribution([
+      'date'                      => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ]);
+
+    $ncd_params = [
+      '_today'                    => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ];
+
+    $this->assertEquals('2023-05-05', $this->getNextContributionDate($ncd_params));
+
   }
 
   public function testNextContributionDateSEPA() {
@@ -271,9 +337,6 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       'cycledays',
       $this->sepaCreditor['id']
     );
-
-    CRM_Sepa_Logic_Settings::setSetting(3, 'batching.RCUR.grace', $this->sepaCreditor['id']);
-    CRM_Sepa_Logic_Settings::setSetting(7, 'batching.RCUR.notice', $this->sepaCreditor['id']);
 
     // Case 1
 
@@ -298,8 +361,8 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     $ncd_params = [
       '_today'          => '2023-01-15',
+      'min_date'        => '2023-03-01',
       'payment_adapter' => 'sepa_mandate',
-      'start_date'      => '2023-03-01',
     ];
 
     $this->assertEquals('2023-03-07', $this->getNextContributionDate($ncd_params));
@@ -309,8 +372,8 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
     $ncd_params = [
       '_today'          => '2023-01-15',
       'cycle_day'       => 14,
+      'min_date'        => '2023-03-01',
       'payment_adapter' => 'sepa_mandate',
-      'start_date'      => '2023-03-01',
     ];
 
     $this->assertEquals('2023-03-14', $this->getNextContributionDate($ncd_params));
@@ -338,7 +401,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     // Case 6
 
-    $recur_contrib_id = self::createRecurringContribution([
+    $recur_contrib_id = $this->createRecurringContribution([
       '_today'          => '2023-01-15',
       'cycle_day'       => 28,
       'payment_adapter' => 'sepa_mandate',
@@ -352,15 +415,53 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
 
     $this->assertEquals('2023-02-28', $this->getNextContributionDate($ncd_params));
 
+    // Case 7
+
+    $recur_contrib_id = $this->createRecurringContribution([
+      '_today'             => '2023-01-15',
+      'cycle_day'          => 21,
+      'frequency_interval' => 6,
+      'frequency_unit'     => 'month',
+      'payment_adapter'    => 'sepa_mandate',
+      'start_date'         => '2023-01-16',
+    ]);
+
+    $this->createContribution([
+      'date'                      => '2023-01-14',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ]);
+
+    $ncd_params = [
+      '_today'                    => '2023-01-15',
+      'recurring_contribution_id' => $recur_contrib_id,
+    ];
+
+    $this->assertEquals('2023-07-21', $this->getNextContributionDate($ncd_params));
+
+  }
+
+  private function createContribution(array $params) {
+    Api4\Contribution::create(FALSE)
+      ->addValue('contact_id'            , $this->contact['id'])
+      ->addValue('contribution_recur_id' , $params['recurring_contribution_id'])
+      ->addValue('financial_type_id.name', 'Member Dues')
+      ->addValue('receive_date'          , $params['date'])
+      ->addValue('total_amount'          , 30.0)
+      ->execute();
   }
 
   private function createRecurringContribution(array $params) {
+    $frequency_interval = CRM_Utils_Array::value('frequency_interval', $params, 1);
+    $frequency_unit = CRM_Utils_Array::value('frequency_unit', $params, 'month');
+
     $api_call = Api4\ContributionRecur::create(FALSE)
-      ->addValue('amount'      , 10.0)
-      ->addValue('contact_id'  , $this->contact['id'])
-      ->addValue('create_date' , $params['_today'])
-      ->addValue('cycle_day'   , $params['cycle_day'])
-      ->addValue('start_date'  , $params['start_date']);
+      ->addValue('amount'             , 10.0)
+      ->addValue('contact_id'         , $this->contact['id'])
+      ->addValue('create_date'        , $params['_today'])
+      ->addValue('cycle_day'          , $params['cycle_day'])
+      ->addValue('frequency_interval' , $frequency_interval)
+      ->addValue('frequency_unit'     , $frequency_unit)
+      ->addValue('start_date'         , $params['start_date']);
 
     switch ($params['payment_adapter']) {
       case 'adyen': {
@@ -387,7 +488,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
           ->execute()
           ->first();
 
-        $sepa_mandate = Api4\SepaMandate::create()
+        $sepa_mandate = Api4\SepaMandate::create(FALSE)
           ->addValue('creditor_id' , $this->pspCreditor['id'])
           ->addValue('date'        , $params['_today'])
           ->addValue('entity_id'   , $recurring_contribution['id'])
@@ -405,7 +506,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
           ->execute()
           ->first();
 
-        $sepa_mandate = Api4\SepaMandate::create()
+        $sepa_mandate = Api4\SepaMandate::create(FALSE)
           ->addValue('creditor_id' , $this->sepaCreditor['id'])
           ->addValue('date'        , $params['_today'])
           ->addValue('entity_id'   , $recurring_contribution['id'])

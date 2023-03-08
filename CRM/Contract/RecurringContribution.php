@@ -8,6 +8,8 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
+
 class CRM_Contract_RecurringContribution {
 
   /** cached variables */
@@ -557,6 +559,25 @@ class CRM_Contract_RecurringContribution {
         ]);
       }
     }
+  }
+
+  public static function getById($recurring_contribution_id) {
+    return Api4\ContributionRecur::get(FALSE)
+      ->addWhere('id', '=', $recurring_contribution_id)
+      ->addSelect('*')
+      ->execute()
+      ->first();
+  }
+
+  public static function getLatestContribution($recurring_contribution_id) {
+    return Api4\Contribution::get(FALSE)
+      ->addWhere('contribution_recur_id'      , '=' , $recurring_contribution_id)
+      ->addWhere('contribution_status_id:name', 'IN', ['Completed', 'In Progress'])
+      ->addSelect('*')
+      ->addOrderBy('receive_date', 'DESC')
+      ->setLimit(1)
+      ->execute()
+      ->first();
   }
 
 }

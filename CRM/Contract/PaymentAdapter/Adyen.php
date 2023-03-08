@@ -399,16 +399,53 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   public static function nextContributionDate($params = [], $today = 'now') {
     $today = new DateTimeImmutable($today);
 
-    $start_date = isset($params['start_date'])
-      ? new DateTimeImmutable($params['start_date'])
-      : $today;
+    // Minimum date
 
-    $min_date = DateTime::createFromImmutable($today);
+    $min_date = isset($params['min_date'])
+      ? new DateTime($params['min_date'])
+      : DateTime::createFromImmutable($today);
 
-    // Start date
+    if ($min_date->getTimestamp() < $today->getTimestamp()) {
+      $min_date = DateTime::createFromImmutable($today);
+    }
 
-    if ($min_date->getTimestamp() < $start_date->getTimestamp()) {
-      $min_date = DateTime::createFromImmutable($start_date);
+    // Recurring contribution
+
+    if (isset($params['recurring_contribution_id'])) {
+      $rc_id = $params['recurring_contribution_id'];
+      $recurring_contribution = CRM_Contract_RecurringContribution::getById($rc_id);
+    }
+
+    if (isset($recurring_contribution)) {
+      $params['cycle_day'] = CRM_Utils_Array::value(
+        'cycle_day',
+        $params,
+        $recurring_contribution['cycle_day']
+      );
+
+      $rc_start_date = new DateTimeImmutable($recurring_contribution['start_date']);
+
+      if ($min_date->getTimestamp() < $rc_start_date->getTimestamp()) {
+        $min_date = DateTime::createFromImmutable($rc_start_date);
+      }
+    }
+
+    // Latest contribution
+
+    if (isset($recurring_contribution)) {
+      $latest_contribution = CRM_Contract_RecurringContribution::getLatestContribution($rc_id);
+    }
+
+    if (isset($latest_contribution)) {
+      $paid_until = CRM_Contract_DateHelper::nextRegularDate(
+        $latest_contribution['receive_date'],
+        $recurring_contribution['frequency_interval'],
+        $recurring_contribution['frequency_unit']
+      );
+
+      if ($min_date->getTimestamp() < $paid_until->getTimestamp()) {
+        $min_date = $paid_until;
+      }
     }
 
     // Allowed cycle days

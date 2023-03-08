@@ -17,7 +17,6 @@ function civicrm_api3_Contract_next_contribution_date($params) {
 }
 
 function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params) {
-  $now = new DateTimeImmutable(CRM_Utils_Array::value('_today', $params, 'now'));
 
   // Recurring contribution
 
@@ -36,10 +35,7 @@ function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params)
 
     $rc = $rc_result->first();
     $adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id);
-
-    $params['cycle_day'] = CRM_Utils_Array::value('cycle_day', $params, $rc['cycle_day']);
-    $params['payment_adapter'] = CRM_Utils_Array::value('payment_adapter', $params, $adapter);
-    $params['start_date'] = CRM_Utils_Array::value('start_date', $params, $rc['start_date']);
+    $params['payment_adapter'] = $adapter;
 
     if ($adapter === 'psp_sepa' && empty($params['creditor_id'])) {
       $sepa_mandate = Api4\SepaMandate::get()
@@ -83,13 +79,6 @@ function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params)
     }
   }
 
-  // Cycle day
-
-  if (empty($params['cycle_day'])) unset($params['cycle_day']);
-
-  // Start date
-
-  $params['start_date'] = CRM_Utils_Array::value('start_date', $params, $now->format('Y-m-d'));
 }
 
 function _civicrm_api3_Contract_next_contribution_date_spec(&$params) {
@@ -107,6 +96,13 @@ function _civicrm_api3_Contract_next_contribution_date_spec(&$params) {
     'title'        => 'Cycle day',
     'type'         => CRM_Utils_Type::T_INT,
   ];
+  $params['min_date'] = [
+    'api.required' => FALSE,
+    'description'  => 'Used as an offset to calculate the result date from',
+    'name'         => 'min_date',
+    'title'        => 'Minimum date',
+    'type'         => CRM_Utils_Type::T_DATE,
+  ];
   $params['payment_adapter'] = [
     'api.required' => FALSE,
     'description'  => 'Payment adapter for the contract',
@@ -120,13 +116,6 @@ function _civicrm_api3_Contract_next_contribution_date_spec(&$params) {
     'name'         => 'recurring_contribution_id',
     'title'        => 'Recurring contribution ID',
     'type'         => CRM_Utils_Type::T_INT,
-  ];
-  $params['start_date'] = [
-    'api.required' => FALSE,
-    'description'  => 'Start date of the recurring contribution',
-    'name'         => 'start_date',
-    'title'        => 'Start date',
-    'type'         => CRM_Utils_Type::T_DATE,
   ];
 }
 

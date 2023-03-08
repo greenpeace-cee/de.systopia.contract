@@ -362,40 +362,55 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
     public static function nextContributionDate($params = [], $today = 'now') {
         $today = new DateTimeImmutable($today);
 
-        $start_date = isset($params['start_date'])
-            ? new DateTimeImmutable($params['start_date'])
-            : $today;
+        // Minimum date
 
-        $min_date = DateTime::createFromImmutable($today);
-
-        // Creditor grace/notice days
-
-        $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
-
-        $grace_setting = (int) CRM_Sepa_Logic_Settings::getSetting(
-            "batching.RCUR.grace",
-            $creditor->id
-        );
-
-        $grace_days = new DateInterval("P{$grace_setting}D");
-
-        $notice_setting = (int) CRM_Sepa_Logic_Settings::getSetting(
-            "batching.RCUR.notice",
-            $creditor->id
-        );
-
-        $notice_days = new DateInterval("P{$notice_setting}D");
-
-        $min_date->add($notice_days)->sub($grace_days);
+        $min_date = isset($params['min_date'])
+            ? new DateTime($params['min_date'])
+            : DateTime::createFromImmutable($today);
 
         if ($min_date->getTimestamp() < $today->getTimestamp()) {
             $min_date = DateTime::createFromImmutable($today);
         }
 
-        // Start date
+        // Recurring contribution
 
-        if ($min_date->getTimestamp() < $start_date->getTimestamp()) {
-            $min_date = DateTime::createFromImmutable($start_date);
+        if (isset($params['recurring_contribution_id'])) {
+            $rc_id = $params['recurring_contribution_id'];
+            $recurring_contribution = CRM_Contract_RecurringContribution::getById($rc_id);
+        }
+
+        if (isset($recurring_contribution)) {
+            $params['cycle_day'] = CRM_Utils_Array::value(
+                'cycle_day',
+                $params,
+                $recurring_contribution['cycle_day']
+            );
+
+            $rc_start_date = new DateTimeImmutable($recurring_contribution['start_date']);
+
+            if ($min_date->getTimestamp() < $rc_start_date->getTimestamp()) {
+                $min_date = DateTime::createFromImmutable($rc_start_date);
+            }
+        }
+
+        // Latest contribution
+
+        if (isset($recurring_contribution)) {
+            $latest_contribution = CRM_Contract_RecurringContribution::getLatestContribution(
+                $rc_id
+            );
+        }
+
+        if (isset($latest_contribution)) {
+            $paid_until = CRM_Contract_DateHelper::nextRegularDate(
+                $latest_contribution['receive_date'],
+                $recurring_contribution['frequency_interval'],
+                $recurring_contribution['frequency_unit']
+            );
+
+            if ($min_date->getTimestamp() < $paid_until->getTimestamp()) {
+                $min_date = $paid_until;
+            }
         }
 
         // Allowed cycle days
