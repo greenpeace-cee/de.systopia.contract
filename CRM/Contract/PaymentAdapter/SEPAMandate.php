@@ -167,7 +167,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             $creditor->id
         );
 
-        return array_map(fn($n) => (int) $n, $cycle_days_setting);
+        return array_map(fn($n) => (int) $n, array_values($cycle_days_setting));
     }
 
     /**
@@ -233,9 +233,6 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         // Default currency
         $result["default_currency"] = $default_creditor->currency;
-
-        // Next cycle day
-        $result["next_cycle_day"] = self::nextCycleDay();
 
         return $result;
     }
@@ -362,7 +359,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         }
     }
 
-    public static function nextContributionDate($params, $today = 'now') {
+    public static function nextContributionDate($params = [], $today = 'now') {
         $today = new DateTimeImmutable($today);
         $start_date = new DateTimeImmutable($params['start_date']);
 
@@ -413,25 +410,9 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      *
      * @return int - the next cycle day
      */
-    public static function nextCycleDay () {
-        $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
-        $notice = (int) CRM_Sepa_Logic_Settings::getSetting("batching.FRST.notice", $creditor->id);
-        $buffer_days = (int) CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days") + $notice;
-        $cycle_days = self::cycleDays();
-
-        $safety_counter = 32;
-        $start_date = strtotime("+{$buffer_days} day", strtotime("now"));
-
-        while (!in_array(date("d", $start_date), $cycle_days)) {
-            $start_date = strtotime("+ 1 day", $start_date);
-            $safety_counter -= 1;
-
-            if ($safety_counter == 0) {
-                throw new Exception("There's something wrong with the nextCycleDay method.");
-            }
-        }
-
-        return (int) date("d", $start_date);
+    public static function nextCycleDay ($params = []) {
+        $next_contribution_date = self::nextContributionDate($params);
+        return (int) DateTime::createFromFormat('Y-m-d', $next_contribution_date)->format('d');
     }
 
     /**

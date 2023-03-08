@@ -93,14 +93,7 @@ interface CRM_Contract_PaymentAdapter {
      *
      * @return string - Next contribution date (YYYY-MM-DD)
      **/
-    public static function nextContributionDate ($params, $today = 'now');
- 
-    /**
-     * Get the next possible cycle day
-     *
-     * @return int - the next cycle day
-     */
-    public static function nextCycleDay ();
+    public static function nextContributionDate ($params = [], $today = 'now');
 
     /**
      * Pause payment

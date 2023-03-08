@@ -1,22 +1,24 @@
-import { registerPaymentAdapter } from "../utils.js";
+import { registerPaymentAdapter, updateCycleDayField } from "../utils.js";
+
+const EXT_VARS = CRM.vars["de.systopia.contract"];
+const ADAPTER_VARS = CRM.vars["de.systopia.contract/sepa_mandate"];
 
 class SEPA {
     constructor() {
-        const extVars = CRM.vars["de.systopia.contract"];
-        const adapterVars = CRM.vars["de.systopia.contract/sepa_mandate"];
-
-        this.action = extVars.action;
-        this.creditor = adapterVars.creditor;
-        this.currentCycleDay = extVars.current_cycle_day;
-        this.cycleDays = adapterVars.cycle_days;
-        this.debitorName = extVars.debitor_name;
-        this.defaultCurrency = adapterVars.default_currency;
-        this.frequencies = extVars.frequencies;
-        this.graceEnd = extVars.grace_end;
-        this.nextCycleDay = adapterVars.next_cycle_day;
+        this.action = EXT_VARS.action;
+        this.creditor = ADAPTER_VARS.creditor;
+        this.currentCycleDay = EXT_VARS.current_cycle_day;
+        this.cycleDays = ADAPTER_VARS.cycle_days;
+        this.debitorName = EXT_VARS.debitor_name;
+        this.defaultCurrency = ADAPTER_VARS.default_currency;
+        this.frequencies = EXT_VARS.frequencies;
+        this.graceEnd = EXT_VARS.grace_end;
     }
 
-    async nextCollectionDate ({ cycle_day = null, start_date = null }) {
+    async nextCollectionDate ({ cycle_day, start_date }) {
+        if (!cycle_day) return "";
+        if (!start_date) return "";
+
         return await CRM.api3("Contract", "next_contribution_date", {
             cycle_day,
             payment_adapter: "sepa_mandate",
@@ -35,22 +37,9 @@ class SEPA {
         cj("span#currency").text(this.defaultCurrency);
 
         // Cycle days
-        const cycleDayField = formFields["cycle_day"];
-        const defaultCycleDay = this.action === "sign" ? this.nextCycleDay : this.currentCycleDay;
-        const selectedCycleDay = cycleDayField.val() || defaultCycleDay;
-        const cycleDayOptions = this.cycleDays;
+        updateCycleDayField(formFields, this.cycleDays, this.currentCycleDay);
 
-        cycleDayField.empty();
-        cycleDayField.append("<option value=\"\">- none -</option>");
-
-        for (const cycleDay of Object.values(cycleDayOptions)) {
-            cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
-
-            if (parseInt(selectedCycleDay) === parseInt(cycleDay)) {
-                cycleDayField.val(cycleDay);
-            }
-        }
-
+        // Payment preview
         this.updatePaymentPreview(formFields);
     }
 

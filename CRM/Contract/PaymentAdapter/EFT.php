@@ -113,12 +113,9 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
      * @return array - Form variables
      */
     public static function formVars ($params = []) {
-        // ...
-
         return [
             "cycle_days"       => self::cycleDays(),
-            "default_currency" => "EUR",
-            "next_cycle_day"   => date("d"), // Today
+            "default_currency" => Civi::settings()->get('defaultCurrency'),
         ];
     }
 
@@ -186,7 +183,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         }
     }
 
-    public static function nextContributionDate($params, $today = 'now') {
+    public static function nextContributionDate($params = [], $today = 'now') {
         $today = new DateTimeImmutable($today);
         $start_date = new DateTimeImmutable($params['start_date']);
 
@@ -218,15 +215,6 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         $ncd = CRM_Contract_DateHelper::findNextOfDays([$cycle_day], $min_date->format('Y-m-d'));
 
         return is_null($ncd) ? $ncd : $ncd->format('Y-m-d');
-    }
-
-    /**
-     * Get the next possible cycle day
-     *
-     * @return int - the next cycle day
-     */
-    public static function nextCycleDay () {
-        return date("d");
     }
 
     /**

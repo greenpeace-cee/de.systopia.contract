@@ -130,7 +130,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             $params['creditor_id']
         );
 
-        return array_map(fn($n) => (int) $n, $cycle_days_setting);
+        return array_map(fn($n) => (int) $n, array_values($cycle_days_setting));
     }
 
     /**
@@ -282,7 +282,6 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
 
         $result["currencies"] = $currencies;
         $result["cycle_days"] = $cycle_days;
-        $result["next_cycle_day"] = self::nextCycleDay();
         $result["payment_instruments"] = $payment_instruments;
 
         if (empty($params["recurring_contribution_id"])) return $result;
@@ -401,7 +400,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         }
     }
 
-    public static function nextContributionDate($params, $today = 'now') {
+    public static function nextContributionDate($params = [], $today = 'now') {
         $today = new DateTimeImmutable($today);
         $start_date = new DateTimeImmutable($params['start_date']);
 
@@ -443,15 +442,6 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $ncd = CRM_Contract_DateHelper::findNextOfDays([$cycle_day], $min_date->format('Y-m-d'));
 
         return is_null($ncd) ? $ncd : $ncd->format('Y-m-d');
-    }
-
-    /**
-     * Get the next possible cycle day
-     *
-     * @return int - the next cycle day
-     */
-    public static function nextCycleDay () {
-        return date("d");
     }
 
     /**

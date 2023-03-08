@@ -267,21 +267,22 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function formVars($params = []) {
-    // ...
+    $paymentTokenFields = [
+      'account_number',
+      'billing_first_name',
+      'billing_last_name',
+      'email',
+      'expiry_date',
+      'ip_address',
+      'payment_processor_id',
+      'shopper_reference',
+      'stored_payment_method_id',
+    ];
 
     return [
-      'default_currency' => Civi::settings()->get('defaultCurrency'),
-      'payment_token_fields' => [
-        'account_number',
-        'billing_first_name',
-        'billing_last_name',
-        'email',
-        'expiry_date',
-        'ip_address',
-        'payment_processor_id',
-        'shopper_reference',
-        'stored_payment_method_id',
-      ],
+      'cycle_days'           => self::cycleDays(),
+      'default_currency'     => Civi::settings()->get('defaultCurrency'),
+      'payment_token_fields' => $paymentTokenFields,
     ];
   }
 
@@ -395,7 +396,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     }
   }
 
-  public static function nextContributionDate($params, $today = 'now') {
+  public static function nextContributionDate($params = [], $today = 'now') {
     $today = new DateTimeImmutable($today);
     $start_date = new DateTimeImmutable($params['start_date']);
 
@@ -427,12 +428,6 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $ncd = CRM_Contract_DateHelper::findNextOfDays([$cycle_day], $min_date->format('Y-m-d'));
 
     return is_null($ncd) ? $ncd : $ncd->format('Y-m-d');
-  }
-
-  public static function nextCycleDay() {
-    // ...
-
-    return 0;
   }
 
   public static function pause($recurring_contribution_id) {

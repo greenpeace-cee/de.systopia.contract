@@ -1,30 +1,34 @@
-import { parseMoney, registerPaymentAdapter } from "../utils.js";
+import { parseMoney, registerPaymentAdapter, updateCycleDayField } from "../utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/adyen"];
 
 class Adyen {
     constructor() {
+        this.currentCycleDay = EXT_VARS.current_cycle_day;
+        this.cycleDays = ADAPTER_VARS.cycle_days;
         this.defaultCurrency = ADAPTER_VARS.default_currency;
     }
 
     onFormChange (formFields) {
-        if (EXT_VARS.action !== "sign") {
-            this.updatePaymentPreview(formFields);
-            return;
+        // Cycle days
+        updateCycleDayField(formFields, this.cycleDays, this.currentCycleDay);
+
+        // Payment token fields
+        if (EXT_VARS.action === "sign") {
+            const useExistingToken = formFields["pa-adyen-use_existing_token"].val() === '0';
+            const paymentTokenFields = ADAPTER_VARS.payment_token_fields;
+
+            paymentTokenFields.forEach(fieldID => {
+                const container = cj(`div.form-field#pa-adyen-${fieldID}`);
+                useExistingToken ? container.hide() : container.show();
+            });
+
+            const tokenIDContainer = cj(`div.form-field#pa-adyen-payment_token_id`);
+            useExistingToken ? tokenIDContainer.show() : tokenIDContainer.hide();
         }
 
-        const useExistingToken = formFields["pa-adyen-use_existing_token"].val() === '0';
-        const paymentTokenFields = ADAPTER_VARS.payment_token_fields;
-
-        paymentTokenFields.forEach(fieldID => {
-            const container = cj(`div.form-field#pa-adyen-${fieldID}`);
-            useExistingToken ? container.hide() : container.show();
-        });
-
-        const tokenIDContainer = cj(`div.form-field#pa-adyen-payment_token_id`);
-        useExistingToken ? tokenIDContainer.show() : tokenIDContainer.hide();
-
+        // Payment preview
         this.updatePaymentPreview(formFields);
     }
 
