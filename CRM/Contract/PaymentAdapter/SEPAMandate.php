@@ -368,9 +368,16 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         $min_date = DateTime::createFromImmutable($today);
 
-        // Creditor notice days
+        // Creditor grace/notice days
 
         $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
+
+        $grace_setting = (int) CRM_Sepa_Logic_Settings::getSetting(
+            "batching.RCUR.grace",
+            $creditor->id
+        );
+
+        $grace_days = new DateInterval("P{$grace_setting}D");
 
         $notice_setting = (int) CRM_Sepa_Logic_Settings::getSetting(
             "batching.RCUR.notice",
@@ -378,7 +385,12 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         );
 
         $notice_days = new DateInterval("P{$notice_setting}D");
-        $min_date->add($notice_days);
+
+        $min_date->add($notice_days)->sub($grace_days);
+
+        if ($min_date->getTimestamp() < $today->getTimestamp()) {
+            $min_date = DateTime::createFromImmutable($today);
+        }
 
         // Start date
 

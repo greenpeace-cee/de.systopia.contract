@@ -178,6 +178,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       $this->pspCreditor['id']
     );
 
+    CRM_Sepa_Logic_Settings::setSetting(3, 'batching.RCUR.grace', $this->pspCreditor['id']);
     CRM_Sepa_Logic_Settings::setSetting(7, 'batching.RCUR.notice', $this->pspCreditor['id']);
 
     // Case 1
@@ -188,7 +189,7 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       'payment_adapter' => 'psp_sepa',
     ];
 
-    $this->assertEquals('2023-01-25', $this->getNextContributionDate($ncd_params));
+    $this->assertEquals('2023-01-20', $this->getNextContributionDate($ncd_params));
 
     // Case 2
 
@@ -271,7 +272,8 @@ class api_v3_Contract_NextContributionDateTest extends api_v3_Contract_DateTestB
       $this->sepaCreditor['id']
     );
 
-    CRM_Sepa_Logic_Settings::setSetting(5, 'batching.RCUR.notice', $this->sepaCreditor['id']);
+    CRM_Sepa_Logic_Settings::setSetting(3, 'batching.RCUR.grace', $this->sepaCreditor['id']);
+    CRM_Sepa_Logic_Settings::setSetting(7, 'batching.RCUR.notice', $this->sepaCreditor['id']);
 
     // Case 1
 
