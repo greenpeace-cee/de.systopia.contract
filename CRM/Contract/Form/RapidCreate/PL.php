@@ -189,7 +189,10 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
 
     // sepa defaults
     $defaults['payment_frequency'] = '12'; // monthly
-    $defaults['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::nextCycleDay();
+
+    $defaults['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::nextContributionDate([
+      'start_date' => $defaults['start_date'],
+    ])->format('d');
 
     $config = CRM_Core_Config::singleton();
     $countryDefault = $config->defaultContactCountry;
@@ -294,10 +297,14 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
       );
     }
 
+    $start_date = CRM_Utils_Date::processDate($submitted['start_date'], NULL, NULL, 'Y-m-d H:i:s');
+
     // Create mandate
     if ($submitted['cycle_day'] < 1 || $submitted['cycle_day'] > 30) {
       // invalid cycle day
-      $submitted['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::nextCycleDay();
+      $submitted['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::nextContributionDate([
+        'start_date' => $start_date,
+      ])->format('d');
     }
 
     // calculate amount
@@ -308,9 +315,9 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
       'contact_id' => $contact['id'],
       'amount' => $amount,
       'currency' => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
-      'start_date' => CRM_Utils_Date::processDate($submitted['start_date'], NULL, NULL, 'Y-m-d H:i:s'),
+      'start_date' => $start_date,
       'creation_date' => date('YmdHis'), // NOW
-      'date' => CRM_Utils_Date::processDate($submitted['start_date'], NULL, NULL, 'Y-m-d H:i:s'),
+      'date' => $start_date,
       'validation_date' => date('YmdHis'), // NOW
       'iban' => $submitted['iban'],
       // 'source'             => ??

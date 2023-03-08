@@ -361,7 +361,10 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
     public static function nextContributionDate($params = [], $today = 'now') {
         $today = new DateTimeImmutable($today);
-        $start_date = new DateTimeImmutable($params['start_date']);
+
+        $start_date = isset($params['start_date'])
+            ? new DateTimeImmutable($params['start_date'])
+            : $today;
 
         $min_date = DateTime::createFromImmutable($today);
 
@@ -402,17 +405,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         $ncd = CRM_Contract_DateHelper::findNextOfDays([$cycle_day], $min_date->format('Y-m-d'));
 
-        return is_null($ncd) ? $ncd : $ncd->format('Y-m-d');
-    }
-
-    /**
-     * Get the next possible cycle day
-     *
-     * @return int - the next cycle day
-     */
-    public static function nextCycleDay ($params = []) {
-        $next_contribution_date = self::nextContributionDate($params);
-        return (int) DateTime::createFromFormat('Y-m-d', $next_contribution_date)->format('d');
+        return $ncd;
     }
 
     /**

@@ -10,7 +10,7 @@ function civicrm_api3_Contract_next_contribution_date($params) {
     $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($params['payment_adapter']);
     $next_contribution_date = $payment_adapter::nextContributionDate($params, $today);
 
-    return civicrm_api3_create_success([$next_contribution_date]);
+    return civicrm_api3_create_success([$next_contribution_date->format('Y-m-d')]);
   } catch (Exception $e) {
     return civicrm_api3_create_error($e->getMessage());
   }
