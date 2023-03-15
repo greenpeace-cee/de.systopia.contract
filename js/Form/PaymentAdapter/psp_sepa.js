@@ -4,18 +4,6 @@ const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/psp_sepa"];
 
 class PSP {
-    constructor() {
-        this.action = EXT_VARS.action;
-        this.currencies = ADAPTER_VARS.currencies;
-        this.currentCycleDay = EXT_VARS.current_cycle_day;
-        this.cycleDays = ADAPTER_VARS.cycle_days;
-        this.debitorName = EXT_VARS.debitor_name;
-        this.defaultCurrency = EXT_VARS.default_currency;
-        this.frequencies = EXT_VARS.frequencies;
-        this.graceEnd = EXT_VARS.grace_end;
-        this.paymentInstruments = ADAPTER_VARS.payment_instruments;
-    }
-
     async nextCollectionDate ({ creditor_id, cycle_day, start_date }) {
         if (!creditor_id) return "";
         if (!cycle_day) return "";
@@ -25,6 +13,7 @@ class PSP {
             creditor_id,
             cycle_day,
             payment_adapter: "psp_sepa",
+            recurring_contribution_id: EXT_VARS.current_recurring,
             start_date,
         }).then(
             result => {
@@ -40,16 +29,20 @@ class PSP {
         const selectedCreditor = formFields["pa-psp_sepa-creditor"].val();
 
         // Currency
-        const currency = this.currencies[selectedCreditor];
+        const currency = ADAPTER_VARS.currencies[selectedCreditor];
         cj("span#currency").text(currency);
 
         // Cycle days
-        updateCycleDayField(formFields, this.cycleDays[selectedCreditor], this.currentCycleDay);
+        updateCycleDayField(
+            formFields,
+            ADAPTER_VARS.cycle_days[selectedCreditor],
+            EXT_VARS.current_cycle_day
+        );
 
         // Payment instruments
         const paymentInstrumentField = formFields["pa-psp_sepa-payment_instrument"];
         const selectedPaymentInstrument = paymentInstrumentField.val();
-        const paymentInstrumentOptions = this.paymentInstruments[selectedCreditor] || {};
+        const paymentInstrumentOptions = ADAPTER_VARS.payment_instruments[selectedCreditor] || {};
 
         paymentInstrumentField.empty();
         paymentInstrumentField.append("<option value=\"\">- none -</option>");
@@ -70,7 +63,7 @@ class PSP {
         const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=psp_sepa]");
 
         // Debitor name
-        paymentPreviewContainer.find("span#debitor_name").text(this.debitorName);
+        paymentPreviewContainer.find("span#debitor_name").text(EXT_VARS.debitor_name);
 
         // Creditor
         const pspCreditors = formFields["pa-psp_sepa-creditor"]
@@ -102,10 +95,10 @@ class PSP {
 
         // Frequency
         const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(this.frequencies[frequency]);
+        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequencies[frequency]);
 
         // Currency
-        const currency = this.currencies[creditorId] || this.defaultCurrency;
+        const currency = ADAPTER_VARS.currencies[creditorId] || EXT_VARS.default_currency;
 
         // Annual amount
         const amount = FormUtils.parseMoney(formFields["amount"].val());
@@ -124,8 +117,6 @@ class PSP {
         const deferPaymentStart = formFields["defer_payment_start"]
             ? formFields["defer_payment_start"].prop("checked")
             : false;
-
-        const graceEnd = this.action === "update" ? this.graceEnd : null;
 
         const startDate = formFields["start_date"]
             ? formFields["start_date"].val()

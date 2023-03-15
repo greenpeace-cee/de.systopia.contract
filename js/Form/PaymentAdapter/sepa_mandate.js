@@ -4,17 +4,6 @@ const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/sepa_mandate"];
 
 class SEPA {
-    constructor() {
-        this.action = EXT_VARS.action;
-        this.creditor = ADAPTER_VARS.creditor;
-        this.currentCycleDay = EXT_VARS.current_cycle_day;
-        this.cycleDays = ADAPTER_VARS.cycle_days;
-        this.debitorName = EXT_VARS.debitor_name;
-        this.defaultCurrency = ADAPTER_VARS.default_currency;
-        this.frequencies = EXT_VARS.frequencies;
-        this.graceEnd = EXT_VARS.grace_end;
-    }
-
     async nextCollectionDate ({ cycle_day, start_date }) {
         if (!cycle_day) return "";
         if (!start_date) return "";
@@ -22,6 +11,7 @@ class SEPA {
         return await CRM.api3("Contract", "next_contribution_date", {
             cycle_day,
             payment_adapter: "sepa_mandate",
+            recurring_contribution_id: EXT_VARS.current_recurring,
             start_date,
         }).then(
             result => {
@@ -34,27 +24,29 @@ class SEPA {
 
     onFormChange (formFields) {
         // Currency
-        cj("span#currency").text(this.defaultCurrency);
+        cj("span#currency").text(ADAPTER_VARS.default_currency);
 
         // Cycle days
-        updateCycleDayField(formFields, this.cycleDays, this.currentCycleDay);
+        updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
 
         // Payment preview
         this.updatePaymentPreview(formFields);
     }
 
     async updatePaymentPreview (formFields) {
-        const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=sepa_mandate]");
+        const paymentPreviewContainer = cj(
+            "div.payment-preview[data-payment-adapter=sepa_mandate]"
+        );
 
         // Debitor name
-        paymentPreviewContainer.find("span#debitor_name").text(this.debitorName);
+        paymentPreviewContainer.find("span#debitor_name").text(EXT_VARS.debitor_name);
 
         // Debitor account
         const iban = formFields["pa-sepa_mandate-iban"].val();
         paymentPreviewContainer.find("span#iban").text(iban);
 
         // Creditor name
-        const creditor = this.creditor;
+        const creditor = ADAPTER_VARS.creditor;
         paymentPreviewContainer.find("span#creditor_name").text(creditor.name);
 
         // Creditor account
@@ -62,7 +54,7 @@ class SEPA {
 
         // Frequency
         const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(this.frequencies[frequency]);
+        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequencies[frequency]);
 
         // Annual amount
         const amount = FormUtils.parseMoney(formFields["amount"].val());

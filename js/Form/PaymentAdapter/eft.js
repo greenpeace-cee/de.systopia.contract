@@ -4,21 +4,12 @@ const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/eft"];
 
 class EFT {
-    constructor() {
-        this.action = EXT_VARS.action;
-        this.currentCycleDay = EXT_VARS.current_cycle_day;
-        this.cycleDays = ADAPTER_VARS.cycle_days;
-        this.debitorName = EXT_VARS.debitor_name;
-        this.defaultCurrency = ADAPTER_VARS.default_currency;
-        this.frequencies = EXT_VARS.frequencies;
-    }
-
     onFormChange (formFields) {
         // Currency
-        cj("span#currency").text(this.defaultCurrency);
+        cj("span#currency").text(ADAPTER_VARS.default_currency);
 
         // Cycle days
-        updateCycleDayField(formFields, this.cycleDays, this.currentCycleDay);
+        updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
 
         // Payment preview
         this.updatePaymentPreview(formFields);
@@ -28,16 +19,16 @@ class EFT {
         const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=eft]");
 
         // Debitor name
-        paymentPreviewContainer.find("span#debitor_name").text(this.debitorName);
+        paymentPreviewContainer.find("span#debitor_name").text(EXT_VARS.debitor_name);
 
         // Frequency
-        const frequencyMapping = this.frequencies;
+        const frequencyMapping = EXT_VARS.frequencies;
         const frequency = Number(formFields["frequency"].val());
         paymentPreviewContainer.find("span#frequency").text(frequencyMapping[frequency]);
 
         // Annual amount
         const amount = FormUtils.parseMoney(formFields["amount"].val());
-        const currency = this.defaultCurrency;
+        const currency = ADAPTER_VARS.default_currency;
         const annualAmount = `${(amount * frequency).toFixed(2)} ${currency}`;
         paymentPreviewContainer.find("span#annual").text(annualAmount);
 

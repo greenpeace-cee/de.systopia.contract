@@ -4,15 +4,9 @@ const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/adyen"];
 
 class Adyen {
-    constructor() {
-        this.currentCycleDay = EXT_VARS.current_cycle_day;
-        this.cycleDays = ADAPTER_VARS.cycle_days;
-        this.defaultCurrency = ADAPTER_VARS.default_currency;
-    }
-
     onFormChange (formFields) {
         // Cycle days
-        updateCycleDayField(formFields, this.cycleDays, this.currentCycleDay);
+        updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
 
         // Payment token fields
         if (EXT_VARS.action === "sign") {
@@ -43,7 +37,7 @@ class Adyen {
 
         // Installment amount
         const amount = parseMoney(formFields["amount"].val());
-        const currency = this.defaultCurrency;
+        const currency = ADAPTER_VARS.default_currency;
         const installment = `${amount.toFixed(2)} ${currency}`;
         paymentPreviewContainer.find("span#installment").text(installment);
 
