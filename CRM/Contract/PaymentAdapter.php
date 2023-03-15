@@ -93,7 +93,7 @@ interface CRM_Contract_PaymentAdapter {
      *
      * @return string - Next contribution date (YYYY-MM-DD)
      **/
-    public static function nextContributionDate ($params = [], $today = 'now');
+    // public static function nextContributionDate ($params = [], $today = 'now');
 
     /**
      * Pause payment
@@ -129,6 +129,16 @@ interface CRM_Contract_PaymentAdapter {
      * @return int - Recurring contribution ID
      */
     public static function revive ($recurring_contribution_id, $update = []);
+
+    /**
+     * Calculate the start date for a recurring contribution
+     * 
+     * @param array $params
+     * @param string $today
+     * 
+     * @return string - Calculated start date
+     */
+    public static function startDate($params = [], $today = "now");
 
     /**
      * Terminate payment

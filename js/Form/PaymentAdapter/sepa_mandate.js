@@ -4,15 +4,16 @@ const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/sepa_mandate"];
 
 class SEPA {
-    async nextCollectionDate ({ cycle_day, start_date }) {
+    async nextCollectionDate ({ cycle_day, defer_payment_start, min_date }) {
         if (!cycle_day) return "";
-        if (!start_date) return "";
+        if (!min_date) return "";
 
-        return await CRM.api3("Contract", "next_contribution_date", {
+        return await CRM.api3("Contract", "start_date", {
             cycle_day,
+            defer_payment_start,
+            min_date,
             payment_adapter: "sepa_mandate",
-            recurring_contribution_id: EXT_VARS.current_recurring,
-            start_date,
+            prev_recur_contrib_id: EXT_VARS.current_recurring,
         }).then(
             result => {
                 if (result.is_error) console.error(result.error_message);
@@ -78,7 +79,8 @@ class SEPA {
 
         const nextDebit = await this.nextCollectionDate({
             cycle_day: cycleDay,
-            start_date: startDate,
+            defer_payment_start: deferPaymentStart,
+            min_date: startDate,
         });
 
         paymentPreviewContainer.find("span#next_debit").text(nextDebit);

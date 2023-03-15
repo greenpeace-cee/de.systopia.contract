@@ -2,26 +2,26 @@
 
 use Civi\Api4;
 
-function civicrm_api3_Contract_next_contribution_date($params) {
+function civicrm_api3_Contract_start_date($params) {
   try {
-    _civicrm_api3_Contract_next_contribution_date_validate_params($params);
+    _civicrm_api3_Contract_start_date_validate_params($params);
 
     $today = CRM_Utils_Array::value('_today', $params);
     $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($params['payment_adapter']);
-    $next_contribution_date = $payment_adapter::nextContributionDate($params, $today);
+    $start_date = $payment_adapter::startDate($params, $today);
 
-    return civicrm_api3_create_success([$next_contribution_date->format('Y-m-d')]);
+    return civicrm_api3_create_success([$start_date->format('Y-m-d')]);
   } catch (Exception $e) {
     return civicrm_api3_create_error($e->getMessage());
   }
 }
 
-function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params) {
+function _civicrm_api3_Contract_start_date_validate_params(&$params) {
 
-  // Recurring contribution
+  // Previous recurring contribution
 
-  if (isset($params['recurring_contribution_id'])) {
-    $rc_id = $params['recurring_contribution_id'];
+  if (isset($params['prev_recur_contrib_id'])) {
+    $rc_id = $params['prev_recur_contrib_id'];
 
     $rc_result = Api4\ContributionRecur::get()
       ->addWhere('id', '=', $rc_id)
@@ -48,6 +48,12 @@ function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params)
 
       $params['creditor_id'] = $sepa_mandate['creditor_id'];
     }
+  }
+
+  // Defer payment start
+
+  if ($params['defer_payment_start'] && empty('prev_recur_contrib_id')) {
+    throw new API_Exception("Missing parameter 'prev_recur_contrib_id'");
   }
 
   // Payment adapter
@@ -81,8 +87,9 @@ function _civicrm_api3_Contract_next_contribution_date_validate_params(&$params)
 
 }
 
-function _civicrm_api3_Contract_next_contribution_date_spec(&$params) {
+function _civicrm_api3_Contract_start_date_spec(&$params) {
   $params['creditor_id'] = [
+    'api.default'  => NULL,
     'api.required' => FALSE,
     'description'  => 'ID of the PSP creditor',
     'name'         => 'creditor_id',
@@ -90,13 +97,23 @@ function _civicrm_api3_Contract_next_contribution_date_spec(&$params) {
     'type'         => CRM_Utils_Type::T_INT,
   ];
   $params['cycle_day'] = [
+    'api.default'  => NULL,
     'api.required' => FALSE,
     'description'  => 'Expected day of the month',
     'name'         => 'cycle_day',
     'title'        => 'Cycle day',
     'type'         => CRM_Utils_Type::T_INT,
   ];
+  $params['defer_payment_start'] = [
+    'api.default'  => FALSE,
+    'api.required' => FALSE,
+    'description'  => 'Defer the start date based on existing contributions',
+    'name'         => 'defer_payment_start',
+    'title'        => 'Defer payment start',
+    'type'         => CRM_Utils_Type::T_BOOLEAN,
+  ];
   $params['min_date'] = [
+    'api.default'  => NULL,
     'api.required' => FALSE,
     'description'  => 'Used as an offset to calculate the result date from',
     'name'         => 'min_date',
@@ -104,17 +121,19 @@ function _civicrm_api3_Contract_next_contribution_date_spec(&$params) {
     'type'         => CRM_Utils_Type::T_DATE,
   ];
   $params['payment_adapter'] = [
+    'api.default'  => NULL,
     'api.required' => FALSE,
     'description'  => 'Payment adapter for the contract',
     'name'         => 'payment_adapter',
     'title'        => 'Payment adapter',
     'type'         => CRM_Utils_Type::T_STRING,
   ];
-  $params['recurring_contribution_id'] = [
+  $params['prev_recur_contrib_id'] = [
+    'api.default'  => NULL,
     'api.required' => FALSE,
     'description'  => 'ID of an existing recurring contribution',
-    'name'         => 'recurring_contribution_id',
-    'title'        => 'Recurring contribution ID',
+    'name'         => 'prev_recur_contrib_id',
+    'title'        => 'Previous recurring contribution ID',
     'type'         => CRM_Utils_Type::T_INT,
   ];
 }
