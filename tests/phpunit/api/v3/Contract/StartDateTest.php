@@ -221,6 +221,8 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
       $this->pspCreditor['id']
     );
 
+    CRM_Sepa_Logic_Settings::setSetting(7, 'batching.RCUR.notice', $this->pspCreditor['id']);
+
     // Case 1
 
     $start_date_params = [
@@ -229,7 +231,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
       'payment_adapter' => 'psp_sepa',
     ];
 
-    $this->assertEquals('2023-01-15', $this->getStartDate($start_date_params));
+    $this->assertEquals('2023-01-25', $this->getStartDate($start_date_params));
 
     // Case 2
 
@@ -300,7 +302,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
       'prev_recur_contrib_id' => $recur_contrib_id,
     ];
 
-    $this->assertEquals('2023-01-20', $this->getStartDate($start_date_params));
+    $this->assertEquals('2023-02-20', $this->getStartDate($start_date_params));
 
     // Case 7
 
@@ -334,6 +336,8 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
       $this->sepaCreditor['id']
     );
 
+    CRM_Sepa_Logic_Settings::setSetting(10, 'batching.RCUR.notice', $this->sepaCreditor['id']);
+
     // Case 1
 
     $start_date_params = [
@@ -341,7 +345,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
       'payment_adapter' => 'sepa_mandate',
     ];
 
-    $this->assertEquals('2023-01-21', $this->getStartDate($start_date_params));
+    $this->assertEquals('2023-01-28', $this->getStartDate($start_date_params));
 
     // Case 2
 

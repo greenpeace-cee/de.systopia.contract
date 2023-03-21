@@ -359,6 +359,17 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         }
     }
 
+    public static function noticeDays() {
+        $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
+
+        $notice_setting = CRM_Sepa_Logic_Settings::getSetting(
+            "batching.RCUR.notice",
+            $creditor->id
+        );
+
+        return new DateInterval("P{$notice_setting}D");
+    }
+
     /**
      * Pause payment
      *
@@ -461,15 +472,20 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
     public static function startDate($params = [], $today = 'now') {
         $today = new DateTimeImmutable($today);
+        $start_date = DateTime::createFromImmutable($today);
 
+        // Notice days
+
+        $start_date->add(self::noticeDays());
+        
         // Minimum date
 
-        $min_date = isset($params['min_date'])
-            ? new DateTime($params['min_date'])
-            : DateTime::createFromImmutable($today);
+        if (isset($params['min_date'])) {
+            $min_date = new DateTimeImmutable($params['min_date']);
+        }
 
-        if ($min_date->getTimestamp() < $today->getTimestamp()) {
-            $min_date = DateTime::createFromImmutable($today);
+        if (isset($min_date) && $start_date->getTimestamp() < $min_date->getTimestamp()) {
+            $start_date = DateTime::createFromImmutable($min_date);
         }
 
         // Previous recurring contribution
@@ -477,14 +493,6 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         if (isset($params['prev_recur_contrib_id'])) {
             $recurring_contribution = CRM_Contract_RecurringContribution::getById(
                 $params['prev_recur_contrib_id']
-            );
-        }
-
-        if (isset($recurring_contribution)) {
-            $params['cycle_day'] = CRM_Utils_Array::value(
-                'cycle_day',
-                $params,
-                $recurring_contribution['cycle_day']
             );
         }
 
@@ -505,8 +513,8 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
                 $recurring_contribution['frequency_unit']
             );
 
-            if ($min_date->getTimestamp() < $paid_until->getTimestamp()) {
-                $min_date = $paid_until;
+            if ($start_date->getTimestamp() < $paid_until->getTimestamp()) {
+                $start_date = $paid_until;
             }
         }
 
@@ -514,12 +522,16 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         $allowed_cycle_days = self::cycleDays();
 
-        $min_date = CRM_Contract_DateHelper::findNextOfDays(
+        $start_date = CRM_Contract_DateHelper::findNextOfDays(
             $allowed_cycle_days,
-            $min_date->format('Y-m-d')
+            $start_date->format('Y-m-d')
         );
 
-        $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $min_date->format('d'));
+        if (empty($params['cycle_day']) && isset($recurring_contribution)) {
+            $params['cycle_day'] = $recurring_contribution['cycle_day'];
+        }
+
+        $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $start_date->format('d'));
 
         if (!in_array($cycle_day, $allowed_cycle_days, TRUE)) {
             throw new Exception("Cycle day $cycle_day is not allowed for this SEPA creditor");
@@ -529,7 +541,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         $start_date = CRM_Contract_DateHelper::findNextOfDays(
             [$cycle_day],
-            $min_date->format('Y-m-d')
+            $start_date->format('Y-m-d')
         );
 
         return $start_date;
