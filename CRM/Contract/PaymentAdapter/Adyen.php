@@ -447,22 +447,23 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
   public static function startDate($params = [], $today = 'now') {
     $today = new DateTimeImmutable($today);
+    $start_date = DateTime::createFromImmutable($today);
 
     // Minimum date
 
-    $min_date = isset($params['min_date'])
-      ? new DateTime($params['min_date'])
-      : DateTime::createFromImmutable($today);
-
-    if ($min_date->getTimestamp() < $today->getTimestamp()) {
-      $min_date = DateTime::createFromImmutable($today);
+    if (isset($params['min_date'])) {
+      $min_date = new DateTimeImmutable($params['min_date']);
     }
 
-    // Previous recurring contribution
+    if (isset($min_date) && $start_date->getTimestamp() < $min_date->getTimestamp()) {
+      $start_date = DateTime::createFromImmutable($min_date);
+    }
 
-    if (isset($params['prev_recur_contrib_id'])) {
-      $recurring_contribution = CRM_Contract_RecurringContribution::getById(
-        $params['prev_recur_contrib_id']
+    // Existing contract
+
+    if (isset($params['membership_id'])) {
+      $recurring_contribution = CRM_Contract_RecurringContribution::getCurrentForContract(
+        $params['membership_id']
       );
     }
 
@@ -478,21 +479,25 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
     $defer_payment_start = CRM_Utils_Array::value('defer_payment_start', $params, FALSE);
 
-    if ($defer_payment_start && isset($recurring_contribution)) {
+    if ($defer_payment_start && isset($params['membership_id'])) {
       $latest_contribution = CRM_Contract_RecurringContribution::getLatestContribution(
-        $recurring_contribution['id']
+        $params['membership_id']
       );
     }
 
     if (isset($latest_contribution)) {
-      $paid_until = CRM_Contract_DateHelper::nextRegularDate(
-        $latest_contribution['receive_date'],
-        $recurring_contribution['frequency_interval'],
-        $recurring_contribution['frequency_unit']
+      $latest_contribution_rc = CRM_Contract_RecurringContribution::getById(
+        $latest_contribution['contribution_recur_id']
       );
 
-      if ($min_date->getTimestamp() < $paid_until->getTimestamp()) {
-        $min_date = $paid_until;
+      $paid_until = CRM_Contract_DateHelper::nextRegularDate(
+        $latest_contribution['receive_date'],
+        $latest_contribution_rc['frequency_interval'],
+        $latest_contribution_rc['frequency_unit']
+      );
+
+      if ($start_date->getTimestamp() < $paid_until->getTimestamp()) {
+        $start_date = $paid_until;
       }
     }
 
@@ -500,12 +505,12 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
     $allowed_cycle_days = self::cycleDays();
 
-    $min_date = CRM_Contract_DateHelper::findNextOfDays(
+    $start_date = CRM_Contract_DateHelper::findNextOfDays(
       $allowed_cycle_days,
-      $min_date->format('Y-m-d')
+      $start_date->format('Y-m-d')
     );
 
-    $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $min_date->format('d'));
+    $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $start_date->format('d'));
 
     if (!in_array($cycle_day, $allowed_cycle_days, TRUE)) {
       throw new Exception("Cycle day $cycle_day is not allowed for Adyen payments");
@@ -515,7 +520,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
     $start_date = CRM_Contract_DateHelper::findNextOfDays(
       [$cycle_day],
-      $min_date->format('Y-m-d')
+      $start_date->format('Y-m-d')
     );
 
     return $start_date;

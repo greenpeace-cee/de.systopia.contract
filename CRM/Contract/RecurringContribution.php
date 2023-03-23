@@ -569,9 +569,30 @@ class CRM_Contract_RecurringContribution {
       ->first();
   }
 
-  public static function getLatestContribution($recurring_contribution_id) {
+  public static function getCurrentForContract($membership_id) {
+    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
+      'contract_id' => $membership_id,
+      'is_active'   => TRUE,
+      'sequential'  => TRUE,
+    ]);
+
+    if ($payment_link['count'] < 1) return NULL;
+
+    return self::getById($payment_link['values'][0]['contribution_recur_id']);
+  }
+
+  public static function getLatestContribution($membership_id) {
+    $payment_links = civicrm_api3('ContractPaymentLink', 'get', [
+      'contract_id' => $membership_id,
+      'sequential'  => TRUE,
+    ]);
+
+    if ($payment_links['count'] < 1) return NULL;
+
+    $rc_ids = array_map(fn ($link) => $link['contribution_recur_id'], $payment_links['values']);
+
     return Api4\Contribution::get(FALSE)
-      ->addWhere('contribution_recur_id'      , '=' , $recurring_contribution_id)
+      ->addWhere('contribution_recur_id'      , 'IN' , $rc_ids)
       ->addWhere('contribution_status_id:name', 'IN', ['Completed', 'In Progress'])
       ->addSelect('*')
       ->addOrderBy('receive_date', 'DESC')

@@ -72,42 +72,49 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
 
     // Case 6
 
-    $recur_contrib_id = $this->createRecurringContribution([
+    $membership = $this->createMembership();
+
+    $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'       => 17,
+      'is_active'       => TRUE,
+      'membership_id'   => $membership['id'],
       'payment_adapter' => 'adyen',
       'start_date'      => '2022-02-17',
     ]);
 
     $start_date_params = [
-      '_today'                => '2023-01-15',
-      'prev_recur_contrib_id' => $recur_contrib_id,
+      '_today'        => '2023-01-15',
+      'membership_id' => $membership['id'],
     ];
 
     $this->assertEquals('2023-01-17', $this->getStartDate($start_date_params));
 
     // Case 7
 
-    $recur_contrib_id = $this->createRecurringContribution([
+    $membership = $this->createMembership();
+
+    $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'          => 1,
       'frequency_interval' => 2,
       'frequency_unit'     => 'month',
+      'is_active'          => TRUE,
+      'membership_id'      => $membership['id'],
       'payment_adapter'    => 'adyen',
-      'start_date'         => '2022-02-01',
+      'start_date'         => '2022-01-01',
     ]);
 
     $this->createContribution([
-      'date'                      => '2022-12-31',
-      'recurring_contribution_id' => $recur_contrib_id,
+      'date'                      => '2023-01-01',
+      'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
     $start_date_params = [
-      '_today'                => '2023-01-15',
-      'cycle_day'             => 17,
-      'defer_payment_start'   => TRUE,
-      'prev_recur_contrib_id' => $recur_contrib_id,
+      '_today'              => '2023-01-15',
+      'defer_payment_start' => TRUE,
+      'membership_id'       => $membership['id'],
     ];
 
-    $this->assertEquals('2023-03-17', $this->getStartDate($start_date_params));
+    $this->assertEquals('2023-03-01', $this->getStartDate($start_date_params));
 
   }
 
@@ -176,38 +183,46 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
 
     // Case 6
 
+    $membership = $this->createMembership();
+
     $recur_contrib_id = $this->createRecurringContribution([
       'cycle_day'       => 5,
+      'is_active'       => TRUE,
+      'membership_id'   => $membership['id'],
       'payment_adapter' => 'eft',
       'start_date'      => '2022-03-01',
     ]);
 
     $start_date_params = [
-      '_today'                => '2023-01-15',
-      'prev_recur_contrib_id' => $recur_contrib_id,
+      '_today'        => '2023-01-15',
+      'membership_id' => $membership['id'],
     ];
 
     $this->assertEquals('2023-02-05', $this->getStartDate($start_date_params));
 
     // Case 7
 
-    $recur_contrib_id = $this->createRecurringContribution([
+    $membership = $this->createMembership();
+
+    $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'          => 5,
       'frequency_interval' => 1,
       'frequency_unit'     => 'year',
+      'is_active'          => TRUE,
+      'membership_id'      => $membership['id'],
       'payment_adapter'    => 'eft',
-      'start_date'         => '2023-01-01',
+      'start_date'         => '2023-01-05',
     ]);
 
     $this->createContribution([
       'date'                      => '2023-01-05',
-      'recurring_contribution_id' => $recur_contrib_id,
+      'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
     $start_date_params = [
-      '_today'                => '2023-01-15',
-      'defer_payment_start'   => TRUE,
-      'prev_recur_contrib_id' => $recur_contrib_id,
+      '_today'              => '2023-01-15',
+      'defer_payment_start' => TRUE,
+      'membership_id'       => $membership['id'],
     ];
 
     $this->assertEquals('2024-01-05', $this->getStartDate($start_date_params));
@@ -291,38 +306,46 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
 
     // Case 6
 
-    $recur_contrib_id = $this->createRecurringContribution([
+    $membership = $this->createMembership();
+
+    $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'       => 20,
+      'is_active'       => TRUE,
+      'membership_id'   => $membership['id'],
       'payment_adapter' => 'psp_sepa',
       'start_date'      => '2022-02-01',
     ]);
 
     $start_date_params = [
-      '_today'                => '2023-01-15',
-      'prev_recur_contrib_id' => $recur_contrib_id,
+      '_today'        => '2023-01-15',
+      'membership_id' => $membership['id'],
     ];
 
     $this->assertEquals('2023-02-20', $this->getStartDate($start_date_params));
 
     // Case 7
 
-    $recur_contrib_id = $this->createRecurringContribution([
+    $membership = $this->createMembership();
+
+    $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'          => 5,
       'frequency_interval' => 3,
       'frequency_unit'     => 'month',
+      'is_active'          => TRUE,
+      'membership_id'      => $membership['id'],
       'payment_adapter'    => 'psp_sepa',
       'start_date'         => '2022-01-05',
     ]);
 
     $this->createContribution([
       'date'                      => '2023-01-05',
-      'recurring_contribution_id' => $recur_contrib_id,
+      'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
     $start_date_params = [
-      '_today'                => '2023-01-15',
-      'defer_payment_start'   => TRUE,
-      'prev_recur_contrib_id' => $recur_contrib_id,
+      '_today'              => '2023-01-15',
+      'defer_payment_start' => TRUE,
+      'membership_id'       => $membership['id'],
     ];
 
     $this->assertEquals('2023-04-05', $this->getStartDate($start_date_params));
@@ -401,38 +424,46 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
 
     // Case 6
 
+    $membership = $this->createMembership();
+
     $recur_contrib_id = $this->createRecurringContribution([
       'cycle_day'       => 28,
+      'is_active'       => TRUE,
+      'membership_id'   => $membership['id'],
       'payment_adapter' => 'sepa_mandate',
       'start_date'      => '2022-01-28',
     ]);
 
     $start_date_params = [
-      '_today'                => '2023-01-15',
-      'prev_recur_contrib_id' => $recur_contrib_id,
+      '_today'        => '2023-01-15',
+      'membership_id' => $membership['id'],
     ];
 
     $this->assertEquals('2023-01-28', $this->getStartDate($start_date_params));
 
     // Case 7
 
-    $recur_contrib_id = $this->createRecurringContribution([
+    $membership = $this->createMembership();
+
+    $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'          => 14,
       'frequency_interval' => 6,
       'frequency_unit'     => 'month',
+      'is_active'          => TRUE,
+      'membership_id'      => $membership['id'],
       'payment_adapter'    => 'sepa_mandate',
       'start_date'         => '2022-01-14',
     ]);
 
     $this->createContribution([
       'date'                      => '2023-01-14',
-      'recurring_contribution_id' => $recur_contrib_id,
+      'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
     $start_date_params = [
-      '_today'                => '2023-01-15',
-      'defer_payment_start'   => TRUE,
-      'prev_recur_contrib_id' => $recur_contrib_id,
+      '_today'              => '2023-01-15',
+      'defer_payment_start' => TRUE,
+      'membership_id'       => $membership['id'],
     ];
 
     $this->assertEquals('2023-07-14', $this->getStartDate($start_date_params));
@@ -449,18 +480,29 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
       ->execute();
   }
 
+  private function createMembership() {
+    return Api4\Membership::create(FALSE)
+      ->addValue('contact_id'             , $this->contact['id'])
+      ->addValue('membership_type_id.name', 'General')
+      ->addValue('status_id.name'         , 'Current')
+      ->execute()
+      ->first();
+  }
+
   private function createRecurringContribution(array $params) {
+    $contribution_status = $params['is_active'] ? 'In Progress' : 'Completed';
     $frequency_interval = CRM_Utils_Array::value('frequency_interval', $params, 1);
     $frequency_unit = CRM_Utils_Array::value('frequency_unit', $params, 'month');
 
     $api_call = Api4\ContributionRecur::create(FALSE)
-      ->addValue('amount'             , 10.0)
-      ->addValue('contact_id'         , $this->contact['id'])
-      ->addValue('create_date'        , $params['start_date'])
-      ->addValue('cycle_day'          , $params['cycle_day'])
-      ->addValue('frequency_interval' , $frequency_interval)
-      ->addValue('frequency_unit'     , $frequency_unit)
-      ->addValue('start_date'         , $params['start_date']);
+      ->addValue('amount'                      , 10.0)
+      ->addValue('contact_id'                  , $this->contact['id'])
+      ->addValue('contribution_status_id:name' , $contribution_status)
+      ->addValue('create_date'                 , $params['start_date'])
+      ->addValue('cycle_day'                   , $params['cycle_day'])
+      ->addValue('frequency_interval'          , $frequency_interval)
+      ->addValue('frequency_unit'              , $frequency_unit)
+      ->addValue('start_date'                  , $params['start_date']);
 
     switch ($params['payment_adapter']) {
       case 'adyen': {
@@ -469,7 +511,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
           ->execute()
           ->first();
 
-        return $recurring_contribution['id'];
+        break;
       }
 
       case 'eft': {
@@ -478,7 +520,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
           ->execute()
           ->first();
 
-        return $recurring_contribution['id'];
+        break;
       }
 
       case 'psp_sepa': {
@@ -496,7 +538,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
           ->execute()
           ->first();
 
-        return $recurring_contribution['id'];
+        break;
       }
 
       case 'sepa_mandate': {
@@ -514,12 +556,20 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
           ->execute()
           ->first();
 
-        return $recurring_contribution['id'];
+        break;
       }
 
       default:
         return NULL;
     }
+
+    civicrm_api3('ContractPaymentLink', 'create', [
+      'contract_id'           => $params['membership_id'],
+      'contribution_recur_id' => $recurring_contribution['id'],
+      'is_active'             => $params['is_active'],
+    ]);
+
+    return $recurring_contribution;
   }
 
   private function getStartDate(array $params) {

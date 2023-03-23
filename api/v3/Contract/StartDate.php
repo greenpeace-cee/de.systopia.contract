@@ -18,22 +18,34 @@ function civicrm_api3_Contract_start_date($params) {
 
 function _civicrm_api3_Contract_start_date_validate_params(&$params) {
 
-  // Previous recurring contribution
+  // Existing contract
 
-  if (isset($params['prev_recur_contrib_id'])) {
-    $rc_id = $params['prev_recur_contrib_id'];
+  if (isset($params['membership_id'])) {
+    $membership_id = $params['membership_id'];
 
-    $rc_result = Api4\ContributionRecur::get()
-      ->addWhere('id', '=', $rc_id)
+    $membership_result = Api4\Membership::get(FALSE)
+      ->addWhere('id', '=', $membership_id)
       ->addSelect('*')
       ->setLimit(1)
       ->execute();
 
-    if ($rc_result->count() < 1) {
-      throw new API_Exception("Recurring contribution with ID $rc_id not found");
+    if ($membership_result->count() < 1) {
+      throw new API_Exception("Membership with ID $membership_id not found");
     }
 
-    $rc = $rc_result->first();
+    $membership = $membership_result->first();
+
+    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
+      'contract_id' => $membership_id,
+      'is_active'   => TRUE,
+      'sequential'  => TRUE,
+    ]);
+
+    if ($payment_link['count'] < 1) {
+      throw new API_Exception("No recurring contribution found for this contract");
+    }
+
+    $rc_id = $payment_link['values'][0]['contribution_recur_id'];
     $adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id);
     $params['payment_adapter'] = $adapter;
 
@@ -52,8 +64,8 @@ function _civicrm_api3_Contract_start_date_validate_params(&$params) {
 
   // Defer payment start
 
-  if ($params['defer_payment_start'] && empty('prev_recur_contrib_id')) {
-    throw new API_Exception("Missing parameter 'prev_recur_contrib_id'");
+  if ($params['defer_payment_start'] && empty($params['membership_id'])) {
+    throw new API_Exception("Missing parameter 'membership_id'");
   }
 
   // Payment adapter
@@ -112,6 +124,14 @@ function _civicrm_api3_Contract_start_date_spec(&$params) {
     'title'        => 'Defer payment start',
     'type'         => CRM_Utils_Type::T_BOOLEAN,
   ];
+  $params['membership_id'] = [
+    'api.default'  => NULL,
+    'api.required' => FALSE,
+    'description'  => 'ID of an existing membership (contract)',
+    'name'         => 'membership_id',
+    'title'        => 'Membership ID',
+    'type'         => CRM_Utils_Type::T_INT,
+  ];
   $params['min_date'] = [
     'api.default'  => NULL,
     'api.required' => FALSE,
@@ -127,14 +147,6 @@ function _civicrm_api3_Contract_start_date_spec(&$params) {
     'name'         => 'payment_adapter',
     'title'        => 'Payment adapter',
     'type'         => CRM_Utils_Type::T_STRING,
-  ];
-  $params['prev_recur_contrib_id'] = [
-    'api.default'  => NULL,
-    'api.required' => FALSE,
-    'description'  => 'ID of an existing recurring contribution',
-    'name'         => 'prev_recur_contrib_id',
-    'title'        => 'Previous recurring contribution ID',
-    'type'         => CRM_Utils_Type::T_INT,
   ];
 }
 

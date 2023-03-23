@@ -29,6 +29,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
   public function setUp() {
     parent::setUp();
 
+    $this->createMembershipTypes();
     $this->createTestContact();
     $this->setAdyenProcessor();
     $this->setDefaultPspCreditor();
@@ -37,6 +38,17 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
 
   public function tearDown() {
     parent::tearDown();
+  }
+
+  private function createMembershipTypes() {
+    Api4\MembershipType::create(FALSE)
+      ->addValue('duration_interval'     , 2)
+      ->addValue('duration_unit'         , 'year')
+      ->addValue('financial_type_id.name', 'Member Dues')
+      ->addValue('member_of_contact_id'  , 1)
+      ->addValue('name'                  , 'General')
+      ->addValue('period_type'           , 'rolling')
+      ->execute();
   }
 
   private function createTestContact() {

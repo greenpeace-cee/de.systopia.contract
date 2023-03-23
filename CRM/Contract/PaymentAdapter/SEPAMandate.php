@@ -488,11 +488,11 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             $start_date = DateTime::createFromImmutable($min_date);
         }
 
-        // Previous recurring contribution
+        // Existing contract
 
-        if (isset($params['prev_recur_contrib_id'])) {
+        if (isset($params['membership_id'])) {
             $recurring_contribution = CRM_Contract_RecurringContribution::getById(
-                $params['prev_recur_contrib_id']
+                $params['membership_id']
             );
         }
 
@@ -500,17 +500,21 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         $defer_payment_start = CRM_Utils_Array::value('defer_payment_start', $params, FALSE);
 
-        if ($defer_payment_start && isset($recurring_contribution)) {
+        if ($defer_payment_start && isset($params['membership_id'])) {
             $latest_contribution = CRM_Contract_RecurringContribution::getLatestContribution(
-                $recurring_contribution['id']
+                $params['membership_id']
             );
         }
 
         if (isset($latest_contribution)) {
+            $latest_contribution_rc = CRM_Contract_RecurringContribution::getById(
+                $latest_contribution['contribution_recur_id']
+            );
+
             $paid_until = CRM_Contract_DateHelper::nextRegularDate(
                 $latest_contribution['receive_date'],
-                $recurring_contribution['frequency_interval'],
-                $recurring_contribution['frequency_unit']
+                $latest_contribution_rc['frequency_interval'],
+                $latest_contribution_rc['frequency_unit']
             );
 
             if ($start_date->getTimestamp() < $paid_until->getTimestamp()) {
