@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @group headless
  */
-class api_v3_Contract_DateTestBase
+class api_v3_Contract_ContractTestBase
 extends TestCase
 implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterface {
   use Test\Api3TestTrait;
@@ -17,10 +17,13 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
   protected $pspCreditor;
   protected $sepaCreditor;
 
+  private $defaultErrorHandler;
+
   public function setUpHeadless() {
     return Test::headless()
       ->installMe(__DIR__)
       ->install('org.project60.sepa')
+      ->install('org.project60.banking')
       ->install('mjwshared')
       ->install('adyen')
       ->apply(TRUE);
@@ -28,6 +31,10 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
 
   public function setUp() {
     parent::setUp();
+
+    $this->defaultErrorHandler = set_error_handler(function ($errno, $errstr) {
+      return TRUE;
+    }, E_USER_DEPRECATED);
 
     $this->createMembershipTypes();
     $this->createTestContact();
@@ -37,7 +44,44 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
   }
 
   public function tearDown() {
+    set_error_handler($this->defaultErrorHandler, E_USER_DEPRECATED);
+
     parent::tearDown();
+  }
+
+  public function assertEachEquals(array $pairs) {
+    foreach ($pairs as $pair) {
+      list($expected, $actual) = $pair;
+      $this->assertEquals($expected, $actual);
+    }
+  }
+
+  public static function getFinancialTypeID(string $name) {
+    return (int) Api4\FinancialType::get(FALSE)
+      ->addWhere('name', '=', $name)
+      ->addSelect('id')
+      ->setLimit(1)
+      ->execute()
+      ->first()['id'];
+  }
+
+  public static function getMembershipTypeID(string $name) {
+    return (int) Api4\MembershipType::get(FALSE)
+      ->addWhere('name', '=', $name)
+      ->addSelect('id')
+      ->setLimit(1)
+      ->execute()
+      ->first()['id'];
+  }
+
+  public static function getOptionValue(string $option_group, string $name) {
+    return (int) Api4\OptionValue::get(FALSE)
+      ->addWhere('name'                , '=', $name)
+      ->addWhere('option_group_id:name', '=', $option_group)
+      ->addSelect('value')
+      ->setLimit(1)
+      ->execute()
+      ->first()['value'];
   }
 
   private function createMembershipTypes() {
@@ -58,6 +102,8 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       ->addValue('last_name'   , 'Contact')
       ->execute()
       ->first();
+
+    $this->contact['email'] = 'test-contact@example.org';
   }
 
   private function setAdyenProcessor() {
@@ -83,6 +129,9 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       ->addValue('currency'      , 'EUR')
       ->addValue('iban'          , 'AT613200000000005678')
       ->addValue('mandate_active', TRUE)
+      ->addValue('mandate_prefix', 'PSP')
+      ->addValue('pi_ooff'       , '1')
+      ->addValue('pi_rcur'       , '1,2,3,4')
       ->execute()
       ->first();
   }
@@ -102,6 +151,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
         ->addValue('currency'      , 'EUR')
         ->addValue('iban'          , 'AT483200000012345864')
         ->addValue('mandate_active', TRUE)
+        ->addValue('mandate_prefix', 'SEPA')
         ->execute()
         ->first();
     }

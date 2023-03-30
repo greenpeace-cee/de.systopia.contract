@@ -59,7 +59,12 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $memberDuesTypeID = CRM_Contract_Utils::getFinancialTypeID('Member Dues');
 
     $cycleDay = (int) CRM_Utils_Array::value('cycle_day', $params);
-    $startDate = new DateTimeImmutable(CRM_Utils_Array::value('start_date', $params, 'now'));
+
+    $startDate = self::startDate([
+      'cycle_day' => CRM_Utils_Array::value('cycle_day', $params),
+      'min_date'  => CRM_Utils_Array::value('start_date', $params),
+    ]);
+
     $nextSchedContribDate = CRM_Contract_Utils::nextCycleDate($cycleDay, $startDate->format('Y-m-d'));
 
     $recurContribParamMapping = [
@@ -78,7 +83,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'payment_processor_id'         => [ NULL                     , FALSE             , $paymentProcessorID         ],
       'payment_token_id'             => [ NULL                     , FALSE             , $paymentToken['id']         ],
       'processor_id'                 => [ 'shopper_reference'      , !$useExistingToken, $defaultShopperReference    ],
-      'start_date'                   => [ 'start_date'             , FALSE             , $startDate->format('Y-m-d') ],
+      'start_date'                   => [ NULL                     , FALSE             , $startDate->format('Y-m-d') ],
       'trxn_id'                      => [ NULL                     , FALSE             , NULL                        ],
     ];
 
@@ -510,7 +515,11 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       $start_date->format('Y-m-d')
     );
 
-    $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $start_date->format('d'));
+    $cycle_day = (int) (
+      isset($params['cycle_day'])
+      ? $params['cycle_day']
+      : $start_date->format('d')
+    );
 
     if (!in_array($cycle_day, $allowed_cycle_days, TRUE)) {
       throw new Exception("Cycle day $cycle_day is not allowed for Adyen payments");

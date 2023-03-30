@@ -5,7 +5,7 @@ use Civi\Api4;
 /**
  * @group headless
  */
-class api_v3_Contract_StartDateTest extends api_v3_Contract_DateTestBase {
+class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
   public function testStartDateAdyen() {
 

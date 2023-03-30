@@ -26,6 +26,11 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         $params["payment_instrument_id"] = "EFT";
         $params["contribution_status_id"] = "Pending";
 
+        $params["start_date"] = self::startDate([
+            "cycle_day" => CRM_Utils_Array::value("cycle_day", $params),
+            "min_date"  => CRM_Utils_Array::value("start_date", $params),
+        ])->format("Y-m-d");
+
         $create_result = civicrm_api3("ContributionRecur", "create", $params);
 
         $rc_id = (string) $create_result["id"];
@@ -301,7 +306,11 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             $start_date->format('Y-m-d')
         );
 
-        $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $start_date->format('d'));
+        $cycle_day = (int) (
+            isset($params['cycle_day'])
+            ? $params['cycle_day']
+            : $start_date->format('d')
+        );
 
         if (!in_array($cycle_day, $allowed_cycle_days, TRUE)) {
             throw new Exception("Cycle day $cycle_day is not allowed for EFT payments");

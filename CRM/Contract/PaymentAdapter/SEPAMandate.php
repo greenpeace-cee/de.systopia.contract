@@ -76,6 +76,17 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $mandate_url = CRM_Utils_System::url("civicrm/sepa/xmandate", "mid=$mandate_id");
         $mandate_reference = $mandate_data["reference"];
 
+        $start_date = self::startDate([
+            "cycle_day" => CRM_Utils_Array::value("cycle_day", $params),
+            "min_date"  => CRM_Utils_Array::value("start_date", $params),
+        ]);
+
+        civicrm_api3("ContributionRecur", "create", [
+            "cycle_day"  => $start_date->format("d"),
+            "id"         => $mandate_data["entity_id"],
+            "start_date" => $start_date->format("Y-m-d"),
+        ]);
+
         CRM_Core_Session::setStatus(
             "New SEPA Mandate <a href=\"$mandate_url\">$mandate_reference</a> created.",
             "Success",
@@ -535,7 +546,11 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             $params['cycle_day'] = $recurring_contribution['cycle_day'];
         }
 
-        $cycle_day = (int) CRM_Utils_Array::value('cycle_day', $params, $start_date->format('d'));
+        $cycle_day = (int) (
+            isset($params['cycle_day'])
+            ? $params['cycle_day']
+            : $start_date->format('d')
+        );
 
         if (!in_array($cycle_day, $allowed_cycle_days, TRUE)) {
             throw new Exception("Cycle day $cycle_day is not allowed for this SEPA creditor");
