@@ -104,6 +104,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
     ]);
 
     $this->createContribution([
+      'amount'                    => 10.0,
       'date'                      => '2023-01-01',
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
@@ -215,6 +216,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
     ]);
 
     $this->createContribution([
+      'amount'                    => 10.0,
       'date'                      => '2023-01-05',
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
@@ -338,6 +340,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
     ]);
 
     $this->createContribution([
+      'amount'                    => 10.0,
       'date'                      => '2023-01-05',
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
@@ -456,6 +459,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
     ]);
 
     $this->createContribution([
+      'amount'                    => 10.0,
       'date'                      => '2023-01-14',
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
@@ -468,16 +472,6 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-07-14', $this->getStartDate($start_date_params));
 
-  }
-
-  private function createContribution(array $params) {
-    Api4\Contribution::create(FALSE)
-      ->addValue('contact_id'            , $this->contact['id'])
-      ->addValue('contribution_recur_id' , $params['recurring_contribution_id'])
-      ->addValue('financial_type_id.name', 'Member Dues')
-      ->addValue('receive_date'          , $params['date'])
-      ->addValue('total_amount'          , 30.0)
-      ->execute();
   }
 
   private function createMembership() {

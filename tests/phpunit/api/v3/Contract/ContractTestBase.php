@@ -49,11 +49,50 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
     parent::tearDown();
   }
 
-  public function assertEachEquals(array $pairs) {
+  protected function assertEachEquals(array $pairs) {
     foreach ($pairs as $pair) {
       list($expected, $actual) = $pair;
       $this->assertEquals($expected, $actual);
     }
+  }
+
+  protected function createContribution(array $params) {
+    return Api4\Contribution::create(FALSE)
+      ->addValue('contact_id'            , $this->contact['id'])
+      ->addValue('contribution_recur_id' , $params['recurring_contribution_id'])
+      ->addValue('financial_type_id.name', 'Member Dues')
+      ->addValue('receive_date'          , $params['date'])
+      ->addValue('total_amount'          , $params['amount'])
+      ->execute()
+      ->first();
+  }
+
+  protected static function getActiveRecurringContribution(int $membership_id) {
+    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
+      'contract_id' => $membership_id,
+      'is_active'   => TRUE,
+      'sequential'  => TRUE,
+    ])['values'][0];
+
+    return Api4\ContributionRecur::get(FALSE)
+      ->addWhere('id', '=', $payment_link['contribution_recur_id'])
+      ->addSelect(
+        '*',
+        'contribution_status_id:name',
+        'payment_instrument_id:name'
+      )
+      ->setLimit(1)
+      ->execute()
+      ->first();
+  }
+
+  protected static function getMembershipByID(int $membership_id) {
+    return Api4\Membership::get(FALSE)
+      ->addWhere('id', '=', $membership_id)
+      ->addSelect('*', 'status_id:name')
+      ->setLimit(1)
+      ->execute()
+      ->first();
   }
 
   public static function getFinancialTypeID(string $name) {
@@ -134,6 +173,12 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       ->addValue('pi_rcur'       , '1,2,3,4')
       ->execute()
       ->first();
+
+    CRM_Sepa_Logic_Settings::setSetting(
+      implode(',', [5, 10, 15, 20, 25]),
+      'cycledays',
+      $this->pspCreditor['id']
+    );
   }
 
   private function setDefaultSepaCreditor() {
@@ -157,6 +202,12 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
     }
 
     CRM_Sepa_Logic_Settings::setSetting($this->sepaCreditor['id'], 'batching_default_creditor');
+
+    CRM_Sepa_Logic_Settings::setSetting(
+      implode(',', [7, 14, 21, 28]),
+      'cycledays',
+      $this->sepaCreditor['id']
+    );
   }
 }
 

@@ -69,8 +69,17 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         // Get the current campaign ID
         $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
-        // Get current the date
-        $now = date("Y-m-d H:i:s");
+        // Calculate the new start date
+        $cycle_day = CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]);
+        $defer_payment_start = CRM_Utils_Array::value("defer_payment_start", $update, TRUE);
+        $min_date = CRM_Utils_Array::value("start_date", $update, $current_rc_data["start_date"]);
+
+        $start_date = self::startDate([
+            "cycle_day"           => $cycle_day,
+            "defer_payment_start" => $defer_payment_start,
+            "membership_id"       => $params["membership_id"],
+            "min_date"            => $min_date,
+        ]);
 
         $create_params = [
             "amount"             => CRM_Utils_Array::value("amount", $update, $current_rc_data["amount"]),
@@ -78,11 +87,11 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             "contact_id"         => $current_rc_data["contact_id"],
             "create_date"        => date("Y-m-d H:i:s"),
             "currency"           => CRM_Utils_Array::value("currency", $update, "EUR"),
-            "cycle_day"          => CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]),
+            "cycle_day"          => $cycle_day,
             "financial_type_id"  => $current_rc_data["financial_type_id"],
             "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $update, $current_rc_data["frequency_interval"]),
             "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $update, $current_rc_data["frequency_unit"]),
-            "start_date"         => $now,
+            "start_date"         => $start_date->format("Y-m-d"),
         ];
 
         return self::create($create_params);
@@ -373,8 +382,17 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         // Get the current campaign ID
         $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
-        // Get current the date
-        $now = date("Y-m-d H:i:s");
+        // Calculate the new start date
+        $cycle_day = CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]);
+        $defer_payment_start = CRM_Utils_Array::value("defer_payment_start", $params, TRUE);
+        $min_date = CRM_Utils_Array::value("start_date", $params, $current_rc_data["start_date"]);
+
+        $start_date = self::startDate([
+            "cycle_day"           => $cycle_day,
+            "defer_payment_start" => $defer_payment_start,
+            "membership_id"       => $params["membership_id"],
+            "min_date"            => $min_date,
+        ]);
 
         // Terminate the current mandate
         self::terminate($recurring_contribution_id, "CHNG");
@@ -386,11 +404,11 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             "contact_id"         => $current_rc_data["contact_id"],
             "create_date"        => $now,
             "currency"           => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),
-            "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
+            "cycle_day"          => $cycle_day,
             "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
             "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $params, $current_rc_data["frequency_interval"]),
             "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $params, $current_rc_data["frequency_unit"]),
-            "start_date"         => $now,
+            "start_date"         => $start_date->format("Y-m-d"),
         ];
 
         return self::create($create_params);

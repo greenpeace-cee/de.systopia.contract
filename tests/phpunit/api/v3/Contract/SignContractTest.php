@@ -57,13 +57,7 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
 
     // Adyen: Check membership
 
-    $membership = Api4\Membership::get(FALSE)
-      ->addWhere('id', '=', $result['id'])
-      ->addSelect('*', 'status_id:name')
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
+    $membership = self::getMembershipByID($result['id']);
     $membership_start_date = new DateTimeImmutable($membership['start_date']);
 
     $this->assertEachEquals([
@@ -75,23 +69,7 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
 
     // Adyen: Check recurring contribution
 
-    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
-      'contract_id' => $membership['id'],
-      'is_active'   => TRUE,
-      'sequential'  => TRUE,
-    ])['values'][0];
-
-    $rc = Api4\ContributionRecur::get(FALSE)
-      ->addWhere('id', '=', $payment_link['contribution_recur_id'])
-      ->addSelect(
-        '*',
-        'contribution_status_id:name',
-        'payment_instrument_id:name'
-      )
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
+    $rc = self::getActiveRecurringContribution($membership['id']);
     $rc_start_date = new DateTimeImmutable($rc['start_date']);
 
     $this->assertEachEquals([
@@ -167,13 +145,7 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
 
     // EFT: Check membership
 
-    $membership = Api4\Membership::get(FALSE)
-      ->addWhere('id', '=', $result['id'])
-      ->addSelect('*', 'status_id:name')
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
+    $membership = self::getMembershipByID($result['id']);
     $membership_start_date = new DateTimeImmutable($membership['start_date']);
 
     $this->assertEachEquals([
@@ -185,23 +157,7 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
 
     // EFT: Check recurring contribution
 
-    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
-      'contract_id' => $membership['id'],
-      'is_active'   => TRUE,
-      'sequential'  => TRUE,
-    ])['values'][0];
-
-    $rc = Api4\ContributionRecur::get(FALSE)
-      ->addWhere('id', '=', $payment_link['contribution_recur_id'])
-      ->addSelect(
-        '*',
-        'contribution_status_id:name',
-        'payment_instrument_id:name'
-      )
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
+    $rc = self::getActiveRecurringContribution($membership['id']);
     $rc_start_date = new DateTimeImmutable($rc['start_date']);
 
     $this->assertEachEquals([
@@ -220,12 +176,6 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
   public function testPSP() {
     $today = new DateTimeImmutable();
     $tomorrow = new DateTimeImmutable('tomorrow');
-
-    CRM_Sepa_Logic_Settings::setSetting(
-      implode(',', [5, 10, 15, 20, 25]),
-      'cycledays',
-      $this->pspCreditor['id']
-    );
 
     // PSP: Create contract
 
@@ -263,13 +213,7 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
 
     // PSP: Check membership
 
-    $membership = Api4\Membership::get(FALSE)
-      ->addWhere('id', '=', $result['id'])
-      ->addSelect('*', 'status_id:name')
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
+    $membership = self::getMembershipByID($result['id']);
     $membership_start_date = new DateTimeImmutable($membership['start_date']);
 
     $this->assertEachEquals([
@@ -281,23 +225,7 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
 
     // PSP: Check recurring contribution
 
-    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
-      'contract_id' => $membership['id'],
-      'is_active'   => TRUE,
-      'sequential'  => TRUE,
-    ])['values'][0];
-
-    $rc = Api4\ContributionRecur::get(FALSE)
-      ->addWhere('id', '=', $payment_link['contribution_recur_id'])
-      ->addSelect(
-        '*',
-        'contribution_status_id:name',
-        'payment_instrument_id:name'
-      )
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
+    $rc = self::getActiveRecurringContribution($membership['id']);
     $rc_start_date = new DateTimeImmutable($rc['start_date']);
 
     $this->assertEachEquals([
@@ -336,12 +264,6 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
     $today = new DateTimeImmutable();
     $tomorrow = new DateTimeImmutable('tomorrow');
 
-    CRM_Sepa_Logic_Settings::setSetting(
-      implode(',', [7, 14, 21, 28]),
-      'cycledays',
-      $this->sepaCreditor['id']
-    );
-
     // SEPA: Create contract
 
     $encounter_medium = self::getOptionValue('encounter_medium', 'in_person');
@@ -376,13 +298,7 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
 
     // SEPA: Check membership
 
-    $membership = Api4\Membership::get(FALSE)
-      ->addWhere('id', '=', $result['id'])
-      ->addSelect('*', 'status_id:name')
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
+    $membership = self::getMembershipByID($result['id']);
     $membership_start_date = new DateTimeImmutable($membership['start_date']);
 
     $this->assertEachEquals([
@@ -394,23 +310,7 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
 
     // SEPA: Check recurring contribution
 
-    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
-      'contract_id' => $membership['id'],
-      'is_active'   => TRUE,
-      'sequential'  => TRUE,
-    ])['values'][0];
-
-    $rc = Api4\ContributionRecur::get(FALSE)
-      ->addWhere('id', '=', $payment_link['contribution_recur_id'])
-      ->addSelect(
-        '*',
-        'contribution_status_id:name',
-        'payment_instrument_id:name'
-      )
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
+    $rc = self::getActiveRecurringContribution($membership['id']);
     $rc_start_date = new DateTimeImmutable($rc['start_date']);
 
     $this->assertEachEquals([

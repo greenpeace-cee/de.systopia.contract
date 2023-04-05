@@ -325,6 +325,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
     if (count($payment_changes["parameters"]) === 0) return $current_rc_id;
 
     $params = $payment_changes["parameters"];
+    $params["membership_id"] = $membership_id;
 
     // Calculate the new amount & frequency
     $current_rc = Api4\ContributionRecur::get(FALSE)

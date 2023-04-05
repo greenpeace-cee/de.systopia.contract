@@ -126,12 +126,16 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         ]);
 
         // Calculate the new start date
-        $new_start_date = CRM_Contract_RecurringContribution::getUpdateStartDate(
-            [ "membership_payment.membership_recurring_contribution" => $recurring_contribution_id ],
-            [ "contract_updates.ch_defer_payment_start" => CRM_Utils_Array::value("defer_payment_start", $update, false) ],
-            [ "activity_type_id" => $activity_type_id ],
-            self::cycleDays()
-        );
+        $cycle_day = CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]);
+        $defer_payment_start = CRM_Utils_Array::value("defer_payment_start", $update, TRUE);
+        $min_date = CRM_Utils_Array::value("start_date", $update, $current_rc_data["start_date"]);
+
+        $new_start_date = self::startDate([
+            "cycle_day"           => $cycle_day,
+            "defer_payment_start" => $defer_payment_start,
+            "membership_id"       => $params["membership_id"],
+            "min_date"            => $min_date,
+        ]);
 
         // Get bank account by ID
         $bank_account_id = CRM_Utils_Array::value("from_ba", $update);
@@ -148,13 +152,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "creation_date"         => date("Y-m-d H:i:s"),
             "creditor_id"           => $creditor->id,
             "currency"              => $currency,
-            "cycle_day"             => CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]),
+            "cycle_day"             => $cycle_day,
             "financial_type_id"     => $current_rc_data["financial_type_id"],
             "frequency_interval"    => CRM_Utils_Array::value("frequency_interval", $update, $current_rc_data["frequency_interval"]),
             "frequency_unit"        => CRM_Utils_Array::value("frequency_unit", $update, $current_rc_data["frequency_unit"]),
             "iban"                  => CRM_Utils_Array::value("iban", $bank_account),
             "payment_instrument_id" => CRM_Utils_Array::value("payment_instrument", $update),
-            "start_date"            => $new_start_date,
+            "start_date"            => $new_start_date->format("Y-m-d"),
             "type"                  => "RCUR",
             "validation_date"       => date("Y-m-d H:i:s"),
         ];
@@ -624,12 +628,16 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $current_mandate_data = end($mandates_result["values"]);
 
         // Calculate the new start date
-        $new_start_date = CRM_Contract_RecurringContribution::getUpdateStartDate(
-            [ "membership_payment.membership_recurring_contribution" => $recurring_contribution_id ],
-            [ "contract_updates.ch_defer_payment_start" => CRM_Utils_Array::value("defer_payment_start", $params, "1") ],
-            [ "activity_type_id" => $activity_type_id ],
-            self::cycleDays()
-        );
+        $cycle_day = CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]);
+        $defer_payment_start = CRM_Utils_Array::value("defer_payment_start", $params, TRUE);
+        $min_date = CRM_Utils_Array::value("start_date", $params, $current_rc_data["start_date"]);
+
+        $new_start_date = self::startDate([
+            "cycle_day"           => $cycle_day,
+            "defer_payment_start" => $defer_payment_start,
+            "membership_id"       => $params["membership_id"],
+            "min_date"            => $min_date,
+        ]);
 
         // Get the creditor & payment currency
         $creditor_id = CRM_Utils_Array::value("creditor_id", $params, $current_mandate_data["creditor_id"]);
@@ -656,13 +664,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "creation_date"      => date("Y-m-d H:i:s"),
             "creditor_id"        => $creditor_id,
             "currency"           => CRM_Utils_Array::value("currency", $params, $creditor_currency),
-            "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
+            "cycle_day"          => $cycle_day,
             "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
             "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $params, $current_rc_data["frequency_interval"]),
             "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $params, $current_rc_data["frequency_unit"]),
             "iban"               => CRM_Utils_Array::value("iban", $bank_account, $current_mandate_data["iban"]),
             "reference"          => CRM_Utils_Array::value("reference", $params),
-            "start_date"         => $new_start_date,
+            "start_date"         => $new_start_date->format("Y-m-d"),
             "type"               => "RCUR",
             "validation_date"    => date("Y-m-d H:i:s"),
         ];

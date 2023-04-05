@@ -125,6 +125,17 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       ->execute()
       ->first();
 
+    $cycleDay = CRM_Utils_Array::value('cycle_day', $update, $originalRC['cycle_day']);
+    $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $update, TRUE);
+    $minDate = CRM_Utils_Array::value('start_date', $update, $originalRC['start_date']);
+
+    $update['start_date'] = self::startDate([
+      'cycle_day'           => $cycleDay,
+      'defer_payment_start' => $deferPaymentStart,
+      'membership_id'       => $update['membership_id'],
+      'min_date'            => $minDate,
+    ])->format('Y-m-d');
+
     $createParams = array_merge($originalRC, $update);
 
     return self::create($createParams);
@@ -580,7 +591,15 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
     $defaultCampaign = CRM_Utils_Array::value('campaign_id', $oldRC, NULL);
     $cycleDay = CRM_Utils_Array::value('cycle_day', $params, $oldRC['cycle_day']);
-    $startDate = new DateTime(CRM_Utils_Array::value('start_date', $params, 'now'));
+    $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $params, TRUE);
+    $minDate = CRM_Utils_Array::value('start_date', $update, $oldRC['start_date']);
+
+    $startDate = self::startDate([
+      'cycle_day'           => $cycleDay,
+      'defer_payment_start' => $deferPaymentStart,
+      'membership_id'       => $params['membership_id'],
+      'min_date'            => $minDate,
+    ]);
 
     $nextSchedContribDate = self::getNextScheduledContributionDate(
       $oldRC['id'],
@@ -618,7 +637,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'payment_processor_id'         => [ 'payment_processor_id'   , FALSE    , $oldRC['payment_processor_id']   ],
       'payment_token_id'             => [ 'payment_token_id'       , FALSE    , $oldRC['payment_token_id']       ],
       'processor_id'                 => [ NULL                     , FALSE    , $defaultShopperReference         ],
-      'start_date'                   => [ 'start_date'             , FALSE    , $oldRC['start_date']             ],
+      'start_date'                   => [ NULL                     , FALSE    , $startDate->format('Y-m-d')      ],
       'trxn_id'                      => [ NULL                     , FALSE    , NULL                             ],
     ];
 
