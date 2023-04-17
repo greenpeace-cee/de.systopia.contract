@@ -69,7 +69,7 @@ class CRM_Contract_Form_Task_DetachContributions extends CRM_Contribute_Form_Tas
       $nonsepa_contribution_ids = $this->getNonSepaContributionIDs();
       foreach ($nonsepa_contribution_ids as $contribution_id) {
         try {
-          Contribution::update()
+          Contribution::update(FALSE)
             ->addWhere('id', '=', $contribution_id)
             ->addValue('contribution_recur_id', '')
             ->setCheckPermissions(FALSE)
@@ -94,7 +94,7 @@ class CRM_Contract_Form_Task_DetachContributions extends CRM_Contribute_Form_Tas
 
       foreach ($this->_contributionIds as $contribution_id) {
         try {
-          Contribution::update()
+          Contribution::update(FALSE)
             ->addWhere('id', '=', $contribution_id)
             ->addValue('financial_type_id', $values['change_financial_type'])
             ->setCheckPermissions(FALSE)

@@ -14,21 +14,9 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
   function buildQuickForm () {
 
     // Cancellation reason (cancel_reason)
-    $options_result = civicrm_api3("OptionValue", "get", [
-      "option_group_id" => "contract_cancel_reason",
-      "filter"          => 0,
-      "is_active"       => 1,
-      "options"         => [
-        "limit" => 0,
-        "sort" => "weight",
-      ],
-    ]);
+    $options_result = CRM_Contract_FormUtils::getOptionValueLabels("contract_cancel_reason");
 
-    $cancel_reason_options = [ "" => "- none -" ];
-
-    foreach ($options_result["values"] as $reason) {
-      $cancel_reason_options[$reason["value"]] = $reason["label"];
-    }
+    $cancel_reason_options = [ "" => "- none -" ] + $options_result;
 
     $this->add(
       "select",
@@ -51,15 +39,9 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
 
 
     // Source media (medium_id)
-    $options_result = civicrm_api3("Activity", "getoptions", [
-      "field" => "activity_medium_id",
-      "options" => [
-        "limit" => 0,
-        "sort" => "weight",
-      ],
-    ]);
+    $options_result = CRM_Contract_FormUtils::getOptionValueLabels("encounter_medium");
 
-    $medium_id_options = [ "" => ts("- none -") ] + $options_result["values"];
+    $medium_id_options = [ "" => ts("- none -") ] + $options_result;
 
     $this->add(
       "select",

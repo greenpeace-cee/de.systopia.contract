@@ -8,6 +8,8 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
+
 class CRM_Contract_Utils
 {
 
@@ -398,72 +400,33 @@ class CRM_Contract_Utils
   public static function getPaymentAdapterClass ($adapter_id) {
     if ($adapter_id === null) return null;
 
-    return [
-      "eft"          => "CRM_Contract_PaymentAdapter_EFT",
-      "psp_sepa"     => "CRM_Contract_PaymentAdapter_PSPSEPA",
-      "sepa_mandate" => "CRM_Contract_PaymentAdapter_SEPAMandate",
-    ][$adapter_id];
+    return CRM_Contract_Configuration::$paymentAdapters[$adapter_id];
   }
 
   public static function getPaymentAdapterForRecurringContribution ($recurring_contribution_id) {
-    if ($recurring_contribution_id === null) return null;
+    foreach (CRM_Contract_Configuration::$paymentAdapters as $paID => $paClass) {
+      if ($paClass::isInstance($recurring_contribution_id)) return $paID;
+    }
 
-    $payment_instrument_id = civicrm_api3("ContributionRecur", "getvalue", [
-      "id"     => $recurring_contribution_id,
-      "return" => "payment_instrument_id",
-    ]);
+    CRM_Core_Error::debug_log_message(
+      "No matching payment adapter found for recurring contribution with ID $recurring_contribution_id"
+    );
 
-    $payment_instrument_name = civicrm_api3("OptionValue", "getvalue", [
-      "option_group_id" => "payment_instrument",
-      "value"           => $payment_instrument_id,
-      "return"          => "name",
-    ]);
-
-    if ($payment_instrument_name === "EFT") return "eft";
-
-    // Get the payment method by looking at the SEPA creditor
-    $mandates_result = civicrm_api3("SepaMandate", "get", [
-      "entity_table" => "civicrm_contribution_recur",
-      "entity_id"    => $recurring_contribution_id,
-      "options"      => [ "sort" => "creation_date" ],
-      "sequential"   => 1,
-      "return"       => ["creditor_id"],
-    ]);
-
-    if ($mandates_result["count"] === 0) return "eft";
-
-    $creditor_id = end($mandates_result["values"])["creditor_id"];
-
-    $creditor_type = civicrm_api3("SepaCreditor", "getvalue", [
-      "id"     => $creditor_id,
-      "return" => "creditor_type",
-    ]);
-
-    if ($creditor_type === "SEPA") return "sepa_mandate";
-    if ($creditor_type === "PSP") return "psp_sepa";
-
-    return null;
+    return 'eft';
   }
 
   public static function calcAnnualAmount(float $amount, int $frequency_interval, string $frequency_unit) {
-    $annual = $frequency_unit === "year" ? $amount : (12 / $frequency_interval) * $amount;
-    $frequency = $frequency_unit === "year" ? 1 : 12 / $frequency_interval;
-
     return [
-      "annual"    => $annual,
-      "frequency" => $frequency,
+      "annual"    => $frequency_unit === "year" ? $amount : (12 / $frequency_interval) * $amount,
+      "frequency" => $frequency_unit === "year" ? 1 : 12 / $frequency_interval,
     ];
   }
 
   public static function calcRecurringAmount(float $annual, int $frequency) {
-    $amount = $annual / $frequency;
-    $frequency_interval = $frequency === 1 ? 1 : 12 / $frequency;
-    $frequency_unit = $frequency === 1 ? "year" : "month";
-
     return [
-      "amount"             => $amount,
-      "frequency_interval" => $frequency_interval,
-      "frequency_unit"     => $frequency_unit,
+      "amount"             => $annual / $frequency,
+      "frequency_interval" => $frequency === 1 ? 1 : 12 / $frequency,
+      "frequency_unit"     => $frequency === 1 ? "year" : "month",
     ];
   }
 
@@ -501,4 +464,49 @@ class CRM_Contract_Utils
       ],
     ];
   }
+
+  public static function getFinancialTypeID(string $name) {
+    return Api4\FinancialType::get(FALSE)
+      ->addSelect('id')
+      ->addWhere('name', '=', $name)
+      ->execute()
+      ->first()['id'];
+  }
+
+  public static function getOptionValue(string $optionGroup, string $name) {
+    return Api4\OptionValue::get(FALSE)
+      ->addSelect('value')
+      ->addWhere('option_group_id:name', '=', $optionGroup)
+      ->addWhere('name', '=', $name)
+      ->execute()
+      ->first()['value'];
+  }
+
+  public static function nextCycleDate(int $cycleDay, string $offset = 'now') {
+    $result = new DateTime($offset);
+
+    if (is_null($cycleDay)) return $result->format('Y-m-d');
+
+    $oneDay = new DateInterval('P1D');
+    $month = $result->format('m');
+    $isNextMonth = $cycleDay <= (int) $result->format('d');
+    $turnOfMonth = 0;
+
+    while($result->format('d') !== "$cycleDay") {
+      $result->add($oneDay);
+
+      if ($result->format('m') !== $month) {
+        $month = $result->format('m');
+        $turnOfMonth++;
+      }
+
+      if ($turnOfMonth > ($isNextMonth ? 1 : 0)) {
+        $result->sub($oneDay);
+        break;
+      }
+    }
+
+    return $result->format('Y-m-d');
+  }
+
 }

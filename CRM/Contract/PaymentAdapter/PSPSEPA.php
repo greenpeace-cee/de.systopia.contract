@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4;
+
 class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter {
 
     const ADAPTER_ID = "psp_sepa";
@@ -65,18 +67,6 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "id" => $recurring_contribution_id,
         ]);
 
-        $current_annual = CRM_Contract_Utils::calcAnnualAmount(
-            (float) $current_rc_data["amount"],
-            (int) $current_rc_data["frequency_interval"],
-            (string) $current_rc_data["frequency_unit"]
-        );
-
-        // Calculate the new contribution amount & frequency
-        $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
-            (float) CRM_Utils_Array::value("annual", $update, $current_annual["annual"]),
-            (int) CRM_Utils_Array::value("frequency", $update, $current_annual["frequency"])
-        );
-
         // Get the current campaign ID
         $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
@@ -105,7 +95,7 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $create_params = [
             "account_name"          => CRM_Utils_Array::value("account_name", $update),
             "account_reference"     => CRM_Utils_Array::value("account_reference", $update),
-            "amount"                => $new_recurring_amount["amount"],
+            "amount"                => CRM_Utils_Array::value("amount", $update, $current_rc_data["amount"]),
             "campaign_id"           => !empty($update["campaign_id"]) ? $update["campaign_id"] : $current_campaign_id,
             "contact_id"            => $current_rc_data["contact_id"],
             "creation_date"         => date("Y-m-d H:i:s"),
@@ -113,8 +103,8 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "currency"              => $currency,
             "cycle_day"             => CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]),
             "financial_type_id"     => $current_rc_data["financial_type_id"],
-            "frequency_interval"    => $new_recurring_amount["frequency_interval"],
-            "frequency_unit"        => $new_recurring_amount["frequency_unit"],
+            "frequency_interval"    => CRM_Utils_Array::value("frequency_interval", $update, $current_rc_data["frequency_interval"]),
+            "frequency_unit"        => CRM_Utils_Array::value("frequency_unit", $update, $current_rc_data["frequency_unit"]),
             "payment_instrument_id" => CRM_Utils_Array::value("payment_instrument", $update),
             "start_date"            => $new_start_date,
             "type"                  => "RCUR",
@@ -144,11 +134,11 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
     /**
      * Get payment specific form field specifications
      *
-     * @param int|null $recurring_contribution_id
+     * @param array $params - Optional parameters, depending on the implementation
      *
      * @return array - List of form field specifications
      */
-    public static function formFields ($recurring_contribution_id = null) {
+    public static function formFields ($params = []) {
         $psp_creditors = civicrm_api3("SepaCreditor", "get", [
             "creditor_type" => "PSP",
             "sequential"    => 1,
@@ -181,9 +171,9 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         }
 
         $defaults = [];
-        $payment_adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($recurring_contribution_id);
+        $recurring_contribution_id = CRM_Utils_Array::value("recurring_contribution_id", $params, NULL);
 
-        if (isset($recurring_contribution_id) && $payment_adapter === self::ADAPTER_ID) {
+        if (isset($recurring_contribution_id) && self::isInstance($recurring_contribution_id)) {
             $rc_data = civicrm_api3("ContributionRecur", "getsingle", [
                 "id" => $recurring_contribution_id,
             ]);
@@ -365,6 +355,22 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         return $result;
     }
 
+    public static function isInstance($recurringContributionID) {
+      $sepaMandateResult = Api4\SepaMandate::get(FALSE)
+        ->selectRowCount()
+        ->addSelect('creditor_id.creditor_type')
+        ->addWhere('entity_table', '=', 'civicrm_contribution_recur')
+        ->addWhere('entity_id',    '=', $recurringContributionID)
+        ->setLimit(1)
+        ->execute();
+
+      if ($sepaMandateResult->rowCount < 1) return FALSE;
+
+      $creditorType = $sepaMandateResult->first()['creditor_id.creditor_type'];
+
+      return $creditorType === 'PSP';
+    }
+
     /**
      * Map submitted form values to paramters for a specific API call
      *
@@ -478,6 +484,11 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             $error_message = $update_result["error_message"];
             throw new Exception("PSP SEPA mandate cannot be paused: $error_message");
         }
+
+        Api4\ContributionRecur::update(FALSE)
+            ->addWhere('id', '=', $recurring_contribution_id)
+            ->addValue('contribution_status_id:name', 'Paused')
+            ->execute();
     }
 
     /**
@@ -516,6 +527,11 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             $error_message = $update_result["error_message"];
             throw new Exception("PSP SEPA mandate cannot be resumed: $error_message");
         }
+
+        Api4\ContributionRecur::update(FALSE)
+            ->addWhere('id', '=', $recurring_contribution_id)
+            ->addValue('contribution_status_id:name', 'Pending')
+            ->execute();
 
         return $recurring_contribution_id;
     }
@@ -588,21 +604,8 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
 
         $current_mandate_data = end($mandates_result["values"]);
 
-        // Calculate the current annual contribution amount & frequency
-        $current_annual_amount = CRM_Contract_Utils::calcAnnualAmount(
-            (float) $current_rc_data["amount"],
-            (int) $current_rc_data["frequency_interval"],
-            (string) $current_rc_data["frequency_unit"]
-        );
-
-        $current_rc_data["annual"] = $current_annual_amount["annual"];
-        $current_rc_data["frequency"] = $current_annual_amount["frequency"];
-
-        // Calculate the new contribution amount & frequency
-        $new_recurring_amount = CRM_Contract_Utils::calcRecurringAmount(
-            (float) CRM_Utils_Array::value("annual", $params, $current_rc_data["annual"]),
-            (int) CRM_Utils_Array::value("frequency", $params, $current_rc_data["frequency"])
-        );
+        // Get the current campaign ID
+        $current_campaign_id = CRM_Utils_Array::value("campaign_id", $current_rc_data);
 
         // Get the creditor & payment currency
         $creditor_id = CRM_Utils_Array::value("creditor_id", $params, $current_mandate_data["creditor_id"]);
@@ -627,16 +630,16 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
         $create_params = [
             "account_name"          => CRM_Utils_Array::value("account_name", $params, $current_mandate_data["bic"]),
             "account_reference"     => CRM_Utils_Array::value("account_reference", $params, $current_mandate_data["iban"]),
-            "amount"                => $new_recurring_amount["amount"],
-            "campaign_id"           => CRM_Utils_Array::value("campaign_id", $params, $current_rc_data["campaign_id"]),
+            "amount"                => CRM_Utils_Array::value("amount", $params, $current_rc_data["amount"]),
+            "campaign_id"           => empty($params["campaign_id"]) ? $current_campaign_id : $params["campaign_id"],
             "contact_id"            => $current_rc_data["contact_id"],
             "creation_date"         => date("Y-m-d H:i:s"),
             "creditor_id"           => $creditor_id,
             "currency"              => CRM_Utils_Array::value("currency", $params, $creditor_currency),
             "cycle_day"             => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
             "financial_type_id"     => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
-            "frequency_interval"    => $new_recurring_amount["frequency_interval"],
-            "frequency_unit"        => $new_recurring_amount["frequency_unit"],
+            "frequency_interval"    => CRM_Utils_Array::value("frequency_interval", $params, $current_rc_data["frequency_interval"]),
+            "frequency_unit"        => CRM_Utils_Array::value("frequency_unit", $params, $current_rc_data["frequency_unit"]),
             "payment_instrument_id" => CRM_Utils_Array::value("payment_instrument", $params, $current_rc_data["payment_instrument_id"]),
             "start_date"            => $new_start_date,
             "type"                  => "RCUR",

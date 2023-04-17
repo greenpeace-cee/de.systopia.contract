@@ -49,11 +49,11 @@ interface CRM_Contract_PaymentAdapter {
     /**
      * Get payment specific form field specifications
      *
-     * @param int|null $recurring_contribution_id
+     * @param array $params - Optional parameters, depending on the implementation
      *
      * @return array - List of form field specifications
      */
-    public static function formFields ($recurring_contribution_id = null);
+    public static function formFields ($params = []);
 
     /**
      * Get payment specific JS variables for forms
@@ -63,6 +63,15 @@ interface CRM_Contract_PaymentAdapter {
      * @return array - Form variables
      */
     public static function formVars ($params = []);
+
+    /**
+     * Determine if a recurring contribution is an instance of this payment method
+     *
+     * @param int $recurring_contribution_id
+     *
+     * @return bool
+     */
+    public static function isInstance ($recurring_contribution_id);
 
     /**
      * Map submitted form values to paramters for a specific API call

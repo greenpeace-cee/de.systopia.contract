@@ -47,51 +47,48 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $this->contact = civicrm_api3("Contact", "getsingle", [ "id" => $contact_id ]);
 
         // Mediums
-        $this->mediums = civicrm_api3("Activity", "getoptions", [
-            "field"   => "activity_medium_id",
-            "options" => [
-                "limit" => 0,
-                "sort"  => "weight",
-            ],
-        ])["values"];
+        $this->mediums = CRM_Contract_FormUtils::getOptionValueLabels("encounter_medium");
 
         // Membership channels
-        $this->membership_channels = civicrm_api3("OptionValue", "get", [
-            "is_active"       => 1,
-            "option_group_id" => "contact_channel",
-            "options"         => [
-                "limit" => 0,
-                "sort"  => "weight",
-            ],
-        ])["values"];
+        $this->membership_channels = CRM_Contract_FormUtils::getOptionValueLabels("contact_channel");
 
         // Membership types
-        $this->membership_types = civicrm_api3("MembershipType", "get", [
-            "options" => [
-                "limit" => 0,
-                "sort"  => "weight",
-            ],
-        ])["values"];
+        $this->membership_types = CRM_Contract_FormUtils::getMembershipTypes();
 
         // Payment adapters
-        $this->payment_adapters = CRM_Contract_FormUtils::getPaymentAdapters();
+        $this->payment_adapters = CRM_Contract_Configuration::$paymentAdapters;
+        $resources = CRM_Core_Resources::singleton();
+        $paymentAdapterFields = [];
+
+        foreach ($this->payment_adapters as $paName => $paClass) {
+            $resources->addVars("de.systopia.contract/$paName", $paClass::formVars());
+
+            $paymentAdapterFields[$paName] = [];
+            $formFields = $paClass::formFields([ "form" => "sign" ]);
+
+            foreach ($formFields as $field) {
+                if (!$field["enabled"]) continue;
+
+                $fieldName = $field["name"];
+                $fieldID = "pa-$paName-$fieldName";
+
+                $paymentAdapterFields[$paName][] = $fieldID;
+            }
+        }
 
         // JS variables
-        $resources = CRM_Core_Resources::singleton();
-
         $resources->addVars("de.systopia.contract", [
             "action"                  => "sign",
             "cid"                     => $this->contact["id"],
             "debitor_name"            => $this->contact["display_name"],
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
+            "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
             "frequencies"             => CRM_Contract_RecurringContribution::getPaymentFrequencies(),
             "grace_end"               => NULL,
+            "payment_adapter_fields"  => $paymentAdapterFields,
+            "payment_adapters"        => CRM_Contract_Configuration::$paymentAdapters,
             "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($this->contact["id"]),
         ]);
-
-        foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            $resources->addVars("de.systopia.contract/$pa_name", $pa_class::formVars());
-        }
 
     }
 
@@ -113,7 +110,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             ]
         );
 
-        // Payment instrument (payment_instrument)
+        // Payment adapter (payment_adapter)
         $payment_adapter_options = [];
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
@@ -127,41 +124,29 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             $payment_adapter_options
         );
 
-        // Payment-instrument-specific fields
+        // Payment-adapter-specific fields
         $pa_form_template_var = [];
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
             $pa_form_template_var[$pa_name] = [];
 
-            foreach ($pa_class::formFields() as $field) {
+            $form_fields = $pa_class::formFields([
+              "contact_id" => $this->contact["id"],
+              "form"       => "sign",
+            ]);
+
+            foreach ($form_fields as $field) {
                 if (!$field["enabled"]) continue;
 
-                $field_name = $field["name"];
-                $field_id = "pa-$pa_name-$field_name";
-                $field_settings = isset($field["settings"]) ? $field["settings"] : [];
+                $field["id"] = "pa-$pa_name-" . $field["name"];
 
-                array_push($pa_form_template_var[$pa_name], $field_id);
+                array_push($pa_form_template_var[$pa_name], $field["id"]);
 
-                switch ($field["type"]) {
-                    case "select":
-                        $this->add(
-                            "select",
-                            $field_id,
-                            ts($field["display_name"]),
-                            $field["options"]
-                        );
-
-                        break;
-
-                    case "text":
-                        $this->add("text", $field_id, ts($field["display_name"]), $field_settings);
-                        break;
-                }
+                CRM_Contract_FormUtils::addFormField($this, $field);
             }
         }
 
         $this->assign("payment_adapter_fields", $pa_form_template_var);
-        $this->assign("payment_adapter_fields_json", json_encode($pa_form_template_var));
 
         // Recurring contribution (existing_recurring_contribution)
         $form_utils = new CRM_Contract_FormUtils($this, "Membership");
@@ -219,11 +204,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         );
 
         // Membership type (membership_type_id)
-        $membership_type_options = [ "" => "- none -" ];
-
-        foreach($this->membership_types as $membership_type){
-            $membership_type_options[$membership_type["id"]] = $membership_type["name"];
-        }
+        $membership_type_options = [ "" => "- none -" ] + $this->membership_types;
 
         $this->add(
             "select",
@@ -267,11 +248,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         );
 
         // Membership channel (membership_channel)
-        $membership_channel_options = [ "" => "- none -" ];
-
-        foreach($this->membership_channels as $mc){
-            $membership_channel_options[$mc["value"]] = $mc["label"];
-        }
+        $membership_channel_options = [ "" => "- none -" ] + $this->membership_channels;
 
         $this->add(
             "select",
@@ -325,13 +302,25 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             $pa_name = $submitted["payment_adapter"];
             $pa_class = $this->payment_adapters[$pa_name];
 
-            foreach ($pa_class::formFields() as $field_name => $field) {
-                if (!$field["enabled"] || empty($field["validate"])) continue;
+            $form_fields = $pa_class::formFields([
+                "form"      => "sign",
+                "submitted" => $submitted,
+            ]);
+
+            foreach ($form_fields as $field_name => $field) {
+                if (!$field["enabled"]) continue;
 
                 $field_id = "pa-$pa_name-$field_name";
+                $value = $submitted[$field_id];
 
                 try {
-                    call_user_func($field["validate"], $submitted[$field_id], $field["required"]);
+                    if ($field["required"] && empty($value)) {
+                        throw new Exception("This field is required");
+                    }
+
+                    if (empty($field["validate"])) continue;
+
+                    call_user_func($field["validate"], $value, $field["required"]);
                 } catch (Exception $exception) {
                     HTML_QuickForm::setElementError($field_id, $exception->getMessage());
                 }
@@ -377,7 +366,9 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
         // Payment-adapter-specific defaults
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            foreach ($pa_class::formFields() as $field_name => $field) {
+            $form_fields = $pa_class::formFields([ "form" => "sign" ]);
+
+            foreach ($form_fields as $field_name => $field) {
                 if (!$field["enabled"] || empty($field["default"])) continue;
 
                 $defaults["pa-$pa_name-$field_name"] = $field["default"];

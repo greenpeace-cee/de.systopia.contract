@@ -208,7 +208,7 @@ class CRM_Contract_Form_Task_AssignContributions extends CRM_Contribute_Form_Tas
 
       // finally: run the upgrade
       if (!empty($contribution_update)) {
-        Contribution::update()
+        Contribution::update(FALSE)
           ->addWhere('id', '=', $contribution_id)
           ->setValues($contribution_update)
           ->setCheckPermissions(FALSE)

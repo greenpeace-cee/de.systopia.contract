@@ -32,6 +32,7 @@ class CRM_Contract_Upgrader extends CRM_Contract_Upgrader_Base {
     $customData->syncOptionGroup(__DIR__ . '/../../resources/option_group_activity_status.json');
     $customData->syncOptionGroup(__DIR__ . '/../../resources/option_group_shirt_type.json');
     $customData->syncOptionGroup(__DIR__ . '/../../resources/option_group_shirt_size.json');
+    $customData->syncOptionGroup(__DIR__ . '/../../resources/option_group_contribution_recur_status.json');
     $customData->syncCustomGroup(__DIR__ . '/../../resources/custom_group_contract_cancellation.json');
     $customData->syncCustomGroup(__DIR__ . '/../../resources/custom_group_contract_updates.json');
     $customData->syncCustomGroup(__DIR__ . '/../../resources/custom_group_membership_cancellation.json');
@@ -135,6 +136,13 @@ class CRM_Contract_Upgrader extends CRM_Contract_Upgrader_Base {
     $customData = new CRM_Contract_CustomData('de.systopia.contract');
     $customData->syncCustomGroup(__DIR__ . '/../../resources/custom_group_contract_updates.json');
     $this->convertLegacyUpdates();
+    return TRUE;
+  }
+
+  public function upgrade_1510() {
+    $this->ctx->log->info('Applying update 1510');
+    $customData = new CRM_Contract_CustomData('de.systopia.contract');
+    $customData->syncOptionGroup(__DIR__ . '/../../resources/option_group_contribution_recur_status.json');
     return TRUE;
   }
 }

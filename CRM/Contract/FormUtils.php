@@ -8,6 +8,9 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
+use CRM_Contract_ExtensionUtil as ExtUtil;
+
 class CRM_Contract_FormUtils {
 
   public function __construct($form, $entity) {
@@ -223,4 +226,81 @@ class CRM_Contract_FormUtils {
     return 1;
   }
 
+  public static function getMembershipTypes() {
+    $types = [];
+
+    $mtResult = Api4\MembershipType::get(FALSE)
+      ->addSelect('name')
+      ->execute();
+
+    foreach ($mtResult as $type) {
+      $types[$type['id']] = $type['name'];
+    }
+
+    return $types;
+  }
+
+  public static function getOptionValueLabels(string $optionGroup) {
+    $mapping = [];
+
+    $ovResult = Api4\OptionValue::get(FALSE)
+      ->addWhere('option_group_id:name', '=', $optionGroup)
+      ->addSelect('label', 'value')
+      ->addOrderBy('weight', 'ASC')
+      ->execute();
+
+    foreach ($ovResult as $optVal) {
+      $mapping[$optVal['value']] = $optVal['label'];
+    }
+
+    return $mapping;
+  }
+
+  public static function addFormField($form, $params) {
+    $displayName = CRM_Utils_Array::value('display_name', $params, '');
+    $id          = CRM_Utils_Array::value('id',           $params, '');
+    $options     = CRM_Utils_Array::value('options',      $params, []);
+    $settings    = CRM_Utils_Array::value('settings',     $params, []);
+    $type        = CRM_Utils_Array::value('type',         $params, NULL);
+
+    switch ($type) {
+      case 'date': {
+        $form->add(
+          'datepicker',
+          $id,
+          ExtUtil::ts($displayName),
+          $settings,
+          FALSE,
+          [ 'time' => FALSE ]
+        );
+
+        break;
+      }
+
+      case 'select': {
+        $form->add(
+          'select',
+          $id,
+          ExtUtil::ts($displayName),
+          $options,
+          FALSE
+        );
+
+        break;
+      }
+
+      case 'text': {
+        $form->add(
+          'text',
+          $id,
+          ExtUtil::ts($displayName),
+          $settings,
+          FALSE
+        );
+
+        break;
+      }
+    }
+  }
+  
 }
