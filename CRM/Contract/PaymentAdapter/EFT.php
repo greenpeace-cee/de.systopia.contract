@@ -267,8 +267,15 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         // Existing contract
 
         if (isset($params['membership_id'])) {
-            $recurring_contribution = CRM_Contract_RecurringContribution::getById(
-                $params['membership_id']
+            $membership = CRM_Contract_Utils::getMembershipByID($params['membership_id']);
+            $membership_start_date = new DateTimeImmutable($membership['start_date']);
+
+            if ($start_date->getTimestamp() < $membership_start_date->getTimestamp()) {
+                $start_date = DateTime::createFromImmutable($membership_start_date);
+            }
+
+            $recurring_contribution = CRM_Contract_RecurringContribution::getCurrentForContract(
+                $membership['id']
             );
         }
 

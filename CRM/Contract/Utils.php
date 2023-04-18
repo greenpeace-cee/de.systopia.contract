@@ -532,4 +532,14 @@ class CRM_Contract_Utils
     }
   }
 
+  public static function getMembershipByID(int $membership_id) {
+    return Api4\Membership::get(FALSE)
+      ->addWhere('id', '=', $membership_id)
+      ->addSelect('*')
+      ->setLimit(1)
+      ->execute()
+      ->first();
+  }
+
+
 }

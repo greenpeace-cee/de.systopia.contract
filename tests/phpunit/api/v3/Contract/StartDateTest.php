@@ -72,7 +72,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     // Case 6
 
-    $membership = $this->createMembership();
+    $membership = $this->createMembership('2023-01-15');
 
     $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'       => 17,
@@ -91,7 +91,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     // Case 7
 
-    $membership = $this->createMembership();
+    $membership = $this->createMembership('2023-01-15');
 
     $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'          => 1,
@@ -184,7 +184,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     // Case 6
 
-    $membership = $this->createMembership();
+    $membership = $this->createMembership('2023-01-15');
 
     $recur_contrib_id = $this->createRecurringContribution([
       'cycle_day'       => 5,
@@ -203,7 +203,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     // Case 7
 
-    $membership = $this->createMembership();
+    $membership = $this->createMembership('2023-01-15');
 
     $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'          => 5,
@@ -308,7 +308,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     // Case 6
 
-    $membership = $this->createMembership();
+    $membership = $this->createMembership('2023-01-15');
 
     $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'       => 20,
@@ -327,7 +327,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     // Case 7
 
-    $membership = $this->createMembership();
+    $membership = $this->createMembership('2023-01-15');
 
     $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'          => 5,
@@ -427,7 +427,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     // Case 6
 
-    $membership = $this->createMembership();
+    $membership = $this->createMembership('2023-01-15');
 
     $recur_contrib_id = $this->createRecurringContribution([
       'cycle_day'       => 28,
@@ -446,7 +446,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     // Case 7
 
-    $membership = $this->createMembership();
+    $membership = $this->createMembership('2023-01-15');
 
     $recurring_contribution = $this->createRecurringContribution([
       'cycle_day'          => 14,
@@ -474,10 +474,11 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
   }
 
-  private function createMembership() {
+  private function createMembership(string $start_date) {
     return Api4\Membership::create(FALSE)
       ->addValue('contact_id'             , $this->contact['id'])
       ->addValue('membership_type_id.name', 'General')
+      ->addValue('start_date'             , $start_date)
       ->addValue('status_id.name'         , 'Current')
       ->execute()
       ->first();
