@@ -402,7 +402,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             "amount"             => CRM_Utils_Array::value("amount", $params, $current_rc_data["amount"]),
             "campaign_id"        => empty($params["campaign_id"]) ? $current_campaign_id : $params["campaign_id"],
             "contact_id"         => $current_rc_data["contact_id"],
-            "create_date"        => $now,
+            "create_date"        => date('Y-m-d'),
             "currency"           => CRM_Utils_Array::value("currency", $params, $current_rc_data["currency"]),
             "cycle_day"          => $cycle_day,
             "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),

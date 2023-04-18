@@ -244,7 +244,7 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
     $params = $payment_changes['parameters'];
     $params['membership_id'] = $membership_id;
 
-    if (count($params) > 0) {
+    if (count($params) > 1) {
       // Calculate the new amount & frequency
       $current_rc = Api4\ContributionRecur::get(FALSE)
         ->addWhere("id", "=", $current_rc_id)

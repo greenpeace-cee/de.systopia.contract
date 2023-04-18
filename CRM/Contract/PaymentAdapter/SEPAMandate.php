@@ -442,7 +442,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         $new_status = isset($mandate["first_contribution_id"]) ? "RCUR" : "FRST";
 
-        if (count($update) > 0) {
+        if (count(array_diff_key($update, [ 'membership_id' => 1 ])) > 0) {
             $update_params = array_merge($update, [ "status" => $new_status ]);
             return self::update($recurring_contribution_id, $update_params);
         }
@@ -630,7 +630,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         // Calculate the new start date
         $cycle_day = CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]);
         $defer_payment_start = CRM_Utils_Array::value("defer_payment_start", $params, TRUE);
-        $min_date = CRM_Utils_Array::value("start_date", $params, $current_rc_data["start_date"]);
+        $min_date = CRM_Utils_Array::value("start_date", $params);
 
         $new_start_date = self::startDate([
             "cycle_day"           => $cycle_day,

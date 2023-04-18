@@ -592,7 +592,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $defaultCampaign = CRM_Utils_Array::value('campaign_id', $oldRC, NULL);
     $cycleDay = CRM_Utils_Array::value('cycle_day', $params, $oldRC['cycle_day']);
     $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $params, TRUE);
-    $minDate = CRM_Utils_Array::value('start_date', $update, $oldRC['start_date']);
+    $minDate = CRM_Utils_Array::value('start_date', $params, $oldRC['start_date']);
 
     $startDate = self::startDate([
       'cycle_day'           => $cycleDay,
