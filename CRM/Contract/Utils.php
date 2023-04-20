@@ -482,33 +482,6 @@ class CRM_Contract_Utils
       ->first()['value'];
   }
 
-  public static function nextCycleDate(int $cycleDay, string $offset = 'now') {
-    $result = new DateTime($offset);
-
-    if (is_null($cycleDay)) return $result->format('Y-m-d');
-
-    $oneDay = new DateInterval('P1D');
-    $month = $result->format('m');
-    $isNextMonth = $cycleDay <= (int) $result->format('d');
-    $turnOfMonth = 0;
-
-    while($result->format('d') !== "$cycleDay") {
-      $result->add($oneDay);
-
-      if ($result->format('m') !== $month) {
-        $month = $result->format('m');
-        $turnOfMonth++;
-      }
-
-      if ($turnOfMonth > ($isNextMonth ? 1 : 0)) {
-        $result->sub($oneDay);
-        break;
-      }
-    }
-
-    return $result->format('Y-m-d');
-  }
-
   public static function resolvePaymentAdapterAlias($adapter) {
     if (empty($adapter)) return NULL;
 

@@ -1,6 +1,7 @@
 <?php
 
 use Civi\Api4;
+use Civi\Core\Event\GenericHookEvent;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
@@ -236,6 +237,62 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $this->assertEquals('Adyen', $paymentProcessor['payment_processor_type_id:name']);
 
+  }
+
+  public function testNextSchedContributionDate() {
+    $tomorrow = new DateTimeImmutable('tomorrow');
+    $startDate = CRM_Contract_DateHelper::findNextOfDays([1], $tomorrow->format('Y-m-d'));
+    $oneMonth = new DateInterval('P1M');
+    $oneMonthFromNow = DateTimeImmutable::createFromMutable($startDate)->add($oneMonth);
+    $twoMonthsFromNow = $oneMonthFromNow->add($oneMonth);
+
+    $recurContribID = CRM_Contract_PaymentAdapter_Adyen::create([
+      'amount'               => 10.0,
+      'contact_id'           => $this->contact['id'],
+      'cycle_day'            => 1,
+      'frequency_interval'   => 1,
+      'frequency_unit'       => 'month',
+      'payment_processor_id' => $this->paymentProcessor['id'],
+      'payment_token_id'     => $this->paymentToken['id'],
+      'start_date'           => $startDate->format('Y-m-d'),
+    ]);
+
+    $recurringContribution = CRM_Contract_RecurringContribution::getById($recurContribID);
+
+    $contribution = Api4\Contribution::create(FALSE)
+      ->addValue('contact_id'            , $this->contact['id'])
+      ->addValue('contribution_recur_id' , $recurContribID)
+      ->addValue('financial_type_id.name', 'Member Dues')
+      ->addValue('receive_date'          , $startDate->format('Y-m-d'))
+      ->addValue('total_amount'          , 10.0)
+      ->execute()
+      ->first();
+
+    $hookEvent = GenericHookEvent::create([
+      'contribution_recur_id' => $recurContribID,
+      'cycle_day'             => $recurringContribution['cycle_day'],
+      'frequency_interval'    => $recurringContribution['frequency_interval'],
+      'frequency_unit'        => $recurringContribution['frequency_unit'],
+      'newDate'               => $twoMonthsFromNow->format('Y-m-d'),
+      'originalDate'          => $recurringContribution['next_sched_contribution_date'],
+    ]);
+
+    Civi::dispatcher()->dispatch('civi.recur.nextschedcontributiondatealter', $hookEvent);
+
+    $recurringContribution = Api4\ContributionRecur::get(FALSE)
+      ->addWhere('id', '=', $recurContribID)
+      ->addSelect('next_sched_contribution_date')
+      ->execute()
+      ->first();
+
+    $nextSchedContribDate = new DateTimeImmutable(
+      $recurringContribution['next_sched_contribution_date']
+    );
+
+    $this->assertEquals(
+      $oneMonthFromNow->format('Y-m-d'),
+      $nextSchedContribDate->format('Y-m-d')
+    );
   }
 
   public function testPauseAndResume() {

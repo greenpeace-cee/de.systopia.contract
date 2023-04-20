@@ -65,8 +65,6 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'min_date'  => CRM_Utils_Array::value('start_date', $params),
     ]);
 
-    $nextSchedContribDate = CRM_Contract_Utils::nextCycleDate($cycleDay, $startDate->format('Y-m-d'));
-
     $recurContribParamMapping = [
       //                                | original name            | required          | default                     |
       'amount'                       => [ 'amount'                 , TRUE              , NULL                        ],
@@ -78,7 +76,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'financial_type_id'            => [ 'financial_type_id'      , FALSE             , $memberDuesTypeID           ],
       'frequency_interval'           => [ 'frequency_interval'     , FALSE             , 1                           ],
       'frequency_unit:name'          => [ 'frequency_unit'         , FALSE             , 'month'                     ],
-      'next_sched_contribution_date' => [ NULL                     , FALSE             , $nextSchedContribDate       ],
+      'next_sched_contribution_date' => [ NULL                     , FALSE             , $startDate->format('Y-m-d') ],
       'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE             , NULL                        ],
       'payment_processor_id'         => [ NULL                     , FALSE             , $paymentProcessorID         ],
       'payment_token_id'             => [ NULL                     , FALSE             , $paymentToken['id']         ],
@@ -302,49 +300,6 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     ];
   }
 
-  public static function getNextScheduledContributionDate(
-    int $recurContribID,
-    int $cycleDay = NULL,
-    string $offset = NULL
-  ): string {
-    $recurringContribution = Api4\ContributionRecur::get(FALSE)
-      ->addSelect(
-        'contribution.receive_date',
-        'cycle_day',
-        'frequency_interval',
-        'frequency_unit:name',
-        'start_date',
-      )
-      ->addJoin(
-        'Contribution AS contribution',
-        'LEFT',
-        ['id', '=', 'contribution.contribution_recur_id']
-      )
-      ->addWhere('id', '=', $recurContribID)
-      ->addOrderBy('contribution.receive_date', 'DESC')
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
-    $cycleDay = $cycleDay ?? $recurringContribution['cycle_day'];
-    $offset = new DateTime($offset ?? $recurringContribution['start_date']);
-
-    if (isset($recurringContribution['contribution.receive_date'])) {
-      $unitMapping = [
-        'month' => 'M',
-        'year'  => 'Y',
-      ];
-
-      $interval = $recurringContribution['frequency_interval'];
-      $unit = $unitMapping[$recurringContribution['frequency_unit:name']];
-      $lastContributionDate = new DateTime($recurringContribution['contribution.receive_date']);
-      $coveredPeriod = new DateInterval("P$interval$unit");
-      $offset = max($offset, $lastContributionDate->add($coveredPeriod));
-    }
-
-    return CRM_Contract_Utils::nextCycleDate($cycleDay, $offset->format('Y-m-d'));
-  }
-
   public static function isInstance($recurringContributionID) {
     $paymentProcessorType = Api4\ContributionRecur::get(FALSE)
       ->addSelect('payment_processor_id.payment_processor_type_id.name')
@@ -410,6 +365,40 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         return [];
       }
     }
+  }
+
+  public static function nextScheduledContributionDate($event) {
+    $cycle_day = (int) $event->cycle_day;
+    $frequency_interval = (int) $event->frequency_interval;
+    $frequency_unit = $event->frequency_unit;
+    $rc_id = $event->contribution_recur_id;
+
+    $latestContribResult = Api4\Contribution::get(FALSE)
+      ->addWhere('contribution_recur_id', '=', $rc_id)
+      ->addSelect('receive_date')
+      ->addOrderBy('receive_date', 'DESC')
+      ->setLimit(1)
+      ->execute();
+
+    if ($latestContribResult->count() < 1) return;
+
+    $latestContribution = $latestContribResult->first();
+
+    $coveredUntil = CRM_Contract_DateHelper::nextRegularDate(
+      $latestContribution['receive_date'],
+      (int) $frequency_interval,
+      $frequency_unit
+    );
+
+    $nextSchedContribDate = CRM_Contract_DateHelper::findNextOfDays(
+      [$cycle_day],
+      $coveredUntil->format('Y-m-d')
+    );
+
+    Api4\ContributionRecur::update(FALSE)
+      ->addWhere('id', '=', $rc_id)
+      ->addValue('next_sched_contribution_date', $nextSchedContribDate->format('Y-m-d'))
+      ->execute();
   }
 
   public static function pause($recurring_contribution_id) {
@@ -608,12 +597,6 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'min_date'            => $minDate,
     ]);
 
-    $nextSchedContribDate = self::getNextScheduledContributionDate(
-      $oldRC['id'],
-      $cycleDay,
-      $startDate->format('Y-m-d')
-    );
-
     $defaultShopperReference = $oldRC['processor_id'];
 
     if (
@@ -639,7 +622,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'financial_type_id'            => [ 'financial_type_id'      , FALSE    , $oldRC['financial_type_id']      ],
       'frequency_interval'           => [ 'frequency_interval'     , FALSE    , $oldRC['frequency_interval']     ],
       'frequency_unit:name'          => [ 'frequency_unit'         , FALSE    , $oldRC['frequency_unit']         ],
-      'next_sched_contribution_date' => [ NULL                     , FALSE    , $nextSchedContribDate            ],
+      'next_sched_contribution_date' => [ NULL                     , FALSE    , $startDate->format('Y-m-d')      ],
       'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE    , $oldRC['payment_instrument_id']  ],
       'payment_processor_id'         => [ 'payment_processor_id'   , FALSE    , $oldRC['payment_processor_id']   ],
       'payment_token_id'             => [ 'payment_token_id'       , FALSE    , $oldRC['payment_token_id']       ],

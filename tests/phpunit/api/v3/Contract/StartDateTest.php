@@ -9,7 +9,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
   public function testStartDateAdyen() {
 
-    // Case 1
+    // Adyen: Case 1
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -18,7 +18,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-01-15', $this->getStartDate($start_date_params));
 
-    // Case 2
+    // Adyen: Case 2
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -28,7 +28,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-02-13', $this->getStartDate($start_date_params));
 
-    // Case 3
+    // Adyen: Case 3
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -38,7 +38,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-03-01', $this->getStartDate($start_date_params));
 
-    // Case 4
+    // Adyen: Case 4
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -49,7 +49,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-03-13', $this->getStartDate($start_date_params));
 
-    // Case 5
+    // Adyen: Case 5
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -70,7 +70,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
       $start_date_result['error_message']
     );
 
-    // Case 6
+    // Adyen: Case 6
 
     $membership = $this->createMembership('2023-01-15');
 
@@ -89,7 +89,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-01-17', $this->getStartDate($start_date_params));
 
-    // Case 7
+    // Adyen: Case 7
 
     $membership = $this->createMembership('2023-01-15');
 
@@ -121,7 +121,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
   public function testStartDateEFT() {
 
-    // Case 1
+    // EFT: Case 1
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -130,7 +130,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-01-15', $this->getStartDate($start_date_params));
 
-    // Case 2
+    // EFT: Case 2
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -140,7 +140,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-02-13', $this->getStartDate($start_date_params));
 
-    // Case 3
+    // EFT: Case 3
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -150,7 +150,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-03-01', $this->getStartDate($start_date_params));
 
-    // Case 4
+    // EFT: Case 4
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -161,7 +161,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-03-13', $this->getStartDate($start_date_params));
 
-    // Case 5
+    // EFT: Case 5
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -182,7 +182,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
       $start_date_result['error_message']
     );
 
-    // Case 6
+    // EFT: Case 6
 
     $membership = $this->createMembership('2023-01-15');
 
@@ -201,7 +201,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-02-05', $this->getStartDate($start_date_params));
 
-    // Case 7
+    // EFT: Case 7
 
     $membership = $this->createMembership('2023-01-15');
 
@@ -240,7 +240,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     CRM_Sepa_Logic_Settings::setSetting(7, 'batching.RCUR.notice', $this->pspCreditor['id']);
 
-    // Case 1
+    // PSP: Case 1
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -250,7 +250,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-01-25', $this->getStartDate($start_date_params));
 
-    // Case 2
+    // PSP: Case 2
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -261,7 +261,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-02-10', $this->getStartDate($start_date_params));
 
-    // Case 3
+    // PSP: Case 3
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -272,7 +272,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-03-05', $this->getStartDate($start_date_params));
 
-    // Case 4
+    // PSP: Case 4
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -284,7 +284,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-03-10', $this->getStartDate($start_date_params));
 
-    // Case 5
+    // PSP: Case 5
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -306,7 +306,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
       $start_date_result['error_message']
     );
 
-    // Case 6
+    // PSP: Case 6
 
     $membership = $this->createMembership('2023-01-15');
 
@@ -325,7 +325,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-02-20', $this->getStartDate($start_date_params));
 
-    // Case 7
+    // PSP: Case 7
 
     $membership = $this->createMembership('2023-01-15');
 
@@ -364,7 +364,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     CRM_Sepa_Logic_Settings::setSetting(10, 'batching.RCUR.notice', $this->sepaCreditor['id']);
 
-    // Case 1
+    // SEPA: Case 1
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -373,7 +373,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-01-28', $this->getStartDate($start_date_params));
 
-    // Case 2
+    // SEPA: Case 2
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -383,7 +383,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-02-14', $this->getStartDate($start_date_params));
 
-    // Case 3
+    // SEPA: Case 3
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -393,7 +393,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-03-07', $this->getStartDate($start_date_params));
 
-    // Case 4
+    // SEPA: Case 4
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -404,7 +404,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-03-14', $this->getStartDate($start_date_params));
 
-    // Case 5
+    // SEPA: Case 5
 
     $start_date_params = [
       '_today'          => '2023-01-15',
@@ -425,7 +425,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
       $start_date_result['error_message']
     );
 
-    // Case 6
+    // SEPA: Case 6
 
     $membership = $this->createMembership('2023-01-15');
 
@@ -444,7 +444,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->assertEquals('2023-01-28', $this->getStartDate($start_date_params));
 
-    // Case 7
+    // SEPA: Case 7
 
     $membership = $this->createMembership('2023-01-15');
 
