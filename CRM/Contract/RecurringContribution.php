@@ -520,4 +520,43 @@ class CRM_Contract_RecurringContribution {
     return $options;
   }
 
+  /**
+   * Post-process contributions related to payment processor ContributionRecurs
+   *
+   * @param \PostEvent $event
+   *
+   * @return void
+   * @throws \API_Exception
+   * @throws \CiviCRM_API3_Exception
+   * @throws \Civi\API\Exception\UnauthorizedException
+   */
+  public static function amendContribution(Civi\Core\Event\PostEvent $event): void {
+    if ($event->action === 'create' && $event->entity === 'Contribution') {
+      $contribution = $event->object;
+      if (empty($contribution->contribution_recur_id)) {
+        return;
+      }
+      $contributionRecur = \Civi\Api4\ContributionRecur::get(FALSE)
+        ->addWhere('id', '=', $contribution->contribution_recur_id)
+        ->addWhere('payment_processor_id', 'IS NOT EMPTY')
+        ->execute()
+        ->first();
+      if (empty($contributionRecur)) {
+        return;
+      }
+      // Find all memberships using this recurring contribution
+      // there should never be more than one, but this mirrors existing behaviour ...
+      $memberships = \Civi\Api4\Membership::get(FALSE)
+        ->addWhere('membership_payment.membership_recurring_contribution', '=', $contributionRecur['id'])
+        ->execute();
+      foreach ($memberships as $membership) {
+        // track membership payments for each membership
+        civicrm_api3('MembershipPayment', 'create', [
+          'membership_id' => $membership['id'],
+          'contribution_id' => $contribution->id,
+        ]);
+      }
+    }
+  }
+
 }
