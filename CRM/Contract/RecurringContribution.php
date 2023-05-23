@@ -274,7 +274,7 @@ class CRM_Contract_RecurringContribution {
    * Get the status IDs for eligible recurring contributions
    */
   protected function getValidRcurStatusIds() {
-    $pending_id = CRM_Core_PseudoConstant::getKey(
+    $validStatuses[] =  CRM_Core_PseudoConstant::getKey(
       'CRM_Contribute_BAO_Contribution',
       'contribution_status_id',
       'Pending'
@@ -284,7 +284,11 @@ class CRM_Contract_RecurringContribution {
       'contribution_status_id',
       'In Progress'
     );
-    return [$pending_id, $current_id];
+    // "In Progress" may not exist on newer installs
+    if (!empty($current_id)) {
+      $validStatuses[] = $current_id;
+    }
+    return $validStatuses;
   }
 
 
