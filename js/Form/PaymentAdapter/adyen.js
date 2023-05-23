@@ -4,6 +4,26 @@ const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/adyen"];
 
 class Adyen {
+    async nextCollectionDate ({ cycle_day, min_date }) {
+        if (!cycle_day) return "";
+        if (!min_date) return "";
+
+        return await CRM.api3("Contract", "start_date", {
+            cycle_day,
+            defer_payment_start: false,
+            membership_id: EXT_VARS.membership_id,
+            min_date,
+            payment_adapter: "adyen",
+            prev_recur_contrib_id: EXT_VARS.current_recurring,
+        }).then(
+            result => {
+                if (result.is_error) console.error(result.error_message);
+                return result?.values?.[0];
+            },
+            error => console.error(error.message),
+        );
+    }
+
     onFormChange (formFields) {
         // Cycle days
         updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
@@ -26,7 +46,7 @@ class Adyen {
         this.updatePaymentPreview(formFields);
     }
 
-    updatePaymentPreview (formFields) {
+    async updatePaymentPreview (formFields) {
         const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=adyen]");
 
         // Payment instrument
@@ -54,6 +74,18 @@ class Adyen {
         // Cycle day
         const cycleDay = formFields["cycle_day"].val();
         paymentPreviewContainer.find("span#cycle_day").text(cycleDay);
+
+        // Next debit
+        const startDate = formFields["start_date"]
+            ? formFields["start_date"].val()
+            : formFields["activity_date"].val();
+
+        const nextDebit = await this.nextCollectionDate({
+            cycle_day: cycleDay,
+            min_date: startDate,
+        });
+
+        paymentPreviewContainer.find("span#next_debit").text(nextDebit);
     }
 }
 
