@@ -77,4 +77,20 @@ return array(
                      . 'be marked with "Needs Review"',
     'help_text' => NULL,
   ),
+  'contract_payment_adapters' => [
+    'group_name' => 'Contract preferences',
+    'name' => 'contract_payment_adapters',
+    'title' => 'Contract Payment Adapters',
+    'type' => 'Array',
+    'default' => [
+      'adyen'        => 'CRM_Contract_PaymentAdapter_Adyen',
+      'eft'          => 'CRM_Contract_PaymentAdapter_EFT',
+      'psp_sepa'     => 'CRM_Contract_PaymentAdapter_PSPSEPA',
+      'sepa_mandate' => 'CRM_Contract_PaymentAdapter_SEPAMandate',
+    ],
+    'add' => '1.6',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => 'List of enabled payment adapter classes',
+  ],
 );

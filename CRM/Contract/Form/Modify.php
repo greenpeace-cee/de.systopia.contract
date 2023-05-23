@@ -123,7 +123,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->recurring_contribution = civicrm_api3("ContributionRecur", "getsingle", [ "id" => $rc_id ]);
 
         // Payment adapters
-        $this->payment_adapters = CRM_Contract_Configuration::$paymentAdapters;
+        $this->payment_adapters = CRM_Contract_Configuration::getPaymentAdapters();
         $resources = CRM_Core_Resources::singleton();
         $paymentAdapterFields = [];
 
@@ -164,7 +164,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "frequencies"             => $frequencies,
             "membership_id"           => $contract_id,
             "payment_adapter_fields"  => $paymentAdapterFields,
-            "payment_adapters"        => CRM_Contract_Configuration::$paymentAdapters,
+            "payment_adapters"        => CRM_Contract_Configuration::getPaymentAdapters(),
             "recurring_contributions" => $recurring_contributions,
         ]);
     }

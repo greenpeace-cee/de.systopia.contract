@@ -13,13 +13,6 @@
  */
 class CRM_Contract_Configuration {
 
-  public static $paymentAdapters = [
-    "adyen"        => "CRM_Contract_PaymentAdapter_Adyen",
-    "eft"          => "CRM_Contract_PaymentAdapter_EFT",
-    "psp_sepa"     => "CRM_Contract_PaymentAdapter_PSPSEPA",
-    "sepa_mandate" => "CRM_Contract_PaymentAdapter_SEPAMandate",
-  ];
-
   protected static $eligible_campaigns = NULL;
 
   /**
@@ -137,5 +130,9 @@ class CRM_Contract_Configuration {
       "Onlinespende",
       "Online-Spenden",
     );
+  }
+
+  public static function getPaymentAdapters(): array {
+    return Civi::settings()->get('contract_payment_adapters');
   }
 }

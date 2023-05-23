@@ -305,7 +305,7 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
 
     $current_rc_id = $current_contract["membership_payment.membership_recurring_contribution"];
     $current_pa_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($current_rc_id);
-    $current_payment_adapter = CRM_Contract_Configuration::$paymentAdapters[$current_pa_id];
+    $current_payment_adapter = CRM_Contract_Configuration::getPaymentAdapters()[$current_pa_id];
 
     $new_rc_id = CRM_Utils_Array::value("contract_updates.ch_recurring_contribution", $change_data, $current_rc_id);
 

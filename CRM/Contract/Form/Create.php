@@ -56,7 +56,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $this->membership_types = CRM_Contract_FormUtils::getMembershipTypes();
 
         // Payment adapters
-        $this->payment_adapters = CRM_Contract_Configuration::$paymentAdapters;
+        $this->payment_adapters = CRM_Contract_Configuration::getPaymentAdapters();
         $resources = CRM_Core_Resources::singleton();
         $paymentAdapterFields = [];
 
@@ -86,7 +86,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
             "frequencies"             => CRM_Contract_RecurringContribution::getPaymentFrequencies(),
             "payment_adapter_fields"  => $paymentAdapterFields,
-            "payment_adapters"        => CRM_Contract_Configuration::$paymentAdapters,
+            "payment_adapters"        => CRM_Contract_Configuration::getPaymentAdapters(),
             "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($this->contact["id"]),
         ]);
 

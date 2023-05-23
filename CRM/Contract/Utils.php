@@ -400,11 +400,11 @@ class CRM_Contract_Utils
   public static function getPaymentAdapterClass ($adapter_id) {
     if ($adapter_id === null) return null;
 
-    return CRM_Contract_Configuration::$paymentAdapters[$adapter_id];
+    return CRM_Contract_Configuration::getPaymentAdapters()[$adapter_id];
   }
 
   public static function getPaymentAdapterForRecurringContribution ($recurring_contribution_id) {
-    foreach (CRM_Contract_Configuration::$paymentAdapters as $paID => $paClass) {
+    foreach (CRM_Contract_Configuration::getPaymentAdapters() as $paID => $paClass) {
       if ($paClass::isInstance($recurring_contribution_id)) return $paID;
     }
 
