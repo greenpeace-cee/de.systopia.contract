@@ -1,40 +1,17 @@
-import { registerPaymentAdapter } from "../utils.js";
+import { registerPaymentAdapter, updateCycleDayField } from "../utils.js";
+
+const EXT_VARS = CRM.vars["de.systopia.contract"];
+const ADAPTER_VARS = CRM.vars["de.systopia.contract/eft"];
 
 class EFT {
-    constructor() {
-        const extVars = CRM.vars["de.systopia.contract"];
-        const adapterVars = CRM.vars["de.systopia.contract/eft"];
-
-        this.action = extVars.action;
-        this.currentCycleDay = extVars.current_cycle_day;
-        this.cycleDays = adapterVars.cycle_days;
-        this.debitorName = extVars.debitor_name;
-        this.defaultCurrency = adapterVars.default_currency;
-        this.frequencies = extVars.frequencies;
-        this.nextCycleDay = adapterVars.next_cycle_day;
-    }
-
     onFormChange (formFields) {
         // Currency
-        cj("span#currency").text(this.defaultCurrency);
+        cj("span#currency").text(ADAPTER_VARS.default_currency);
 
         // Cycle days
-        const cycleDayField = formFields["cycle_day"];
-        const defaultCycleDay = this.action === "sign" ? this.nextCycleDay : this.currentCycleDay;
-        const selectedCycleDay = cycleDayField.val() || defaultCycleDay;
-        const cycleDayOptions = this.cycleDays;
+        updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
 
-        cycleDayField.empty();
-        cycleDayField.append("<option value=\"\">- none -</option>");
-
-        for (const cycleDay of cycleDayOptions) {
-            cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
-
-            if (parseInt(selectedCycleDay) === parseInt(cycleDay)) {
-                cycleDayField.val(cycleDay);
-            }
-        }
-
+        // Payment preview
         this.updatePaymentPreview(formFields);
     }
 
@@ -42,16 +19,16 @@ class EFT {
         const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=eft]");
 
         // Debitor name
-        paymentPreviewContainer.find("span#debitor_name").text(this.debitorName);
+        paymentPreviewContainer.find("span#debitor_name").text(EXT_VARS.debitor_name);
 
         // Frequency
-        const frequencyMapping = this.frequencies;
+        const frequencyMapping = EXT_VARS.frequencies;
         const frequency = Number(formFields["frequency"].val());
         paymentPreviewContainer.find("span#frequency").text(frequencyMapping[frequency]);
 
         // Annual amount
         const amount = FormUtils.parseMoney(formFields["amount"].val());
-        const currency = this.defaultCurrency;
+        const currency = ADAPTER_VARS.default_currency;
         const annualAmount = `${(amount * frequency).toFixed(2)} ${currency}`;
         paymentPreviewContainer.find("span#annual").text(annualAmount);
 

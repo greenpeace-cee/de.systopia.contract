@@ -59,3 +59,23 @@ export function registerPaymentAdapter (name, adapter) {
 
     window._PAYMENT_ADAPTERS_[name] = adapter;
 }
+
+export function updateCycleDayField (formFields, cycleDays, currentCycleDay) {
+    const cycleDayField = formFields["cycle_day"];
+    let selectedCycleDay = parseInt(cycleDayField.val() || currentCycleDay);
+
+    if (!cycleDays.includes(selectedCycleDay)) {
+        selectedCycleDay = undefined;
+    }
+
+    cycleDayField.empty();
+    cycleDayField.append("<option value=\"\">- none -</option>");
+
+    for (const cycleDay of cycleDays) {
+        cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
+
+        if (selectedCycleDay === cycleDay) {
+            cycleDayField.val(cycleDay);
+        }
+    }
+}

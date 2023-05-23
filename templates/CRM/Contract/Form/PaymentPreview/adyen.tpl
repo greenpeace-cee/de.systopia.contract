@@ -6,4 +6,5 @@
     Frequency: <span id="frequency"></span><br />
     Annual amount: <span id="annual"></span><br />
     Cycle day: <span id="cycle_day"></span><br />
+    Next debit: <span id="next_debit"></span><br />
 </div>

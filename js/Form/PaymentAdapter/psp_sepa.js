@@ -1,92 +1,50 @@
-import { registerPaymentAdapter } from "../utils.js";
+import { registerPaymentAdapter, updateCycleDayField } from "../utils.js";
+
+const EXT_VARS = CRM.vars["de.systopia.contract"];
+const ADAPTER_VARS = CRM.vars["de.systopia.contract/psp_sepa"];
 
 class PSP {
-    constructor() {
-        const extVars = CRM.vars["de.systopia.contract"];
-        const adapterVars = CRM.vars["de.systopia.contract/psp_sepa"];
+    async nextCollectionDate ({ creditor_id, cycle_day, defer_payment_start, min_date }) {
+        if (!creditor_id) return "";
+        if (!cycle_day) return "";
+        if (!min_date) return "";
 
-        this.action = extVars.action;
-        this.currencies = adapterVars.currencies;
-        this.currentCycleDay = extVars.current_cycle_day;
-        this.cycleDays = adapterVars.cycle_days;
-        this.debitorName = extVars.debitor_name;
-        this.defaultCurrency = extVars.default_currency;
-        this.frequencies = extVars.frequencies;
-        this.graceDays = adapterVars.grace_days;
-        this.graceEnd = extVars.grace_end;
-        this.nextCycleDay = adapterVars.next_cycle_day;
-        this.nextInstallmentDates = adapterVars.next_installment_dates;
-        this.noticeDays = adapterVars.notice_days;
-        this.paymentInstruments = adapterVars.payment_instruments;
-    }
-
-    nextCollectionDate ({ creditorId, cycleDay, deferPaymentStart, graceEnd, startDate }) {
-        if (!cycleDay) return "";
-
-        let date = deferPaymentStart ? new Date(this.nextInstallmentDates[creditorId]) : new Date();
-
-        const grace = parseInt(this.graceDays[creditorId]);
-        const notice = parseInt(this.noticeDays[creditorId]);
-        const millisecondsInADay = 24 * 60 * 60 * 1000;
-
-        date.setTime(date.getTime() + Math.max(0, (notice - grace)) * millisecondsInADay);
-
-        if (startDate && new Date(startDate).getTime() > date.getTime()) {
-            date = new Date(startDate);
-        }
-
-        if (graceEnd && new Date(graceEnd).getTime() > date.getTime()) {
-            date = new Date(graceEnd);
-        }
-
-        const cycleDay_int = parseInt(cycleDay, 10);
-
-        if (cycleDay_int < date.getDate()) {
-            let i = 31;
-
-            while (i > 0 && date.getDate() !== cycleDay_int) {
-                date.setTime(date.getTime() + millisecondsInADay);
-                i--;
-            }
-        } else {
-            date.setDate(cycleDay_int);
-        }
-
-        const year = date.getFullYear();
-        const month = (date.getMonth() + 1).toString(10).padStart(2, "0");
-        const day = date.getDate().toString(10).padStart(2, "0");
-
-        return `${year}-${month}-${day}`;
+        return await CRM.api3("Contract", "start_date", {
+            creditor_id,
+            cycle_day,
+            defer_payment_start,
+            membership_id: EXT_VARS.membership_id,
+            min_date,
+            payment_adapter: "psp_sepa",
+            prev_recur_contrib_id: EXT_VARS.current_recurring,
+        }).then(
+            result => {
+                if (result.is_error) console.error(result.error_message);
+                return result?.values?.[0];
+            },
+            error => console.error(error.message),
+        );
     }
 
     onFormChange (formFields) {
+        // Creditor
         const selectedCreditor = formFields["pa-psp_sepa-creditor"].val();
 
         // Currency
-        const currency = this.currencies[selectedCreditor];
+        const currency = ADAPTER_VARS.currencies[selectedCreditor];
         cj("span#currency").text(currency);
 
         // Cycle days
-        const cycleDayField = formFields["cycle_day"];
-        const defaultCycleDay = this.action === "sign" ? this.nextCycleDay : this.currentCycleDay;
-        const selectedCycleDay = cycleDayField.val() || defaultCycleDay;
-        const cycleDayOptions = this.cycleDays[selectedCreditor] || {};
-
-        cycleDayField.empty();
-        cycleDayField.append("<option value=\"\">- none -</option>");
-
-        for (const cycleDay of Object.values(cycleDayOptions)) {
-            cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
-
-            if (parseInt(selectedCycleDay) === parseInt(cycleDay)) {
-                cycleDayField.val(cycleDay);
-            }
-        }
+        updateCycleDayField(
+            formFields,
+            ADAPTER_VARS.cycle_days[selectedCreditor],
+            EXT_VARS.current_cycle_day
+        );
 
         // Payment instruments
         const paymentInstrumentField = formFields["pa-psp_sepa-payment_instrument"];
         const selectedPaymentInstrument = paymentInstrumentField.val();
-        const paymentInstrumentOptions = this.paymentInstruments[selectedCreditor] || {};
+        const paymentInstrumentOptions = ADAPTER_VARS.payment_instruments[selectedCreditor] || {};
 
         paymentInstrumentField.empty();
         paymentInstrumentField.append("<option value=\"\">- none -</option>");
@@ -99,14 +57,15 @@ class PSP {
             }
         }
 
+        // Payment preview
         this.updatePaymentPreview(formFields);
     }
 
-    updatePaymentPreview (formFields) {
+    async updatePaymentPreview (formFields) {
         const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=psp_sepa]");
 
         // Debitor name
-        paymentPreviewContainer.find("span#debitor_name").text(this.debitorName);
+        paymentPreviewContainer.find("span#debitor_name").text(EXT_VARS.debitor_name);
 
         // Creditor
         const pspCreditors = formFields["pa-psp_sepa-creditor"]
@@ -138,10 +97,10 @@ class PSP {
 
         // Frequency
         const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(this.frequencies[frequency]);
+        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequencies[frequency]);
 
         // Currency
-        const currency = this.currencies[creditorId] || this.defaultCurrency;
+        const currency = ADAPTER_VARS.currencies[creditorId] || EXT_VARS.default_currency;
 
         // Annual amount
         const amount = FormUtils.parseMoney(formFields["amount"].val());
@@ -161,18 +120,15 @@ class PSP {
             ? formFields["defer_payment_start"].prop("checked")
             : false;
 
-        const graceEnd = this.action === "update" ? this.graceEnd : null;
-
         const startDate = formFields["start_date"]
             ? formFields["start_date"].val()
             : formFields["activity_date"].val();
 
-        const nextDebit = this.nextCollectionDate({
-            creditorId,
-            cycleDay,
-            deferPaymentStart,
-            graceEnd,
-            startDate,
+        const nextDebit = await this.nextCollectionDate({
+            creditor_id: creditorId,
+            cycle_day: cycleDay,
+            defer_payment_start: deferPaymentStart,
+            min_date: startDate,
         });
 
         paymentPreviewContainer.find("span#next_debit").text(nextDebit);

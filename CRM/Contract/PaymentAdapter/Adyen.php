@@ -59,8 +59,11 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $memberDuesTypeID = CRM_Contract_Utils::getFinancialTypeID('Member Dues');
 
     $cycleDay = (int) CRM_Utils_Array::value('cycle_day', $params);
-    $startDate = new DateTimeImmutable(CRM_Utils_Array::value('start_date', $params, 'now'));
-    $nextSchedContribDate = CRM_Contract_Utils::nextCycleDate($cycleDay, $startDate->format('Y-m-d'));
+
+    $startDate = self::startDate([
+      'cycle_day' => CRM_Utils_Array::value('cycle_day', $params),
+      'min_date'  => CRM_Utils_Array::value('start_date', $params),
+    ]);
 
     $recurContribParamMapping = [
       //                                | original name            | required          | default                     |
@@ -73,12 +76,12 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'financial_type_id'            => [ 'financial_type_id'      , FALSE             , $memberDuesTypeID           ],
       'frequency_interval'           => [ 'frequency_interval'     , FALSE             , 1                           ],
       'frequency_unit:name'          => [ 'frequency_unit'         , FALSE             , 'month'                     ],
-      'next_sched_contribution_date' => [ NULL                     , FALSE             , $nextSchedContribDate       ],
+      'next_sched_contribution_date' => [ NULL                     , FALSE             , $startDate->format('Y-m-d') ],
       'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE             , NULL                        ],
       'payment_processor_id'         => [ NULL                     , FALSE             , $paymentProcessorID         ],
       'payment_token_id'             => [ NULL                     , FALSE             , $paymentToken['id']         ],
       'processor_id'                 => [ 'shopper_reference'      , !$useExistingToken, $defaultShopperReference    ],
-      'start_date'                   => [ 'start_date'             , FALSE             , $startDate->format('Y-m-d') ],
+      'start_date'                   => [ NULL                     , FALSE             , $startDate->format('Y-m-d') ],
       'trxn_id'                      => [ NULL                     , FALSE             , NULL                        ],
     ];
 
@@ -119,6 +122,17 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       )
       ->execute()
       ->first();
+
+    $cycleDay = CRM_Utils_Array::value('cycle_day', $update, $originalRC['cycle_day']);
+    $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $update, TRUE);
+    $minDate = CRM_Utils_Array::value('start_date', $update, $originalRC['start_date']);
+
+    $update['start_date'] = self::startDate([
+      'cycle_day'           => $cycleDay,
+      'defer_payment_start' => $deferPaymentStart,
+      'membership_id'       => $update['membership_id'],
+      'min_date'            => $minDate,
+    ])->format('Y-m-d');
 
     $createParams = array_merge($originalRC, $update);
 
@@ -267,65 +281,23 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function formVars($params = []) {
-    // ...
+    $paymentTokenFields = [
+      'account_number',
+      'billing_first_name',
+      'billing_last_name',
+      'email',
+      'expiry_date',
+      'ip_address',
+      'payment_processor_id',
+      'shopper_reference',
+      'stored_payment_method_id',
+    ];
 
     return [
-      'default_currency' => Civi::settings()->get('defaultCurrency'),
-      'payment_token_fields' => [
-        'account_number',
-        'billing_first_name',
-        'billing_last_name',
-        'email',
-        'expiry_date',
-        'ip_address',
-        'payment_processor_id',
-        'shopper_reference',
-        'stored_payment_method_id',
-      ],
+      'cycle_days'           => self::cycleDays(),
+      'default_currency'     => Civi::settings()->get('defaultCurrency'),
+      'payment_token_fields' => $paymentTokenFields,
     ];
-  }
-
-  public static function getNextScheduledContributionDate(
-    int $recurContribID,
-    int $cycleDay = NULL,
-    string $offset = NULL
-  ): string {
-    $recurringContribution = Api4\ContributionRecur::get(FALSE)
-      ->addSelect(
-        'contribution.receive_date',
-        'cycle_day',
-        'frequency_interval',
-        'frequency_unit:name',
-        'start_date',
-      )
-      ->addJoin(
-        'Contribution AS contribution',
-        'LEFT',
-        ['id', '=', 'contribution.contribution_recur_id']
-      )
-      ->addWhere('id', '=', $recurContribID)
-      ->addOrderBy('contribution.receive_date', 'DESC')
-      ->setLimit(1)
-      ->execute()
-      ->first();
-
-    $cycleDay = $cycleDay ?? $recurringContribution['cycle_day'];
-    $offset = new DateTime($offset ?? $recurringContribution['start_date']);
-
-    if (isset($recurringContribution['contribution.receive_date'])) {
-      $unitMapping = [
-        'month' => 'M',
-        'year'  => 'Y',
-      ];
-
-      $interval = $recurringContribution['frequency_interval'];
-      $unit = $unitMapping[$recurringContribution['frequency_unit:name']];
-      $lastContributionDate = new DateTime($recurringContribution['contribution.receive_date']);
-      $coveredPeriod = new DateInterval("P$interval$unit");
-      $offset = max($offset, $lastContributionDate->add($coveredPeriod));
-    }
-
-    return CRM_Contract_Utils::nextCycleDate($cycleDay, $offset->format('Y-m-d'));
   }
 
   public static function isInstance($recurringContributionID) {
@@ -395,10 +367,38 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     }
   }
 
-  public static function nextCycleDay() {
-    // ...
+  public static function nextScheduledContributionDate($event) {
+    $cycle_day = (int) $event->cycle_day;
+    $frequency_interval = (int) $event->frequency_interval;
+    $frequency_unit = $event->frequency_unit;
+    $rc_id = $event->contribution_recur_id;
 
-    return 0;
+    $latestContribResult = Api4\Contribution::get(FALSE)
+      ->addWhere('contribution_recur_id', '=', $rc_id)
+      ->addSelect('receive_date')
+      ->addOrderBy('receive_date', 'DESC')
+      ->setLimit(1)
+      ->execute();
+
+    if ($latestContribResult->count() < 1) return;
+
+    $latestContribution = $latestContribResult->first();
+
+    $coveredUntil = CRM_Contract_DateHelper::nextRegularDate(
+      $latestContribution['receive_date'],
+      (int) $frequency_interval,
+      $frequency_unit
+    );
+
+    $nextSchedContribDate = CRM_Contract_DateHelper::findNextOfDays(
+      [$cycle_day],
+      $coveredUntil->format('Y-m-d')
+    );
+
+    Api4\ContributionRecur::update(FALSE)
+      ->addWhere('id', '=', $rc_id)
+      ->addValue('next_sched_contribution_date', $nextSchedContribDate->format('Y-m-d'))
+      ->execute();
   }
 
   public static function pause($recurring_contribution_id) {
@@ -450,6 +450,98 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     return self::update($recurringContributionID, $update);
   }
 
+  public static function startDate($params = [], $today = 'now') {
+    $today = new DateTimeImmutable($today);
+    $start_date = DateTime::createFromImmutable($today);
+
+    // Minimum date
+
+    if (isset($params['min_date'])) {
+      $min_date = new DateTimeImmutable($params['min_date']);
+    }
+
+    if (isset($min_date) && $start_date->getTimestamp() < $min_date->getTimestamp()) {
+      $start_date = DateTime::createFromImmutable($min_date);
+    }
+
+    // Existing contract
+
+    if (isset($params['membership_id'])) {
+      $membership = CRM_Contract_Utils::getMembershipByID($params['membership_id']);
+      $membership_start_date = new DateTimeImmutable($membership['start_date']);
+
+      if ($start_date->getTimestamp() < $membership_start_date->getTimestamp()) {
+        $start_date = DateTime::createFromImmutable($membership_start_date);
+      }
+
+      $recurring_contribution = CRM_Contract_RecurringContribution::getCurrentForContract(
+        $membership['id']
+      );
+    }
+
+    if (isset($recurring_contribution)) {
+      $params['cycle_day'] = CRM_Utils_Array::value(
+        'cycle_day',
+        $params,
+        $recurring_contribution['cycle_day']
+      );
+    }
+
+    // Defer payment start
+
+    $defer_payment_start = CRM_Utils_Array::value('defer_payment_start', $params, FALSE);
+
+    if ($defer_payment_start && isset($params['membership_id'])) {
+      $latest_contribution = CRM_Contract_RecurringContribution::getLatestContribution(
+        $params['membership_id']
+      );
+    }
+
+    if (isset($latest_contribution)) {
+      $latest_contribution_rc = CRM_Contract_RecurringContribution::getById(
+        $latest_contribution['contribution_recur_id']
+      );
+
+      $paid_until = CRM_Contract_DateHelper::nextRegularDate(
+        $latest_contribution['receive_date'],
+        $latest_contribution_rc['frequency_interval'],
+        $latest_contribution_rc['frequency_unit']
+      );
+
+      if ($start_date->getTimestamp() < $paid_until->getTimestamp()) {
+        $start_date = $paid_until;
+      }
+    }
+
+    // Allowed cycle days
+
+    $allowed_cycle_days = self::cycleDays();
+
+    $start_date = CRM_Contract_DateHelper::findNextOfDays(
+      $allowed_cycle_days,
+      $start_date->format('Y-m-d')
+    );
+
+    $cycle_day = (int) (
+      isset($params['cycle_day'])
+      ? $params['cycle_day']
+      : $start_date->format('d')
+    );
+
+    if (!in_array($cycle_day, $allowed_cycle_days, TRUE)) {
+      throw new Exception("Cycle day $cycle_day is not allowed for Adyen payments");
+    }
+
+    // Find next date for expected cycle day
+
+    $start_date = CRM_Contract_DateHelper::findNextOfDays(
+      [$cycle_day],
+      $start_date->format('Y-m-d')
+    );
+
+    return $start_date;
+  }
+
   public static function terminate($recurringContributionID, $reason = "CHNG") {
     $now = date('Y-m-d H:i:s');
 
@@ -495,13 +587,15 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
     $defaultCampaign = CRM_Utils_Array::value('campaign_id', $oldRC, NULL);
     $cycleDay = CRM_Utils_Array::value('cycle_day', $params, $oldRC['cycle_day']);
-    $startDate = new DateTime(CRM_Utils_Array::value('start_date', $params, 'now'));
+    $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $params, TRUE);
+    $minDate = CRM_Utils_Array::value('start_date', $params, $oldRC['start_date']);
 
-    $nextSchedContribDate = self::getNextScheduledContributionDate(
-      $oldRC['id'],
-      $cycleDay,
-      $startDate->format('Y-m-d')
-    );
+    $startDate = self::startDate([
+      'cycle_day'           => $cycleDay,
+      'defer_payment_start' => $deferPaymentStart,
+      'membership_id'       => $params['membership_id'],
+      'min_date'            => $minDate,
+    ]);
 
     $defaultShopperReference = $oldRC['processor_id'];
 
@@ -528,12 +622,12 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'financial_type_id'            => [ 'financial_type_id'      , FALSE    , $oldRC['financial_type_id']      ],
       'frequency_interval'           => [ 'frequency_interval'     , FALSE    , $oldRC['frequency_interval']     ],
       'frequency_unit:name'          => [ 'frequency_unit'         , FALSE    , $oldRC['frequency_unit']         ],
-      'next_sched_contribution_date' => [ NULL                     , FALSE    , $nextSchedContribDate            ],
+      'next_sched_contribution_date' => [ NULL                     , FALSE    , $startDate->format('Y-m-d')      ],
       'payment_instrument_id'        => [ 'payment_instrument_id'  , FALSE    , $oldRC['payment_instrument_id']  ],
       'payment_processor_id'         => [ 'payment_processor_id'   , FALSE    , $oldRC['payment_processor_id']   ],
       'payment_token_id'             => [ 'payment_token_id'       , FALSE    , $oldRC['payment_token_id']       ],
       'processor_id'                 => [ NULL                     , FALSE    , $defaultShopperReference         ],
-      'start_date'                   => [ 'start_date'             , FALSE    , $oldRC['start_date']             ],
+      'start_date'                   => [ NULL                     , FALSE    , $startDate->format('Y-m-d')      ],
       'trxn_id'                      => [ NULL                     , FALSE    , NULL                             ],
     ];
 

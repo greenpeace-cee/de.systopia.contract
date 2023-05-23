@@ -1,126 +1,54 @@
-import { registerPaymentAdapter } from "../utils.js";
+import { registerPaymentAdapter, updateCycleDayField } from "../utils.js";
+
+const EXT_VARS = CRM.vars["de.systopia.contract"];
+const ADAPTER_VARS = CRM.vars["de.systopia.contract/sepa_mandate"];
 
 class SEPA {
-    constructor() {
-        const extVars = CRM.vars["de.systopia.contract"];
-        const adapterVars = CRM.vars["de.systopia.contract/sepa_mandate"];
+    async nextCollectionDate ({ cycle_day, defer_payment_start, min_date }) {
+        if (!cycle_day) return "";
+        if (!min_date) return "";
 
-        this.action = extVars.action;
-        this.creditor = adapterVars.creditor;
-        this.currentCycleDay = extVars.current_cycle_day;
-        this.cycleDays = adapterVars.cycle_days;
-        this.debitorName = extVars.debitor_name;
-        this.defaultCreditorGrace = adapterVars.default_creditor_grace;
-        this.defaultCreditorNotice = adapterVars.default_creditor_notice;
-        this.defaultCurrency = adapterVars.default_currency;
-        this.frequencies = extVars.frequencies;
-        this.graceEnd = extVars.grace_end;
-        this.nextCycleDay = adapterVars.next_cycle_day;
-        this.nextInstallmentDate = adapterVars.next_installment_date;
-    }
-
-    nextCollectionDate (cycle_day, start_date, grace_end, defer_payment_start) {
-        cycle_day = parseInt(cycle_day);
-
-        if (cycle_day < 1 || cycle_day > 30) {
-            alert("Illegal cycle day detected: " + cycle_day);
-            return "Error";
-        }
-
-        // earliest contribution date is: max(now+notice, start_date, grace_end)
-
-        // first: calculate the earliest possible collection date
-        var notice = parseInt(this.defaultCreditorNotice);
-        var grace  = parseInt(this.defaultCreditorGrace);
-        var earliest_date = defer_payment_start ? new Date(this.nextInstallmentDate) : new Date();
-
-        // see https://stackoverflow.com/questions/6963311/add-days-to-a-date-object
-        earliest_date = new Date(earliest_date.setTime(earliest_date.getTime() + Math.max(0, (notice-grace)) * 86400000));
-
-        // then: take start date into account
-        if (start_date) {
-            start_date = new Date(start_date);
-
-            if (start_date.getTime() > earliest_date.getTime()) {
-                earliest_date = start_date;
-            }
-        }
-
-        // then: take grace period into account
-        if (grace_end) {
-            grace_end = new Date(grace_end);
-
-            if (grace_end.getTime() > earliest_date.getTime()) {
-                earliest_date = grace_end;
-            }
-        }
-
-        // now move to the next cycle day
-        var safety_check = 65; // max two months
-
-        while (earliest_date.getDate() != cycle_day && safety_check > 0) {
-            // advance one day
-            earliest_date = new Date(earliest_date.setTime(earliest_date.getTime() + 86400000));
-            safety_check = safety_check - 1;
-        }
-
-        if (safety_check == 0) {
-            console.log("Error, cannot cycle to day " + cycle_day);
-        }
-
-        // format to YYYY-MM-DD. Don't use toISOString() (timezone mess-up)
-        var month = earliest_date.getMonth() + 1;
-        month = month.toString();
-
-        if (month.length == 1) {
-            month = '0' +  month;
-        }
-
-        var day = earliest_date.getDate().toString();
-
-        if (day.length == 1) {
-            day = '0' + day;
-        }
-
-        return earliest_date.getFullYear() + '-' + month + '-' + day;
+        return await CRM.api3("Contract", "start_date", {
+            cycle_day,
+            defer_payment_start,
+            membership_id: EXT_VARS.membership_id,
+            min_date,
+            payment_adapter: "sepa_mandate",
+            prev_recur_contrib_id: EXT_VARS.current_recurring,
+        }).then(
+            result => {
+                if (result.is_error) console.error(result.error_message);
+                return result?.values?.[0];
+            },
+            error => console.error(error.message),
+        );
     }
 
     onFormChange (formFields) {
         // Currency
-        cj("span#currency").text(this.defaultCurrency);
+        cj("span#currency").text(ADAPTER_VARS.default_currency);
 
         // Cycle days
-        const cycleDayField = formFields["cycle_day"];
-        const defaultCycleDay = this.action === "sign" ? this.nextCycleDay : this.currentCycleDay;
-        const selectedCycleDay = cycleDayField.val() || defaultCycleDay;
-        const cycleDayOptions = this.cycleDays;
+        updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
 
-        cycleDayField.empty();
-        cycleDayField.append("<option value=\"\">- none -</option>");
-
-        for (const cycleDay of Object.values(cycleDayOptions)) {
-            cycleDayField.append(`<option value="${cycleDay}">${cycleDay}</option>`);
-
-            if (parseInt(selectedCycleDay) === parseInt(cycleDay)) {
-                cycleDayField.val(cycleDay);
-            }
-        }
-
+        // Payment preview
         this.updatePaymentPreview(formFields);
     }
 
-    updatePaymentPreview (formFields) {
-        const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=sepa_mandate]");
+    async updatePaymentPreview (formFields) {
+        const paymentPreviewContainer = cj(
+            "div.payment-preview[data-payment-adapter=sepa_mandate]"
+        );
 
         // Debitor name
-        paymentPreviewContainer.find("span#debitor_name").text(this.debitorName);
+        paymentPreviewContainer.find("span#debitor_name").text(EXT_VARS.debitor_name);
 
         // Debitor account
         const iban = formFields["pa-sepa_mandate-iban"].val();
         paymentPreviewContainer.find("span#iban").text(iban);
 
         // Creditor name
-        const creditor = this.creditor;
+        const creditor = ADAPTER_VARS.creditor;
         paymentPreviewContainer.find("span#creditor_name").text(creditor.name);
 
         // Creditor account
@@ -128,7 +56,7 @@ class SEPA {
 
         // Frequency
         const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(this.frequencies[frequency]);
+        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequencies[frequency]);
 
         // Annual amount
         const amount = FormUtils.parseMoney(formFields["amount"].val());
@@ -150,8 +78,12 @@ class SEPA {
             ? formFields["start_date"].val()
             : formFields["activity_date"].val();
 
-        const graceEnd = this.action === "update" ? this.graceEnd : null;
-        const nextDebit = this.nextCollectionDate(cycleDay, startDate, graceEnd, deferPaymentStart);
+        const nextDebit = await this.nextCollectionDate({
+            cycle_day: cycleDay,
+            defer_payment_start: deferPaymentStart,
+            min_date: startDate,
+        });
+
         paymentPreviewContainer.find("span#next_debit").text(nextDebit);
     }
 }

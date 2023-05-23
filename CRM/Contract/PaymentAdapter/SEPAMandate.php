@@ -76,6 +76,17 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $mandate_url = CRM_Utils_System::url("civicrm/sepa/xmandate", "mid=$mandate_id");
         $mandate_reference = $mandate_data["reference"];
 
+        $start_date = self::startDate([
+            "cycle_day" => CRM_Utils_Array::value("cycle_day", $params),
+            "min_date"  => CRM_Utils_Array::value("start_date", $params),
+        ]);
+
+        civicrm_api3("ContributionRecur", "create", [
+            "cycle_day"  => $start_date->format("d"),
+            "id"         => $mandate_data["entity_id"],
+            "start_date" => $start_date->format("Y-m-d"),
+        ]);
+
         CRM_Core_Session::setStatus(
             "New SEPA Mandate <a href=\"$mandate_url\">$mandate_reference</a> created.",
             "Success",
@@ -115,12 +126,16 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         ]);
 
         // Calculate the new start date
-        $new_start_date = CRM_Contract_RecurringContribution::getUpdateStartDate(
-            [ "membership_payment.membership_recurring_contribution" => $recurring_contribution_id ],
-            [ "contract_updates.ch_defer_payment_start" => CRM_Utils_Array::value("defer_payment_start", $update, false) ],
-            [ "activity_type_id" => $activity_type_id ],
-            self::cycleDays()
-        );
+        $cycle_day = CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]);
+        $defer_payment_start = CRM_Utils_Array::value("defer_payment_start", $update, TRUE);
+        $min_date = CRM_Utils_Array::value("start_date", $update, $current_rc_data["start_date"]);
+
+        $new_start_date = self::startDate([
+            "cycle_day"           => $cycle_day,
+            "defer_payment_start" => $defer_payment_start,
+            "membership_id"       => $params["membership_id"],
+            "min_date"            => $min_date,
+        ]);
 
         // Get bank account by ID
         $bank_account_id = CRM_Utils_Array::value("from_ba", $update);
@@ -137,13 +152,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "creation_date"         => date("Y-m-d H:i:s"),
             "creditor_id"           => $creditor->id,
             "currency"              => $currency,
-            "cycle_day"             => CRM_Utils_Array::value("cycle_day", $update, $current_rc_data["cycle_day"]),
+            "cycle_day"             => $cycle_day,
             "financial_type_id"     => $current_rc_data["financial_type_id"],
             "frequency_interval"    => CRM_Utils_Array::value("frequency_interval", $update, $current_rc_data["frequency_interval"]),
             "frequency_unit"        => CRM_Utils_Array::value("frequency_unit", $update, $current_rc_data["frequency_unit"]),
             "iban"                  => CRM_Utils_Array::value("iban", $bank_account),
             "payment_instrument_id" => CRM_Utils_Array::value("payment_instrument", $update),
-            "start_date"            => $new_start_date,
+            "start_date"            => $new_start_date->format("Y-m-d"),
             "type"                  => "RCUR",
             "validation_date"       => date("Y-m-d H:i:s"),
         ];
@@ -160,7 +175,14 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      */
     public static function cycleDays ($params = []) {
         $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
-        return CRM_Sepa_Logic_Settings::getListSetting("cycledays", range(1, 28), $creditor->id);
+
+        $cycle_days_setting = CRM_Sepa_Logic_Settings::getListSetting(
+            'cycledays',
+            range(1, 28),
+            $creditor->id
+        );
+
+        return array_map(fn($n) => (int) $n, array_values($cycle_days_setting));
     }
 
     /**
@@ -224,31 +246,8 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         // Cycle days
         $result["cycle_days"] = self::cycleDays();
 
-        // Default creditor grace
-        $result["default_creditor_grace"] = (int) CRM_Sepa_Logic_Settings::getSetting(
-            "batching.RCUR.grace",
-            $default_creditor->creditor_id
-        );
-
-        // Default creditor notice
-        $result["default_creditor_notice"] = (int) CRM_Sepa_Logic_Settings::getSetting(
-            "batching.RCUR.notice",
-            $default_creditor->creditor_id
-        );
-
         // Default currency
         $result["default_currency"] = $default_creditor->currency;
-
-        // Next cycle day
-        $result["next_cycle_day"] = self::nextCycleDay();
-
-        if (empty($params["recurring_contribution_id"])) return $result;
-
-        // Next installment date
-        $result["next_installment_date"] = CRM_Contract_RecurringContribution::getNextInstallmentDate(
-            $params["recurring_contribution_id"],
-            self::cycleDays()
-        );
 
         return $result;
     }
@@ -375,30 +374,15 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         }
     }
 
-    /**
-     * Get the next possible cycle day
-     *
-     * @return int - the next cycle day
-     */
-    public static function nextCycleDay () {
+    public static function noticeDays() {
         $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
-        $notice = (int) CRM_Sepa_Logic_Settings::getSetting("batching.FRST.notice", $creditor->id);
-        $buffer_days = (int) CRM_Sepa_Logic_Settings::getSetting("pp_buffer_days") + $notice;
-        $cycle_days = self::cycleDays();
 
-        $safety_counter = 32;
-        $start_date = strtotime("+{$buffer_days} day", strtotime("now"));
+        $notice_setting = CRM_Sepa_Logic_Settings::getSetting(
+            "batching.RCUR.notice",
+            $creditor->id
+        );
 
-        while (!in_array(date("d", $start_date), $cycle_days)) {
-            $start_date = strtotime("+ 1 day", $start_date);
-            $safety_counter -= 1;
-
-            if ($safety_counter == 0) {
-                throw new Exception("There's something wrong with the nextCycleDay method.");
-            }
-        }
-
-        return (int) date("d", $start_date);
+        return new DateInterval("P{$notice_setting}D");
     }
 
     /**
@@ -458,7 +442,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         $new_status = isset($mandate["first_contribution_id"]) ? "RCUR" : "FRST";
 
-        if (count($update) > 0) {
+        if (count(array_diff_key($update, [ 'membership_id' => 1 ])) > 0) {
             $update_params = array_merge($update, [ "status" => $new_status ]);
             return self::update($recurring_contribution_id, $update_params);
         }
@@ -499,6 +483,98 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         );
 
         return self::update($recurring_contribution_id, $update, $revive_activity_type);
+    }
+
+    public static function startDate($params = [], $today = 'now') {
+        $today = new DateTimeImmutable($today);
+        $start_date = DateTime::createFromImmutable($today);
+
+        // Notice days
+
+        $start_date->add(self::noticeDays());
+        
+        // Minimum date
+
+        if (isset($params['min_date'])) {
+            $min_date = new DateTimeImmutable($params['min_date']);
+        }
+
+        if (isset($min_date) && $start_date->getTimestamp() < $min_date->getTimestamp()) {
+            $start_date = DateTime::createFromImmutable($min_date);
+        }
+
+        // Existing contract
+
+        if (isset($params['membership_id'])) {
+            $membership = CRM_Contract_Utils::getMembershipByID($params['membership_id']);
+            $membership_start_date = new DateTimeImmutable($membership['start_date']);
+
+            if ($start_date->getTimestamp() < $membership_start_date->getTimestamp()) {
+                $start_date = DateTime::createFromImmutable($membership_start_date);
+            }
+
+            $recurring_contribution = CRM_Contract_RecurringContribution::getCurrentForContract(
+                $membership['id']
+            );
+        }
+
+        // Defer payment start
+
+        $defer_payment_start = CRM_Utils_Array::value('defer_payment_start', $params, FALSE);
+
+        if ($defer_payment_start && isset($params['membership_id'])) {
+            $latest_contribution = CRM_Contract_RecurringContribution::getLatestContribution(
+                $params['membership_id']
+            );
+        }
+
+        if (isset($latest_contribution)) {
+            $latest_contribution_rc = CRM_Contract_RecurringContribution::getById(
+                $latest_contribution['contribution_recur_id']
+            );
+
+            $paid_until = CRM_Contract_DateHelper::nextRegularDate(
+                $latest_contribution['receive_date'],
+                $latest_contribution_rc['frequency_interval'],
+                $latest_contribution_rc['frequency_unit']
+            );
+
+            if ($start_date->getTimestamp() < $paid_until->getTimestamp()) {
+                $start_date = $paid_until;
+            }
+        }
+
+        // Allowed cycle days
+
+        $allowed_cycle_days = self::cycleDays();
+
+        $start_date = CRM_Contract_DateHelper::findNextOfDays(
+            $allowed_cycle_days,
+            $start_date->format('Y-m-d')
+        );
+
+        if (empty($params['cycle_day']) && isset($recurring_contribution)) {
+            $params['cycle_day'] = $recurring_contribution['cycle_day'];
+        }
+
+        $cycle_day = (int) (
+            isset($params['cycle_day'])
+            ? $params['cycle_day']
+            : $start_date->format('d')
+        );
+
+        if (!in_array($cycle_day, $allowed_cycle_days, TRUE)) {
+            throw new Exception("Cycle day $cycle_day is not allowed for this SEPA creditor");
+        }
+
+        // Find next date for expected cycle day
+
+        $start_date = CRM_Contract_DateHelper::findNextOfDays(
+            [$cycle_day],
+            $start_date->format('Y-m-d')
+        );
+
+        return $start_date;
     }
 
     /**
@@ -559,12 +635,16 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $current_mandate_data = end($mandates_result["values"]);
 
         // Calculate the new start date
-        $new_start_date = CRM_Contract_RecurringContribution::getUpdateStartDate(
-            [ "membership_payment.membership_recurring_contribution" => $recurring_contribution_id ],
-            [ "contract_updates.ch_defer_payment_start" => CRM_Utils_Array::value("defer_payment_start", $params, "1") ],
-            [ "activity_type_id" => $activity_type_id ],
-            self::cycleDays()
-        );
+        $cycle_day = CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]);
+        $defer_payment_start = CRM_Utils_Array::value("defer_payment_start", $params, TRUE);
+        $min_date = CRM_Utils_Array::value("start_date", $params);
+
+        $new_start_date = self::startDate([
+            "cycle_day"           => $cycle_day,
+            "defer_payment_start" => $defer_payment_start,
+            "membership_id"       => $params["membership_id"],
+            "min_date"            => $min_date,
+        ]);
 
         // Get the creditor & payment currency
         $creditor_id = CRM_Utils_Array::value("creditor_id", $params, $current_mandate_data["creditor_id"]);
@@ -591,13 +671,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "creation_date"      => date("Y-m-d H:i:s"),
             "creditor_id"        => $creditor_id,
             "currency"           => CRM_Utils_Array::value("currency", $params, $creditor_currency),
-            "cycle_day"          => CRM_Utils_Array::value("cycle_day", $params, $current_rc_data["cycle_day"]),
+            "cycle_day"          => $cycle_day,
             "financial_type_id"  => CRM_Utils_Array::value("financial_type_id", $params, $current_rc_data["financial_type_id"]),
             "frequency_interval" => CRM_Utils_Array::value("frequency_interval", $params, $current_rc_data["frequency_interval"]),
             "frequency_unit"     => CRM_Utils_Array::value("frequency_unit", $params, $current_rc_data["frequency_unit"]),
             "iban"               => CRM_Utils_Array::value("iban", $bank_account, $current_mandate_data["iban"]),
             "reference"          => CRM_Utils_Array::value("reference", $params),
-            "start_date"         => $new_start_date,
+            "start_date"         => $new_start_date->format("Y-m-d"),
             "type"               => "RCUR",
             "validation_date"    => date("Y-m-d H:i:s"),
         ];

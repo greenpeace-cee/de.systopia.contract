@@ -482,31 +482,37 @@ class CRM_Contract_Utils
       ->first()['value'];
   }
 
-  public static function nextCycleDate(int $cycleDay, string $offset = 'now') {
-    $result = new DateTime($offset);
+  public static function resolvePaymentAdapterAlias($adapter) {
+    if (empty($adapter)) return NULL;
 
-    if (is_null($cycleDay)) return $result->format('Y-m-d');
+    switch ($adapter) {
+      case 'adyen':
+        return 'adyen';
 
-    $oneDay = new DateInterval('P1D');
-    $month = $result->format('m');
-    $isNextMonth = $cycleDay <= (int) $result->format('d');
-    $turnOfMonth = 0;
+      case 'eft':
+        return 'eft';
 
-    while($result->format('d') !== "$cycleDay") {
-      $result->add($oneDay);
+      case 'psp':
+      case 'psp_sepa':
+        return 'psp_sepa';
 
-      if ($result->format('m') !== $month) {
-        $month = $result->format('m');
-        $turnOfMonth++;
-      }
+      case 'sepa':
+      case 'sepa_mandate':
+        return 'sepa_mandate';
 
-      if ($turnOfMonth > ($isNextMonth ? 1 : 0)) {
-        $result->sub($oneDay);
-        break;
-      }
+      default:
+        return NULL;
     }
-
-    return $result->format('Y-m-d');
   }
+
+  public static function getMembershipByID(int $membership_id) {
+    return Api4\Membership::get(FALSE)
+      ->addWhere('id', '=', $membership_id)
+      ->addSelect('*')
+      ->setLimit(1)
+      ->execute()
+      ->first();
+  }
+
 
 }

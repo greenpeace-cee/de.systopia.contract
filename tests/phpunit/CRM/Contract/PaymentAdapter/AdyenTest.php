@@ -1,6 +1,7 @@
 <?php
 
 use Civi\Api4;
+use Civi\Core\Event\GenericHookEvent;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
@@ -33,8 +34,14 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Create a new Adyen payment --- //
 
-    $startDate = new DateTimeImmutable('2022-01-15');
-    $expiryDate = new DateTimeImmutable('2023-12-31');
+    $tomorrow = new DateTimeImmutable('tomorrow');
+    $startDate = CRM_Contract_DateHelper::findNextOfDays([15], $tomorrow->format('Y-m-d'));
+    $oneYear = new DateInterval('P1Y');
+
+    $expiryDate = DateTimeImmutable::createFromMutable($startDate)
+      ->add($oneYear)
+      ->setDate((int) $startDate->format('Y'), 12, 31);
+
     $cycleDay = $startDate->format('d');
     $creditCardOptVal = self::getOptionValue('payment_instrument', 'Credit Card');
     $inProgressOptVal = self::getOptionValue('contribution_recur_status', 'In Progress');
@@ -99,7 +106,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'frequency_interval'           => 1,
       'frequency_unit'               => 'month',
       'id'                           => $recurringContribution['id'],
-      'next_sched_contribution_date' => '2022-01-15 00:00:00',
+      'next_sched_contribution_date' => $startDate->format('Y-m-d H:i:s'),
       'payment_token_id'             => $recurringContribution['payment_token_id'],
       'processor_id'                 => self::SHOPPER_REFERENCE,
       'start_date'                   => $startDate->format('Y-m-d H:i:s'),
@@ -131,7 +138,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'billing_last_name'     => $this->contact['last_name'],
       'contact_id'            => $this->contact['id'],
       'email'                 => $this->contact['email'],
-      'expiry_date'           => $expiryDate->format('Y-m-d 00:00:00'),
+      'expiry_date'           => $expiryDate->format('Y-m-d H:i:s'),
       'id'                    => $paymentToken['id'],
       'ip_address'            => '127.0.0.1',
       'masked_account_number' => self::BANK_ACCOUNT_NUMBER,
@@ -232,6 +239,62 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
   }
 
+  public function testNextSchedContributionDate() {
+    $tomorrow = new DateTimeImmutable('tomorrow');
+    $startDate = CRM_Contract_DateHelper::findNextOfDays([1], $tomorrow->format('Y-m-d'));
+    $oneMonth = new DateInterval('P1M');
+    $oneMonthFromNow = DateTimeImmutable::createFromMutable($startDate)->add($oneMonth);
+    $twoMonthsFromNow = $oneMonthFromNow->add($oneMonth);
+
+    $recurContribID = CRM_Contract_PaymentAdapter_Adyen::create([
+      'amount'               => 10.0,
+      'contact_id'           => $this->contact['id'],
+      'cycle_day'            => 1,
+      'frequency_interval'   => 1,
+      'frequency_unit'       => 'month',
+      'payment_processor_id' => $this->paymentProcessor['id'],
+      'payment_token_id'     => $this->paymentToken['id'],
+      'start_date'           => $startDate->format('Y-m-d'),
+    ]);
+
+    $recurringContribution = CRM_Contract_RecurringContribution::getById($recurContribID);
+
+    $contribution = Api4\Contribution::create(FALSE)
+      ->addValue('contact_id'            , $this->contact['id'])
+      ->addValue('contribution_recur_id' , $recurContribID)
+      ->addValue('financial_type_id.name', 'Member Dues')
+      ->addValue('receive_date'          , $startDate->format('Y-m-d'))
+      ->addValue('total_amount'          , 10.0)
+      ->execute()
+      ->first();
+
+    $hookEvent = GenericHookEvent::create([
+      'contribution_recur_id' => $recurContribID,
+      'cycle_day'             => $recurringContribution['cycle_day'],
+      'frequency_interval'    => $recurringContribution['frequency_interval'],
+      'frequency_unit'        => $recurringContribution['frequency_unit'],
+      'newDate'               => $twoMonthsFromNow->format('Y-m-d'),
+      'originalDate'          => $recurringContribution['next_sched_contribution_date'],
+    ]);
+
+    Civi::dispatcher()->dispatch('civi.recur.nextschedcontributiondatealter', $hookEvent);
+
+    $recurringContribution = Api4\ContributionRecur::get(FALSE)
+      ->addWhere('id', '=', $recurContribID)
+      ->addSelect('next_sched_contribution_date')
+      ->execute()
+      ->first();
+
+    $nextSchedContribDate = new DateTimeImmutable(
+      $recurringContribution['next_sched_contribution_date']
+    );
+
+    $this->assertEquals(
+      $oneMonthFromNow->format('Y-m-d'),
+      $nextSchedContribDate->format('Y-m-d')
+    );
+  }
+
   public function testPauseAndResume() {
 
     // --- Create a payment --- //
@@ -284,7 +347,8 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Create a payment --- //
 
-    $oldStartDate = new DateTimeImmutable('2021-12-01');
+    $tomorrow = new DateTimeImmutable('tomorrow');
+    $startDate = CRM_Contract_DateHelper::findNextOfDays([15], $tomorrow->format('Y-m-d'));
 
     $recurContribID = CRM_Contract_PaymentAdapter_Adyen::create([
       'amount'               => 20.0,
@@ -294,7 +358,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'frequency_unit'       => 'month',
       'payment_processor_id' => $this->paymentProcessor['id'],
       'payment_token_id'     => $this->paymentToken['id'],
-      'start_date'           => $oldStartDate->format('Y-m-d'),
+      'start_date'           => $startDate->format('Y-m-d'),
     ]);
 
     // --- Add a contribution for that payment --- //
@@ -341,18 +405,23 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'frequency_unit:name'         => 'month',
       'id'                          => $recurContribID,
       'payment_token_id'            => $cancelledRC['payment_token_id'],
-      'start_date'                  => $oldStartDate->format('Y-m-d H:i:s'),
+      'start_date'                  => $startDate->format('Y-m-d H:i:s'),
     ], $cancelledRC);
 
     $this->assertNotNull($cancelledRC['cancel_date']);
 
     // --- Revive the payment --- //
 
-    $reviveDate = new DateTimeImmutable('2022-01-01');
+    $threeMonths = new DateInterval('P3M');
+
+    $reviveDate = CRM_Contract_DateHelper::findNextOfDays(
+      [28],
+      $startDate->format('Y-m-d')
+    )->add($threeMonths);
 
     $newRecurContribID = CRM_Contract_PaymentAdapter_Adyen::revive($recurContribID, [
       'amount'     => 15.0,
-      'cycle_day'  => 31,
+      'cycle_day'  => 28,
       'start_date' => $reviveDate->format('Y-m-d'),
     ]);
 
@@ -380,9 +449,9 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'cancel_date'                  => NULL,
       'cancel_reason'                => NULL,
       'contribution_status_id:name'  => 'Pending',
-      'cycle_day'                    => 31,
+      'cycle_day'                    => 28,
       'id'                           => $newRecurContribID,
-      'next_sched_contribution_date' => '2022-02-28 00:00:00',
+      'next_sched_contribution_date' => $reviveDate->format('Y-m-d H:i:s'),
       'payment_token_id'             => $cancelledRC['payment_token_id'],
     ], $revivedRC);
 
@@ -446,7 +515,8 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Create a payment --- //
 
-    $startDate = new DateTimeImmutable('2022-01-01');
+    $tomorrow = new DateTimeImmutable('tomorrow');
+    $startDate = CRM_Contract_DateHelper::findNextOfDays([13], $tomorrow->format('Y-m-d'));
 
     $donationTypeID = self::getFinancialTypeID('Donation');
     $memberDuesTypeID = self::getFinancialTypeID('Member Dues');
@@ -502,7 +572,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'frequency_interval'           => 1,
       'frequency_unit'               => 'month',
       'id'                           => $recurringContribution['id'],
-      'next_sched_contribution_date' => '2022-01-13 00:00:00',
+      'next_sched_contribution_date' => $startDate->format('Y-m-d H:i:s'),
       'payment_instrument_id'        => $creditCardOptVal,
       'payment_token_id'             => $recurringContribution['payment_token_id'],
       'processor_id'                 => self::SHOPPER_REFERENCE,
@@ -512,7 +582,12 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     // --- Update the payment --- //
 
-    $newStartDate = new DateTimeImmutable('2022-02-01');
+    $oneMonth = new DateInterval('P1M');
+
+    $newStartDate = CRM_Contract_DateHelper::findNextOfDays(
+      [17],
+      $startDate->format('Y-m-d')
+    )->add($oneMonth);
 
     $newRecurContribID = CRM_Contract_PaymentAdapter_Adyen::update($recurringContribution['id'], [
       'amount'                 => 20.0,
@@ -561,9 +636,9 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'frequency_interval'           => 2,
       'frequency_unit'               => 'week',
       'id'                           => $newRecurContribID,
-      'next_sched_contribution_date' => '2022-02-17 00:00:00',
+      'next_sched_contribution_date' => $newStartDate->format('Y-m-d H:i:s'),
       'payment_instrument_id'        => $debitCardOptVal,
-      'start_date'                   => '2022-02-01 00:00:00',
+      'start_date'                   => $newStartDate->format('Y-m-d H:i:s'),
       'trxn_id'                      => NULL,
     ], $newRecurringContribution);
 

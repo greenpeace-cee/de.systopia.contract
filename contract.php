@@ -20,6 +20,11 @@ use CRM_Contract_ExtensionUtil as E;
 function contract_civicrm_config(&$config) {
   _contract_civix_civicrm_config($config);
   Civi::dispatcher()->addListener('hook_civicrm_post', 'CRM_Contract_RecurringContribution::amendContribution');
+
+  Civi::dispatcher()->addListener(
+    'civi.recur.nextschedcontributiondatealter',
+    ['CRM_Contract_PaymentAdapter_Adyen', 'nextScheduledContributionDate']
+  );
 }
 
 /**

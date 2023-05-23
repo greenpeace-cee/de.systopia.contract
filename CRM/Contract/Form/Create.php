@@ -80,11 +80,11 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $resources->addVars("de.systopia.contract", [
             "action"                  => "sign",
             "cid"                     => $this->contact["id"],
+            "current_recurring"       => NULL,
             "debitor_name"            => $this->contact["display_name"],
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
             "frequencies"             => CRM_Contract_RecurringContribution::getPaymentFrequencies(),
-            "grace_end"               => NULL,
             "payment_adapter_fields"  => $paymentAdapterFields,
             "payment_adapters"        => CRM_Contract_Configuration::$paymentAdapters,
             "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($this->contact["id"]),

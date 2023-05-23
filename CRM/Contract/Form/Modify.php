@@ -162,6 +162,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
             "frequencies"             => $frequencies,
+            "membership_id"           => $contract_id,
             "payment_adapter_fields"  => $paymentAdapterFields,
             "payment_adapters"        => CRM_Contract_Configuration::$paymentAdapters,
             "recurring_contributions" => $recurring_contributions,

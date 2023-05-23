@@ -221,6 +221,7 @@ class CRM_Contract_Change_Revive extends CRM_Contract_Change {
     $current_payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($current_pa_id);
     $payment_changes = json_decode($change_data["contract_updates.ch_payment_changes"], true);
     $params = $payment_changes['parameters'];
+    $params['membership_id'] = $membership_id;
 
     // Calculate the new amount & frequency
     $current_rc = Api4\ContributionRecur::get(FALSE)
