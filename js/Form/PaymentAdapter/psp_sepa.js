@@ -13,6 +13,7 @@ class PSP {
             creditor_id,
             cycle_day,
             defer_payment_start,
+            membership_id: EXT_VARS.membership_id,
             min_date,
             payment_adapter: "psp_sepa",
             prev_recur_contrib_id: EXT_VARS.current_recurring,
