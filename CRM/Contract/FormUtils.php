@@ -240,14 +240,18 @@ class CRM_Contract_FormUtils {
     return $types;
   }
 
-  public static function getOptionValueLabels(string $optionGroup) {
+  public static function getOptionValueLabels(string $optionGroup, int $filter = NULL) {
     $mapping = [];
 
-    $ovResult = Api4\OptionValue::get(FALSE)
+    $ovSearch = Api4\OptionValue::get(FALSE)
       ->addWhere('option_group_id:name', '=', $optionGroup)
+      ->addWhere('is_active', '=', TRUE)
       ->addSelect('label', 'value')
-      ->addOrderBy('weight', 'ASC')
-      ->execute();
+      ->addOrderBy('weight', 'ASC');
+    if (!is_null($filter)) {
+      $ovSearch->addWhere('filter', '=', $filter);
+    }
+    $ovResult = $ovSearch->execute();
 
     foreach ($ovResult as $optVal) {
       $mapping[$optVal['value']] = $optVal['label'];
@@ -302,5 +306,5 @@ class CRM_Contract_FormUtils {
       }
     }
   }
-  
+
 }

@@ -14,7 +14,7 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
   function buildQuickForm () {
 
     // Cancellation reason (cancel_reason)
-    $options_result = CRM_Contract_FormUtils::getOptionValueLabels("contract_cancel_reason");
+    $options_result = CRM_Contract_FormUtils::getOptionValueLabels("contract_cancel_reason", 0);
 
     $cancel_reason_options = [ "" => "- none -" ] + $options_result;
 
