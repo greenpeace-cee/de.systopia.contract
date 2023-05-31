@@ -399,7 +399,9 @@ class CRM_Contract_Utils
 
   public static function getPaymentAdapterClass ($adapter_id) {
     if ($adapter_id === null) return null;
-
+    if (empty(CRM_Contract_Configuration::getPaymentAdapters()[$adapter_id])) {
+      throw new Exception('Unknown payment adapter: ' . $adapter_id);
+    }
     return CRM_Contract_Configuration::getPaymentAdapters()[$adapter_id];
   }
 
