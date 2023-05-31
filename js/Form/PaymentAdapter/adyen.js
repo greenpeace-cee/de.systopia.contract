@@ -113,12 +113,17 @@ class Adyen {
         paymentPreviewContainer.find("span#cycle_day").text(cycleDay);
 
         // Next debit
+        const deferPaymentStart = formFields["defer_payment_start"]
+            ? formFields["defer_payment_start"].prop("checked")
+            : false;
+
         const startDate = formFields["start_date"]
             ? formFields["start_date"].val()
             : formFields["activity_date"].val();
 
         const nextDebit = await this.nextCollectionDate({
             cycle_day: cycleDay,
+            defer_payment_start: deferPaymentStart,
             min_date: startDate,
         });
 

@@ -112,7 +112,7 @@
         class="crm-section form-field"
         id="defer_payment_start"
         data-payment-change="modify"
-        data-payment-adapter="psp_sepa sepa_mandate"
+        data-payment-adapter="adyen psp_sepa sepa_mandate"
     >
         <div class="label">
           {$form.defer_payment_start.label}
