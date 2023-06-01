@@ -501,7 +501,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                 break;
 
             case "modify":
-                $contract_modify_params["membership_payment.defer_payment_start"] = $submitted["defer_payment_start"] ?? "0";
+                $contract_modify_params["membership_payment.defer_payment_start"] = $submitted["defer_payment_start"] === "1";
 
                 $pa_id = $submitted["payment_adapter"];
                 $contract_modify_params["payment_method.adapter"] = $pa_id;
