@@ -72,7 +72,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'contact_id'                   => [ 'contact_id'             , TRUE              , NULL                        ],
       'contribution_status_id'       => [ 'contribution_status_id' , FALSE             , $pendingOptVal              ],
       'currency'                     => [ 'currency'               , FALSE             , $defaultCurrency            ],
-      'cycle_day'                    => [ 'cycle_day'              , FALSE             , 1                           ],
+      'cycle_day'                    => [ 'cycle_day'              , FALSE             , $startDate->format('d')     ],
       'financial_type_id'            => [ 'financial_type_id'      , FALSE             , $memberDuesTypeID           ],
       'frequency_interval'           => [ 'frequency_interval'     , FALSE             , 1                           ],
       'frequency_unit:name'          => [ 'frequency_unit'         , FALSE             , 'month'                     ],
@@ -113,7 +113,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'contact_id',
         'contribution_status_id',
         'currency',
-        'cycle_day', 
+        'cycle_day',
         'financial_type_id',
         'frequency_interval',
         'frequency_unit',
@@ -703,7 +703,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
       if ($paymentInstrument !== 'Credit Card') continue;
 
-      $expiryDate = (new Datetime($token['expiry_date']))->format('m/Y'); 
+      $expiryDate = (new Datetime($token['expiry_date']))->format('m/Y');
       $paymentTokens[$token['id']] .= " ($expiryDate)";
     }
 
