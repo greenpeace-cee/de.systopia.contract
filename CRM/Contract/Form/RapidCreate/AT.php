@@ -79,7 +79,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
       'frequencies' => CRM_Contract_RecurringContribution::getPaymentFrequencies()));
     CRM_Contract_PaymentAdapter_SEPAMandate::addJsSepaTools();
 
-    $this->add('select', 'cycle_day', ts('Cycle day'), CRM_Contract_PaymentAdapter_SEPAMandate::cycleDays());
+    $this->add('select', 'cycle_day', ts('Cycle day'), array_combine(CRM_Contract_PaymentAdapter_SEPAMandate::cycleDays(), CRM_Contract_PaymentAdapter_SEPAMandate::cycleDays()));
     $this->add('text',   'iban', ts('IBAN'), array('class' => 'huge'), true);
     if (CRM_Contract_Utils::isDefaultCreditorUsesBic()) {
       $this->add('text', 'bic', ts('BIC'), null, true);
@@ -199,9 +199,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     // sepa defaults
     $defaults['payment_frequency'] = '12'; // monthly
 
-    $defaults['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::nextContributionDate([
-      'start_date' => $defaults['start_date'],
-    ])->format('d');
+    $defaults['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::startDate([], $defaults['start_date'] ?? 'now')->format('d');
 
     $config = CRM_Core_Config::singleton();
     $countryDefault = $config->defaultContactCountry;
@@ -298,9 +296,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
     // Create mandate
     if ($submitted['cycle_day'] < 1 || $submitted['cycle_day'] > 30) {
       // invalid cycle day
-      $submitted['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::nextContributionDate([
-        'start_date' => $start_date,
-      ])->format('d');
+      $submitted['cycle_day'] = CRM_Contract_PaymentAdapter_SEPAMandate::startDate([], $start_date)->format('d');
     }
 
     // calculate amount
