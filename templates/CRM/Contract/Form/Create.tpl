@@ -115,12 +115,6 @@
         <div class="clear"></div>
     </div>
 
-    <div class="crm-section form-field" id="end_date">
-        <div class="label">{$form.end_date.label}</div>
-        <div class="content">{$form.end_date.html}</div>
-        <div class="clear"></div>
-    </div>
-
     <hr />
 
     <div class="crm-section form-field" id="campaign_id">
