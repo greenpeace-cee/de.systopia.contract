@@ -586,6 +586,12 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     self::terminate($recurringContributionID);
 
     $defaultCampaign = CRM_Utils_Array::value('campaign_id', $oldRC, NULL);
+
+    if (array_key_exists('campaign_id', $params) && empty($params['campaign_id'])) {
+      // Remove invalid campaign IDs (GP-34548)
+      $params['campaign_id'] = NULL;
+    }
+
     $cycleDay = CRM_Utils_Array::value('cycle_day', $params, $oldRC['cycle_day']);
     $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $params, TRUE);
     $minDate = CRM_Utils_Array::value('start_date', $params, $oldRC['start_date']);
