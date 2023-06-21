@@ -12,10 +12,11 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $rc_old = self::getActiveRecurringContribution($membership_id);
 
     $this->assertEachEquals([
-      [10.0   , $rc_old['amount']            ],
-      [1      , $rc_old['cycle_day']         ],
-      [1      , $rc_old['frequency_interval']],
-      ['month', $rc_old['frequency_unit']    ],
+      [10.0                 , $rc_old['amount']            ],
+      [$this->campaign['id'], $rc_old['campaign_id']       ],
+      [1                    , $rc_old['cycle_day']         ],
+      [1                    , $rc_old['frequency_interval']],
+      ['month'              , $rc_old['frequency_unit']    ],
     ]);
 
     $start_date_old = new DateTimeImmutable($rc_old['start_date']);
@@ -28,6 +29,7 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
 
     civicrm_api3('Contract', 'modify', [
       'action'                                  => 'update',
+      'campaign_id'                             => NULL,
       'id'                                      => $membership_id,
       'membership_payment.membership_annual'    => 180.0,
       'membership_payment.membership_frequency' => 6,
@@ -37,6 +39,10 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     ]);
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
+
+    $update_activity = self::getLatestUpdateActivity($membership_id);
+
+    $this->assertEquals(NULL, $update_activity['campaign_id']);
 
     $rc_new = self::getActiveRecurringContribution($membership_id);
 
@@ -52,6 +58,7 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
 
     $this->assertEachEquals([
       [30.0                            , $rc_new['amount']               ],
+      [$rc_old['campaign_id']          , $rc_new['campaign_id']          ],
       [13                              , $rc_new['cycle_day']            ],
       [2                               , $rc_new['frequency_interval']   ],
       ['month'                         , $rc_new['frequency_unit']       ],
@@ -64,10 +71,11 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $rc_old = self::getActiveRecurringContribution($membership_id);
 
     $this->assertEachEquals([
-      [10.0   , $rc_old['amount']            ],
-      [1      , $rc_old['cycle_day']         ],
-      [1      , $rc_old['frequency_interval']],
-      ['month', $rc_old['frequency_unit']    ],
+      [10.0                 , $rc_old['amount']            ],
+      [$this->campaign['id'], $rc_old['campaign_id']       ],
+      [1                    , $rc_old['cycle_day']         ],
+      [1                    , $rc_old['frequency_interval']],
+      ['month'              , $rc_old['frequency_unit']    ],
     ]);
 
     $start_date_old = new DateTimeImmutable($rc_old['start_date']);
@@ -80,6 +88,7 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
 
     civicrm_api3('Contract', 'modify', [
       'action'                                  => 'update',
+      'campaign_id'                             => NULL,
       'id'                                      => $membership_id,
       'membership_payment.membership_annual'    => 200.0,
       'membership_payment.membership_frequency' => 4,
@@ -89,6 +98,10 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     ]);
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
+
+    $update_activity = self::getLatestUpdateActivity($membership_id);
+
+    $this->assertEquals(NULL, $update_activity['campaign_id']);
 
     $rc_new = self::getActiveRecurringContribution($membership_id);
 
@@ -116,10 +129,11 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $rc_old = self::getActiveRecurringContribution($membership_id);
 
     $this->assertEachEquals([
-      [10.0   , $rc_old['amount']            ],
-      [5      , $rc_old['cycle_day']         ],
-      [1      , $rc_old['frequency_interval']],
-      ['month', $rc_old['frequency_unit']    ],
+      [10.0                 , $rc_old['amount']            ],
+      [$this->campaign['id'], $rc_old['campaign_id']       ],
+      [5                    , $rc_old['cycle_day']         ],
+      [1                    , $rc_old['frequency_interval']],
+      ['month'              , $rc_old['frequency_unit']    ],
     ]);
 
     $start_date_old = new DateTimeImmutable($rc_old['start_date']);
@@ -132,6 +146,7 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
 
     civicrm_api3('Contract', 'modify', [
       'action'                                  => 'update',
+      'campaign_id'                             => NULL,
       'id'                                      => $membership_id,
       'membership_payment.membership_annual'    => 180.0,
       'membership_payment.membership_frequency' => 3,
@@ -141,6 +156,10 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     ]);
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
+
+    $update_activity = self::getLatestUpdateActivity($membership_id);
+
+    $this->assertEquals(NULL, $update_activity['campaign_id']);
 
     $rc_new = self::getActiveRecurringContribution($membership_id);
 
@@ -168,10 +187,11 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $rc_old = self::getActiveRecurringContribution($membership_id);
 
     $this->assertEachEquals([
-      [10.0   , $rc_old['amount']            ],
-      [7      , $rc_old['cycle_day']         ],
-      [1      , $rc_old['frequency_interval']],
-      ['month', $rc_old['frequency_unit']    ],
+      [10.0                 , $rc_old['amount']            ],
+      [$this->campaign['id'], $rc_old['campaign_id']       ],
+      [7                    , $rc_old['cycle_day']         ],
+      [1                    , $rc_old['frequency_interval']],
+      ['month'              , $rc_old['frequency_unit']    ],
     ]);
 
     $start_date_old = new DateTimeImmutable($rc_old['start_date']);
@@ -184,6 +204,7 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
 
     civicrm_api3('Contract', 'modify', [
       'action'                                  => 'update',
+      'campaign_id'                             => NULL,
       'id'                                      => $membership_id,
       'membership_payment.membership_annual'    => 200.0,
       'membership_payment.membership_frequency' => 2,
@@ -193,6 +214,10 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     ]);
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
+
+    $update_activity = self::getLatestUpdateActivity($membership_id);
+
+    $this->assertEquals(NULL, $update_activity['campaign_id']);
 
     $rc_new = self::getActiveRecurringContribution($membership_id);
 
@@ -225,11 +250,13 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $start_date = CRM_Contract_DateHelper::findNextOfDays([1], $tomorrow->format('Y-m-d'));
 
     $params = [
+      'campaign_id'                       => $this->campaign['id'],
       'contact_id'                        => $this->contact['id'],
       'medium_id'                         => $encounter_medium,
       'membership_type_id'                => $membership_type,
       'payment_method.adapter'            => $adapter,
       'payment_method.amount'             => 10.0,
+      'payment_method.campaign_id'        => $this->campaign['id'],
       'payment_method.contact_id'         => $this->contact['id'],
       'payment_method.financial_type_id'  => $financial_type,
       'payment_method.frequency_interval' => 1,
@@ -284,6 +311,17 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $result = civicrm_api3('Contract', 'create', $params);
 
     return (int) $result['id'];
+  }
+
+  private static function getLatestUpdateActivity($membership_id) {
+    return Api4\Activity::get(FALSE)
+      ->addWhere('activity_type_id:name', '=', 'Contract_Updated')
+      ->addWhere('source_record_id', '=', $membership_id)
+      ->addSelect('*')
+      ->addOrderBy('activity_date_time', 'DESC')
+      ->setLimit(1)
+      ->execute()
+      ->first();
   }
 
 }

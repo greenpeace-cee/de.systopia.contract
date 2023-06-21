@@ -13,6 +13,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
   use Test\Api3TestTrait;
 
   protected $adyenProcessor;
+  protected $campaign;
   protected $contact;
   protected $pspCreditor;
   protected $sepaCreditor;
@@ -37,6 +38,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
     }, E_USER_DEPRECATED);
 
     $this->createMembershipTypes();
+    $this->createTestCampaign();
     $this->createTestContact();
     $this->setAdyenProcessor();
     $this->setDefaultPspCreditor();
@@ -132,6 +134,23 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       ->addValue('name'                  , 'General')
       ->addValue('period_type'           , 'rolling')
       ->execute();
+  }
+
+  private function createTestCampaign() {
+    $settings_result = Api4\Setting::get(FALSE)
+      ->addSelect('enable_components')
+      ->execute()
+      ->first();
+
+    Api4\Setting::set(FALSE)
+      ->addValue('enable_components', array_merge($settings_result['value'], ['CiviCampaign']))
+      ->execute();
+
+    $create_campaign_result = Api4\Campaign::create(FALSE)
+      ->addValue('title', 'DD')
+      ->execute();
+
+    $this->campaign = $create_campaign_result->first();
   }
 
   private function createTestContact() {
