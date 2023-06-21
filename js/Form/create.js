@@ -15,7 +15,6 @@ export function initForm () {
         "amount",
         "campaign_id",
         "cycle_day",
-        "end_date",
         "existing_recurring_contribution",
         "frequency",
         "join_date",

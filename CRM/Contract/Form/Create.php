@@ -190,9 +190,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             [ "time" => false ]
         );
 
-        // End date (end_date)
-        $this->add("datepicker", "end_date", ts("End date"), [], false, [ "time" => false ]);
-
         // Campaign (campaign_id)
         $this->add(
             "select",
@@ -415,15 +412,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             null,
             "Y-m-d H:i:s"
         );
-
-        if ($submitted["end_date"]) {
-            $contract_params["end_date"] = CRM_Utils_Date::processDate(
-                $submitted["end_date"],
-                null,
-                null,
-                "Y-m-d H:i:s"
-            );
-        }
 
         $contract_params["membership_type_id"] = $submitted["membership_type_id"];
         $contract_params["membership_general.membership_reference"] = $submitted["membership_reference"];
