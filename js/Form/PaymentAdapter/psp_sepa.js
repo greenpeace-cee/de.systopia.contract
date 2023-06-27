@@ -1,9 +1,48 @@
-import { registerPaymentAdapter, updateCycleDayField } from "../utils.js";
+import {
+    getPaymentInstrumentLabel,
+    mapPaymentFrequency,
+    parseMoney,
+    registerPaymentAdapter,
+    updateCycleDayField,
+} from "../utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/psp_sepa"];
 
 class PSP {
+    async confirmDialog (formFields) {
+        const currency = EXT_VARS.default_currency;
+        const amount = parseMoney(formFields["amount"].val());
+        const frequency = parseInt(formFields["frequency"].val());
+        const frequencyLabel = mapPaymentFrequency(frequency);
+        const annualAmount = (amount * frequency).toFixed(2);
+        const paymentInstrumentID = formFields["pa-psp_sepa-payment_instrument"].val();
+        const paymentInstrumentLabel = await getPaymentInstrumentLabel(paymentInstrumentID);
+        const creditorID = formFields["pa-psp_sepa-creditor"].val();
+        const cycleDay = formFields["cycle_day"].val();
+        const deferPaymentStart = formFields["defer_payment_start"]?.prop("checked");
+        const startDate = (formFields["start_date"] || formFields["activity_date"]).val();
+
+        const firstDebit = await this.nextCollectionDate({
+            creditor_id: creditorID,
+            cycle_day: cycleDay,
+            defer_payment_start: deferPaymentStart,
+            min_date: startDate,
+        })
+
+        return `
+            <ul>
+                <li>
+                    We will debit <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b>
+                    via <b>${paymentInstrumentLabel} (PSP)</b>
+                </li>
+
+                <li>The first debit is on <b>${firstDebit}</b></li>
+                <li>The total annual amount will be <b>${currency} ${annualAmount}</b></li>
+            </ul>
+        `;
+    }
+
     async nextCollectionDate ({ creditor_id, cycle_day, defer_payment_start, min_date }) {
         if (!creditor_id) return "";
         if (!cycle_day) return "";
@@ -103,7 +142,7 @@ class PSP {
         const currency = ADAPTER_VARS.currencies[creditorId] || EXT_VARS.default_currency;
 
         // Annual amount
-        const amount = FormUtils.parseMoney(formFields["amount"].val());
+        const amount = parseMoney(formFields["amount"].val());
         const annualAmount = `${(amount * frequency).toFixed(2)} ${currency}`;
         paymentPreviewContainer.find("span#annual").text(annualAmount);
 

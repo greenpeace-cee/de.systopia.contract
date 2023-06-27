@@ -1,4 +1,9 @@
-import { displayRelevantFormFields, getFormFields } from "./utils.js";
+import {
+    addConfirmDialog,
+    displayRelevantFormFields,
+    getCurrentPaymentAdapter,
+    getFormFields,
+} from "./utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 
@@ -33,6 +38,9 @@ export function initForm () {
 
     Object.values(formFields).forEach(field => field.change(updateForm));
 
+    const confirmButton = cj("button[data-identifier=_qf_Create_submit]");
+    addConfirmDialog(confirmButton, formFields);
+
     updateForm();
 }
 
@@ -46,9 +54,6 @@ function updateForm () {
         "data-payment-adapter": selectedPaymentAdapter,
     });
 
-    if (!window._PAYMENT_ADAPTERS_) return;
-    if (!window._PAYMENT_ADAPTERS_[selectedPaymentAdapter]) return;
-    
-    adapter = window._PAYMENT_ADAPTERS_[selectedPaymentAdapter];
+    adapter = getCurrentPaymentAdapter(formFields);
     adapter.onFormChange(formFields);
 }

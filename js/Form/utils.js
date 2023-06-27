@@ -1,3 +1,25 @@
+export function addConfirmDialog (confirmButton, formFields) {
+    const clonedButton = confirmButton.clone();
+    confirmButton.hide();
+    confirmButton.parent().append(clonedButton);
+
+    clonedButton.on("click", async () => {
+        const adapter = getCurrentPaymentAdapter(formFields);
+        const message = await adapter.confirmDialog(formFields);
+
+        CRM.confirm({
+            title: "Payment preview",
+            message,
+            options: {
+                yes: "Confirm",
+                no: "Edit",
+            },
+        }).on("crmConfirm:yes", () => {
+            confirmButton.click();
+        });
+    });
+}
+
 export function displayRelevantFormFields (dataAttributes) {
     const selector = Object.keys(dataAttributes)
         .map(attr => `*[${attr}]`)
@@ -19,6 +41,14 @@ export function displayRelevantFormFields (dataAttributes) {
     });
 }
 
+export function getCurrentPaymentAdapter (formFields) {
+    const selectedPaymentAdapter = formFields["payment_adapter"].val();
+
+    if (!window._PAYMENT_ADAPTERS_) return;
+    if (!window._PAYMENT_ADAPTERS_[selectedPaymentAdapter]) return;
+    return window._PAYMENT_ADAPTERS_[selectedPaymentAdapter];
+}
+
 export function getFormFields (fieldIDs) {
     const formFields = {};
 
@@ -29,27 +59,42 @@ export function getFormFields (fieldIDs) {
     return formFields;
 }
 
- export function parseMoney(raw_value) {
-  if (raw_value.length == 0) {
-    return 0.0;
-  }
+export function getPaymentInstrumentLabel (optionValue) {
+    return CRM.api3('OptionValue', 'getsingle', {
+      option_group_id: "payment_instrument",
+      value: optionValue,
+    }).then(result => result.label, console.error);
+}
 
-  // find out if there's a problem with ','
-  var stripped_value = raw_value.replace(' ', '');
-  if (stripped_value.includes(',')) {
-    // if there are at least three digits after the ','
-    //  it's a thousands separator
-    if (stripped_value.match('#,\d{3}#')) {
-      // it's a thousands separator -> just strip
-      stripped_value = stripped_value.replace(',', '');
-    } else {
-      // it has to be interpreted as a decimal
-      // first remove all other decimals
-      stripped_value = stripped_value.replace('.', '');
-      stripped_value = stripped_value.replace(',', '.');
+export function mapPaymentFrequency (frequency) {
+    if (frequency === 1) return "annually";
+    if (frequency === 2) return "semi-annually";
+    if (frequency === 4) return "quarterly";
+    if (frequency === 12) return "monthly";
+    return "";
+}
+
+export function parseMoney(raw_value) {
+    if (raw_value.length == 0) return 0.0;
+
+    // find out if there's a problem with ','
+    var stripped_value = raw_value.replace(' ', '');
+
+    if (stripped_value.includes(',')) {
+        // if there are at least three digits after the ','
+        //  it's a thousands separator
+        if (stripped_value.match('#,\d{3}#')) {
+            // it's a thousands separator -> just strip
+            stripped_value = stripped_value.replace(',', '');
+        } else {
+            // it has to be interpreted as a decimal
+            // first remove all other decimals
+            stripped_value = stripped_value.replace('.', '');
+            stripped_value = stripped_value.replace(',', '.');
+        }
     }
-  }
-  return parseFloat(stripped_value);
+
+    return parseFloat(stripped_value);
 }
 
 export function registerPaymentAdapter (name, adapter) {

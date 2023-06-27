@@ -1,16 +1,53 @@
-import { parseMoney, registerPaymentAdapter, updateCycleDayField } from "../utils.js";
+import {
+    getPaymentInstrumentLabel,
+    mapPaymentFrequency,
+    parseMoney,
+    registerPaymentAdapter,
+    updateCycleDayField,
+} from "../utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/adyen"];
 
 class Adyen {
-    async nextCollectionDate ({ cycle_day, min_date }) {
+    async confirmDialog (formFields) {
+        const currency = EXT_VARS.default_currency;
+        const amount = parseMoney(formFields["amount"].val());
+        const frequency = parseInt(formFields["frequency"].val());
+        const frequencyLabel = mapPaymentFrequency(frequency);
+        const annualAmount = (amount * frequency).toFixed(2);
+        const paymentInstrumentID = formFields["pa-adyen-payment_instrument_id"].val();
+        const paymentInstrumentLabel = await getPaymentInstrumentLabel(paymentInstrumentID);
+        const cycleDay = formFields["cycle_day"].val();
+        const deferPaymentStart = formFields["defer_payment_start"]?.prop("checked");
+        const startDate = (formFields["start_date"] || formFields["activity_date"]).val();
+
+        const firstDebit = await this.nextCollectionDate({
+            cycle_day: cycleDay,
+            defer_payment_start: deferPaymentStart,
+            min_date: startDate,
+        })
+
+        return `
+            <ul>
+                <li>
+                    We will debit <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b>
+                    via <b>${paymentInstrumentLabel} (Adyen)</b>
+                </li>
+
+                <li>The first debit is on <b>${firstDebit}</b></li>
+                <li>The total annual amount will be <b>${currency} ${annualAmount}</b></li>
+            </ul>
+        `;
+    }
+
+    async nextCollectionDate ({ cycle_day, defer_payment_start, min_date }) {
         if (!cycle_day) return "";
         if (!min_date) return "";
 
         return await CRM.api3("Contract", "start_date", {
             cycle_day,
-            defer_payment_start: false,
+            defer_payment_start,
             membership_id: EXT_VARS.membership_id,
             min_date,
             payment_adapter: "adyen",
