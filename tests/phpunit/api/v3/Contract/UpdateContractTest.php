@@ -31,11 +31,11 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
       'action'                                  => 'update',
       'campaign_id'                             => NULL,
       'id'                                      => $membership_id,
+      'membership_payment.defer_payment_start'  => TRUE,
       'membership_payment.membership_annual'    => 180.0,
       'membership_payment.membership_frequency' => 6,
       'payment_method.adapter'                  => 'adyen',
       'payment_method.cycle_day'                => 13,
-      'payment_method.defer_payment_start'      => TRUE,
     ]);
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
@@ -90,11 +90,11 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
       'action'                                  => 'update',
       'campaign_id'                             => NULL,
       'id'                                      => $membership_id,
+      'membership_payment.defer_payment_start'  => TRUE,
       'membership_payment.membership_annual'    => 200.0,
       'membership_payment.membership_frequency' => 4,
       'payment_method.adapter'                  => 'eft',
       'payment_method.cycle_day'                => 17,
-      'payment_method.defer_payment_start'      => TRUE,
     ]);
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
@@ -148,11 +148,11 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
       'action'                                  => 'update',
       'campaign_id'                             => NULL,
       'id'                                      => $membership_id,
+      'membership_payment.defer_payment_start'  => TRUE,
       'membership_payment.membership_annual'    => 180.0,
       'membership_payment.membership_frequency' => 3,
       'payment_method.adapter'                  => 'psp_sepa',
       'payment_method.cycle_day'                => 15,
-      'payment_method.defer_payment_start'      => TRUE,
     ]);
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
@@ -206,11 +206,11 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
       'action'                                  => 'update',
       'campaign_id'                             => NULL,
       'id'                                      => $membership_id,
+      'membership_payment.defer_payment_start'  => TRUE,
       'membership_payment.membership_annual'    => 200.0,
       'membership_payment.membership_frequency' => 2,
       'payment_method.adapter'                  => 'sepa_mandate',
       'payment_method.cycle_day'                => 21,
-      'payment_method.defer_payment_start'      => TRUE,
     ]);
 
     civicrm_api3('Contract', 'process_scheduled_modifications');

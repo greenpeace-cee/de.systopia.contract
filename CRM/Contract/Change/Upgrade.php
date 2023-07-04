@@ -92,9 +92,10 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
       // are in fact intended as updates. it would be cleaner to use a stricter
       // emptiness test (i.e. only skip if the key is not set or is NULL),
       // but that might break existing code, so we'll only deprecate it for now.
-      if ($contract_attribute === "membership_payment.defer_payment_start" && in_array($param_value, [0, "0"], true)) {
+      if ($contract_attribute === "membership_payment.defer_payment_start" && in_array($param_value, [0, "0", FALSE], true)) {
         // skip deprecation warning for membership_payment.defer_payment_start = 0 or "0"
         // because this is an actual change
+        $param_value = 0;
       } elseif (empty($param_value)) {
         CRM_Core_Error::deprecatedFunctionWarning(
           "de.systopia.contract: Empty values for contract update parameters that are not NULL are deprecated. Affected parameter: $contract_attribute"
