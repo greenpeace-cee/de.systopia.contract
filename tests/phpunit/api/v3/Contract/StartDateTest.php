@@ -105,7 +105,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->createContribution([
       'amount'                    => 10.0,
-      'date'                      => '2023-01-01',
+      'date'                      => '2023-01-05',
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
@@ -341,7 +341,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->createContribution([
       'amount'                    => 10.0,
-      'date'                      => '2023-01-05',
+      'date'                      => '2023-01-07',
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
@@ -460,7 +460,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
 
     $this->createContribution([
       'amount'                    => 10.0,
-      'date'                      => '2023-01-14',
+      'date'                      => '2023-01-17',
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 

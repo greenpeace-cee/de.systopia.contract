@@ -588,8 +588,13 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
                 $latest_contribution['contribution_recur_id']
             );
 
+            $last_regular_date = CRM_Contract_DateHelper::findLastOfDays(
+                [(int) $latest_contribution_rc['cycle_day']],
+                $latest_contribution['receive_date']
+            );
+
             $paid_until = CRM_Contract_DateHelper::nextRegularDate(
-                $latest_contribution['receive_date'],
+                $last_regular_date->format('Y-m-d'),
                 $latest_contribution_rc['frequency_interval'],
                 $latest_contribution_rc['frequency_unit']
             );
