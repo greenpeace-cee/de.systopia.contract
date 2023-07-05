@@ -590,6 +590,7 @@ class CRM_Contract_RecurringContribution {
   public static function getLatestContribution($membership_id) {
     $membership_payment_result = civicrm_api3('MembershipPayment', 'get', [
       'membership_id' => $membership_id,
+      'options' => [ 'limit' => 0 ],
       'sequential'    => 1,
     ]);
 
