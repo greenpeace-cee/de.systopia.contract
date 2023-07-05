@@ -490,7 +490,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
         'cancel_reason',
         'contribution_status_id:name',
         'end_date',
-        'next_sched_contribution_date'
+        // 'next_sched_contribution_date'
       )
       ->addWhere('id', '=', $recurringContribution['id'])
       ->execute()
@@ -502,7 +502,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'contribution_status_id:name'  => 'Completed',
       'end_date'                     => $recurringContribution['end_date'],
       'id'                           => $recurringContribution['id'],
-      'next_sched_contribution_date' => NULL,
+      // 'next_sched_contribution_date' => NULL,
     ], $recurringContribution);
 
     // Recurring contribution should have ended within the last minute

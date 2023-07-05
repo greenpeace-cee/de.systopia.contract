@@ -24,6 +24,7 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $contribution = $this->createContribution([
       'amount'                    => 10.0,
       'date'                      => $start_date_old->format('Y-m-d'),
+      'membership_id'             => $membership_id,
       'recurring_contribution_id' => $rc_old['id'],
     ]);
 
@@ -83,6 +84,7 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $contribution = $this->createContribution([
       'amount'                    => 10.0,
       'date'                      => $start_date_old->format('Y-m-d'),
+      'membership_id'             => $membership_id,
       'recurring_contribution_id' => $rc_old['id'],
     ]);
 
@@ -141,6 +143,7 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $contribution = $this->createContribution([
       'amount'                    => 10.0,
       'date'                      => $start_date_old->format('Y-m-d'),
+      'membership_id'             => $membership_id,
       'recurring_contribution_id' => $rc_old['id'],
     ]);
 
@@ -199,6 +202,7 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     $contribution = $this->createContribution([
       'amount'                    => 10.0,
       'date'                      => $start_date_old->format('Y-m-d'),
+      'membership_id'             => $membership_id,
       'recurring_contribution_id' => $rc_old['id'],
     ]);
 

@@ -625,12 +625,17 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       'next_sched_contribution_date should be as soon as possible'
     );
 
-    civicrm_api3('Contribution', 'create', [
+    $contribution = civicrm_api3('Contribution', 'create', [
       'contact_id'            => $contract['contact_id'],
       'contribution_recur_id' => $contract['membership_payment.membership_recurring_contribution'],
       'financial_type_id'     => 'Member Dues',
       'receive_date'          => $nextScheduleDate->format('Y-m-d'),
       'total_amount'          => 10.0,
+    ]);
+
+    civicrm_api3('MembershipPayment', 'create', [
+      'contribution_id' => $contribution['id'],
+      'membership_id'   => $contract['id'],
     ]);
 
     // update to a monthly membership with defer_payment_start's default value of 1
