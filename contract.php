@@ -383,6 +383,12 @@ function contract_civicrm_permission(&$permissions) {
   ];
 }
 
+function contract_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions) {
+  if (strtolower($entity) == 'contract' && strtolower($action) == 'start_date') {
+    $permissions[$entity][$action] = ['access CiviMember'];
+  }
+}
+
 /**
  * Entity Types Hook
  * @param $entityTypes
