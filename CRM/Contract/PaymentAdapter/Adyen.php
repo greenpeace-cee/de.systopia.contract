@@ -54,7 +54,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $paymentProcessorID = $paymentToken['payment_processor_id'];
     $defaultShopperReference = CRM_Utils_Array::value('cr.processor_id', $paymentToken);
 
-    $pendingOptVal = (int) CRM_Contract_Utils::getOptionValue('contribution_recur_status', 'Pending');
+    $inProgressOptVal = (int) CRM_Contract_Utils::getOptionValue('contribution_recur_status', 'In Progress');
     $defaultCurrency = Civi::settings()->get('defaultCurrency');
     $memberDuesTypeID = CRM_Contract_Utils::getFinancialTypeID('Member Dues');
 
@@ -70,7 +70,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'amount'                       => [ 'amount'                 , TRUE              , NULL                        ],
       'campaign_id'                  => [ 'campaign_id'            , FALSE             , NULL                        ],
       'contact_id'                   => [ 'contact_id'             , TRUE              , NULL                        ],
-      'contribution_status_id'       => [ 'contribution_status_id' , FALSE             , $pendingOptVal              ],
+      'contribution_status_id'       => [ 'contribution_status_id' , FALSE             , $inProgressOptVal           ],
       'currency'                     => [ 'currency'               , FALSE             , $defaultCurrency            ],
       'cycle_day'                    => [ 'cycle_day'              , FALSE             , $startDate->format('d')     ],
       'financial_type_id'            => [ 'financial_type_id'      , FALSE             , $memberDuesTypeID           ],
@@ -412,21 +412,21 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     if (count($update) < 1) {
       Api4\ContributionRecur::update(FALSE)
         ->addWhere('id', '=', $recurringContributionID)
-        ->addValue('contribution_status_id:name', 'Pending')
+        ->addValue('contribution_status_id:name', 'In Progress')
         ->execute();
 
       return $recurringContributionID;
     }
 
-    $pendingOptVal = (int) CRM_Contract_Utils::getOptionValue(
+    $inProgressOptVal = (int) CRM_Contract_Utils::getOptionValue(
       'contribution_recur_status',
-      'Pending'
+      'In Progress'
     );
 
     $update['contribution_status_id'] = CRM_Utils_Array::value(
       'contribution_status_id',
       $update,
-      $pendingOptVal
+      $inProgressOptVal
     );
 
     return self::update($recurringContributionID, $update);
@@ -436,15 +436,15 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $update['cancel_date'] = NULL;
     $update['cancel_reason'] = NULL;
 
-    $pendingOptVal = (int) CRM_Contract_Utils::getOptionValue(
+    $inProgressOptVal = (int) CRM_Contract_Utils::getOptionValue(
       'contribution_recur_status',
-      'Pending'
+      'In Progress'
     );
 
     $update['contribution_status_id'] = CRM_Utils_Array::value(
       'contribution_status_id',
       $update,
-      $pendingOptVal
+      $inProgressOptVal
     );
 
     return self::update($recurringContributionID, $update);
