@@ -75,7 +75,7 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
     $this->assertEachEquals([
       [10.0                                , $rc['amount']                     ],
       [$this->contact['id']                , $rc['contact_id']                 ],
-      ['Pending'                           , $rc['contribution_status_id:name']],
+      ['In Progress'                       , $rc['contribution_status_id:name']],
       [$cycle_day                          , $rc['cycle_day']                  ],
       [$financial_type                     , $rc['financial_type_id']          ],
       [1                                   , $rc['frequency_interval']         ],
