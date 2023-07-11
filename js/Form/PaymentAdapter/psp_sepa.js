@@ -1,5 +1,4 @@
 import {
-    getPaymentInstrumentLabel,
     mapPaymentFrequency,
     parseMoney,
     registerPaymentAdapter,
@@ -16,8 +15,9 @@ class PSP {
         const frequency = parseInt(formFields["frequency"].val());
         const frequencyLabel = mapPaymentFrequency(frequency);
         const annualAmount = (amount * frequency).toFixed(2);
-        const paymentInstrumentID = formFields["pa-psp_sepa-payment_instrument"].val();
-        const paymentInstrumentLabel = await getPaymentInstrumentLabel(paymentInstrumentID);
+        const piField = formFields["pa-psp_sepa-payment_instrument"];
+        const paymentInstrumentID = piField.val();
+        const paymentInstrumentLabel = piField.find(`option[value=${paymentInstrumentID}]`).text();
         const creditorID = formFields["pa-psp_sepa-creditor"].val();
         const cycleDay = formFields["cycle_day"].val();
         const deferPaymentStart = formFields["defer_payment_start"]?.prop("checked");

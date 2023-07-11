@@ -1,5 +1,4 @@
 import {
-    getPaymentInstrumentLabel,
     mapPaymentFrequency,
     parseMoney,
     registerPaymentAdapter,
@@ -16,8 +15,7 @@ class Adyen {
         const frequency = parseInt(formFields["frequency"].val());
         const frequencyLabel = mapPaymentFrequency(frequency);
         const annualAmount = (amount * frequency).toFixed(2);
-        const paymentInstrumentID = formFields["pa-adyen-payment_instrument_id"].val();
-        const paymentInstrumentLabel = await getPaymentInstrumentLabel(paymentInstrumentID);
+        const paymentInstrument = await this.#getSelectedPaymentInstrument(formFields);
         const cycleDay = formFields["cycle_day"].val();
         const deferPaymentStart = formFields["defer_payment_start"]?.prop("checked");
         const startDate = (formFields["start_date"] || formFields["activity_date"]).val();
@@ -32,7 +30,7 @@ class Adyen {
             <ul>
                 <li>
                     We will debit <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b>
-                    via <b>${paymentInstrumentLabel} (Adyen)</b>
+                    via <b>${paymentInstrument} (Adyen)</b>
                 </li>
 
                 <li>The first debit is on <b>${firstDebit}</b></li>
@@ -87,10 +85,8 @@ class Adyen {
         const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=adyen]");
 
         // Payment instrument
-        const piField = formFields["pa-adyen-payment_instrument_id"];
-        const selectedPIValue = piField.val();
-        const selectedPILabel = piField.find(`option[value=${selectedPIValue}]`).text();
-        paymentPreviewContainer.find("span#payment_instrument").text(selectedPILabel);
+        let paymentInstrument = await this.#getSelectedPaymentInstrument(formFields);
+        paymentPreviewContainer.find("span#payment_instrument").text(paymentInstrument);
 
         // Installment amount
         const amount = parseMoney(formFields["amount"].val());
@@ -128,6 +124,41 @@ class Adyen {
         });
 
         paymentPreviewContainer.find("span#next_debit").text(nextDebit);
+    }
+
+    async #getSelectedPaymentInstrument (formFields) {
+        try {
+            const useExistingToken = formFields["pa-adyen-use_existing_token"]?.val() === "1";
+
+            if (EXT_VARS.action === "sign" && useExistingToken) {
+                const piField = formFields["pa-adyen-payment_instrument_id"];
+                const paymentInstrumentID = piField.val();
+
+                return piField.find(`option[value=${paymentInstrumentID}]`).text();
+            }
+
+            const paymentTokenID = formFields["pa-adyen-payment_token_id"].val();
+
+            if (!paymentTokenID) return "";
+
+            const rcResult = await CRM.api4('ContributionRecur', 'get', {
+              select: ["payment_instrument_id:label"],
+              where: [["payment_token_id", "=", paymentTokenID]],
+              limit: 1,
+            });
+
+            if (rcResult.length < 1) {
+                throw new Error(
+                    `No recurring contribution found for payment token with ID ${paymentTokenID}`
+                );
+            }
+
+            return rcResult[0]["payment_instrument_id:label"];
+        } catch (error) {
+            console.error(error);
+
+            return "";
+        }
     }
 }
 

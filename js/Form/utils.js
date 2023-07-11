@@ -59,13 +59,6 @@ export function getFormFields (fieldIDs) {
     return formFields;
 }
 
-export function getPaymentInstrumentLabel (optionValue) {
-    return CRM.api3('OptionValue', 'getsingle', {
-      option_group_id: "payment_instrument",
-      value: optionValue,
-    }).then(result => result.label, console.error);
-}
-
 export function mapPaymentFrequency (frequency) {
     if (frequency === 1) return "annually";
     if (frequency === 2) return "semi-annually";
