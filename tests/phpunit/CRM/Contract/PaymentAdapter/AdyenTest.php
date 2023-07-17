@@ -298,8 +298,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
   public function testPauseAndResume() {
 
     // --- Create a payment --- //
-
-    CRM_Contract_PaymentAdapter_Adyen::create([
+    $recurId = CRM_Contract_PaymentAdapter_Adyen::create([
       'amount'                   => 10.0,
       'contact_id'               => $this->contact['id'],
       'payment_processor_id'     => $this->paymentProcessor['id'],
@@ -308,10 +307,11 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $recurContribQuery = Api4\ContributionRecur::get(FALSE)
       ->addSelect('contribution_status_id:name')
+      ->addWhere('id', $recurId)
       ->execute();
 
     $recurringContribution = $recurContribQuery->first();
-    $this->assertEquals('Pending', $recurringContribution['contribution_status_id:name']);
+    $this->assertEquals('In Progress', $recurringContribution['contribution_status_id:name']);
 
     // --- Pause the payment --- //
 
@@ -339,7 +339,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       ->execute()
       ->first();
 
-    $this->assertEquals('Pending', $recurringContribution['contribution_status_id:name']);
+    $this->assertEquals('In Progress', $recurringContribution['contribution_status_id:name']);
 
   }
 
@@ -448,7 +448,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'amount'                       => 15.0,
       'cancel_date'                  => NULL,
       'cancel_reason'                => NULL,
-      'contribution_status_id:name'  => 'Pending',
+      'contribution_status_id:name'  => 'In Progress',
       'cycle_day'                    => 28,
       'id'                           => $newRecurContribID,
       'next_sched_contribution_date' => $reviveDate->format('Y-m-d H:i:s'),
@@ -476,7 +476,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $this->assertEquals(1, $recurContribQuery->rowCount);
 
     $recurringContribution = $recurContribQuery->first();
-    $this->assertEquals('Pending', $recurringContribution['contribution_status_id:name']);
+    $this->assertEquals('In Progress', $recurringContribution['contribution_status_id:name']);
 
     // --- Terminate the payment --- //
 
@@ -524,7 +524,6 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $creditCardOptVal = (int) $this->getOptionValue('payment_instrument', 'Credit Card');
     $debitCardOptVal = (int) $this->getOptionValue('payment_instrument', 'Debit Card');
     $inProgressOptVal = (int) $this->getOptionValue('contribution_recur_status', 'In Progress');
-    $pendingOptVal = (int) $this->getOptionValue('contribution_recur_status', 'Pending');
 
     $recurContribID = CRM_Contract_PaymentAdapter_Adyen::create([
       'amount'                => 10.0,
@@ -565,7 +564,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $this->assertEquals([
       'amount'                       => 10.0,
       'campaign_id'                  => $this->campaign['id'],
-      'contribution_status_id:name'  => 'Pending',
+      'contribution_status_id:name'  => 'In Progress',
       'currency'                     => 'EUR',
       'cycle_day'                    => 13,
       'financial_type_id'            => $memberDuesTypeID,
