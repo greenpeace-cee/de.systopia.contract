@@ -311,7 +311,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
 
     $recurContribQuery = Api4\ContributionRecur::get(FALSE)
       ->addSelect('contribution_status_id:name')
-      ->addWhere('id', $recurId)
+      ->addWhere('id', '=', $recurId)
       ->execute();
 
     $recurringContribution = $recurContribQuery->first();
