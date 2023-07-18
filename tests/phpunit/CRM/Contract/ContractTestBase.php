@@ -1,5 +1,6 @@
 <?php
 
+use Civi\Api4\Activity;
 use Civi\Test\Api3TestTrait;
 use CRM_Contract_ExtensionUtil as E;
 use Civi\Test\HeadlessInterface;
@@ -78,7 +79,18 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
     $result = $this->callAPISuccess('Contract', 'process_scheduled_modifications', [
         'now' => $now,
         'id'  => $contract_id]);
-    $this->assertTrue(empty($result['values']['failed']), "Contract Engine reports failure");
+    if (!empty($result['values']['failed'])) {
+      $activity = Activity::get(FALSE)
+        ->addWhere('id', '=', $result['values']['failed'][0])
+        ->addSelect('*')
+        ->execute()
+        ->first();
+      if (empty($activity)) {
+        $this->fail('Contract Engine reports failure; no contract activity found');
+      } else {
+        $this->fail('Contract Engine reports failure: ' . $activity['details']);
+      }
+    }
     return $result;
   }
 

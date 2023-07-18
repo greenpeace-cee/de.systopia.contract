@@ -201,7 +201,7 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
 
     $annual_before = $contract_before["membership_payment.membership_annual"];
     $annual_after = $contract_after["membership_payment.membership_annual"];
-    $this->setParameter("contract_updates.ch_annual_diff", $annual_after - $annual_before);
+    $this->setParameter("contract_updates.ch_annual_diff", CRM_Contract_Utils::formatMoney($annual_after) - CRM_Contract_Utils::formatMoney($annual_before));
 
     $this->setParameter("subject", $this->getSubject($contract_after, $contract_before));
     $this->setParameter("activity_date_time", date("Y-m-d H:i:s"));
