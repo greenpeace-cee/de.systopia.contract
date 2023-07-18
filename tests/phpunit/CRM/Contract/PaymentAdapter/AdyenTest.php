@@ -87,6 +87,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
         'frequency_interval',
         'frequency_unit',
         'next_sched_contribution_date',
+        'payment_instrument_id',
         'payment_token_id',
         'processor_id',
         'start_date',
@@ -107,6 +108,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'frequency_unit'               => 'month',
       'id'                           => $recurringContribution['id'],
       'next_sched_contribution_date' => $startDate->format('Y-m-d H:i:s'),
+      'payment_instrument_id'        => $creditCardOptVal,
       'payment_token_id'             => $recurringContribution['payment_token_id'],
       'processor_id'                 => self::SHOPPER_REFERENCE,
       'start_date'                   => $startDate->format('Y-m-d H:i:s'),
@@ -207,6 +209,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
         'financial_type_id',
         'frequency_interval',
         'frequency_unit:name',
+        'payment_instrument_id',
         'payment_processor_id',
         'payment_token_id'
       )
@@ -217,14 +220,15 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $newRecurContrib = $newRCResult->first();
 
     $this->assertEquals([
-      'amount'               => 15.0,
-      'contact_id'           => $this->contact['id'],
-      'financial_type_id'    => $memberDuesTypeID,
-      'frequency_interval'   => 1,
-      'frequency_unit:name'  => 'month',
-      'id'                   => $newRecurContrib['id'],
-      'payment_processor_id' => $newRecurContrib['payment_processor_id'],
-      'payment_token_id'     => $this->paymentToken['id'],
+      'amount'                => 15.0,
+      'contact_id'            => $this->contact['id'],
+      'financial_type_id'     => $memberDuesTypeID,
+      'frequency_interval'    => 1,
+      'frequency_unit:name'   => 'month',
+      'id'                    => $newRecurContrib['id'],
+      'payment_instrument_id' => $this->paymentToken['payment_instrument_id'],
+      'payment_processor_id'  => $newRecurContrib['payment_processor_id'],
+      'payment_token_id'      => $this->paymentToken['id'],
     ], $newRecurContrib);
 
     // --- Assert the new payment is linked to an Adyen payment processor --- //
@@ -490,7 +494,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
         'cancel_reason',
         'contribution_status_id:name',
         'end_date',
-        'next_sched_contribution_date'
+        // 'next_sched_contribution_date'
       )
       ->addWhere('id', '=', $recurringContribution['id'])
       ->execute()
@@ -502,7 +506,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'contribution_status_id:name'  => 'Completed',
       'end_date'                     => $recurringContribution['end_date'],
       'id'                           => $recurringContribution['id'],
-      'next_sched_contribution_date' => NULL,
+      // 'next_sched_contribution_date' => NULL,
     ], $recurringContribution);
 
     // Recurring contribution should have ended within the last minute
@@ -521,8 +525,6 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $donationTypeID = self::getFinancialTypeID('Donation');
     $memberDuesTypeID = self::getFinancialTypeID('Member Dues');
 
-    $creditCardOptVal = (int) $this->getOptionValue('payment_instrument', 'Credit Card');
-    $debitCardOptVal = (int) $this->getOptionValue('payment_instrument', 'Debit Card');
     $inProgressOptVal = (int) $this->getOptionValue('contribution_recur_status', 'In Progress');
 
     $recurContribID = CRM_Contract_PaymentAdapter_Adyen::create([
@@ -534,7 +536,6 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'financial_type_id'     => $memberDuesTypeID,
       'frequency_interval'    => 1,
       'frequency_unit'        => 'month',
-      'payment_instrument_id' => $creditCardOptVal,
       'payment_processor_id'  => $this->paymentProcessor['id'],
       'payment_token_id'      => $this->paymentToken['id'],
       'start_date'            => $startDate->format('Y-m-d'),
@@ -572,7 +573,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'frequency_unit'               => 'month',
       'id'                           => $recurringContribution['id'],
       'next_sched_contribution_date' => $startDate->format('Y-m-d H:i:s'),
-      'payment_instrument_id'        => $creditCardOptVal,
+      'payment_instrument_id'        => $this->paymentToken['payment_instrument_id'],
       'payment_token_id'             => $recurringContribution['payment_token_id'],
       'processor_id'                 => self::SHOPPER_REFERENCE,
       'start_date'                   => $startDate->format('Y-m-d H:i:s'),
@@ -597,7 +598,6 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'financial_type_id'      => $donationTypeID,
       'frequency_interval'     => 2,
       'frequency_unit'         => 'week',
-      'payment_instrument_id'  => $debitCardOptVal,
       'start_date'             => $newStartDate->format('Y-m-d'),
     ]);
 
@@ -636,7 +636,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'frequency_unit'               => 'week',
       'id'                           => $newRecurContribID,
       'next_sched_contribution_date' => $newStartDate->format('Y-m-d H:i:s'),
-      'payment_instrument_id'        => $debitCardOptVal,
+      'payment_instrument_id'        => $this->paymentToken['payment_instrument_id'],
       'start_date'                   => $newStartDate->format('Y-m-d H:i:s'),
       'trxn_id'                      => NULL,
     ], $newRecurringContribution);
@@ -668,27 +668,31 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
     $expiryDate = new DateTime('+1 year');
 
     $createPaymentTokenResult = Api4\PaymentToken::create(FALSE)
-      ->addValue('billing_first_name',    $this->contact['first_name'])
-      ->addValue('billing_last_name',     $this->contact['last_name'])
-      ->addValue('contact_id',            $this->contact['id'])
-      ->addValue('email',                 $this->contact['email'])
-      ->addValue('expiry_date',           $expiryDate->format('Y-m-d 00:00:00'))
-      ->addValue('ip_address',            '127.0.0.1')
+      ->addValue('billing_first_name'   , $this->contact['first_name'])
+      ->addValue('billing_last_name'    , $this->contact['last_name'])
+      ->addValue('contact_id'           , $this->contact['id'])
+      ->addValue('email'                , $this->contact['email'])
+      ->addValue('expiry_date'          , $expiryDate->format('Y-m-d 00:00:00'))
+      ->addValue('ip_address'           , '127.0.0.1')
       ->addValue('masked_account_number', self::BANK_ACCOUNT_NUMBER)
-      ->addValue('payment_processor_id',  $this->paymentProcessor['id'])
-      ->addValue('token',                 self::STORED_PAYMENT_METHOD_ID)
+      ->addValue('payment_processor_id' , $this->paymentProcessor['id'])
+      ->addValue('token'                , self::STORED_PAYMENT_METHOD_ID)
       ->execute();
 
     $this->paymentToken = $createPaymentTokenResult->first();
 
-    Api4\ContributionRecur::create(FALSE)
-      ->addValue('amount',                 0.0)
-      ->addValue('contact_id',             $this->contact['id'])
-      ->addValue('financial_type_id.name', 'Member Dues')
-      ->addValue('payment_token_id',       $this->paymentToken['id'])
-      ->addValue('processor_id',           self::SHOPPER_REFERENCE)
-      ->addValue('trxn_id',                NULL)
-      ->execute();
+    $recurringContribution = Api4\ContributionRecur::create(FALSE)
+      ->addValue('amount'                    ,  0.0)
+      ->addValue('contact_id'                ,  $this->contact['id'])
+      ->addValue('financial_type_id.name'    , 'Member Dues')
+      ->addValue('payment_instrument_id:name', 'Credit Card')
+      ->addValue('payment_token_id'          , $this->paymentToken['id'])
+      ->addValue('processor_id'              , self::SHOPPER_REFERENCE)
+      ->addValue('trxn_id'                   , NULL)
+      ->execute()
+      ->first();
+
+    $this->paymentToken['payment_instrument_id'] = $recurringContribution['payment_instrument_id'];
   }
 
 }

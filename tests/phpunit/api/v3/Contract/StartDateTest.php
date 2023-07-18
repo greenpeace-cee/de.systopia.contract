@@ -106,6 +106,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
     $this->createContribution([
       'amount'                    => 10.0,
       'date'                      => '2023-01-05',
+      'membership_id'             => $membership['id'],
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
@@ -218,6 +219,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
     $this->createContribution([
       'amount'                    => 10.0,
       'date'                      => '2023-01-05',
+      'membership_id'             => $membership['id'],
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
@@ -342,6 +344,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
     $this->createContribution([
       'amount'                    => 10.0,
       'date'                      => '2023-01-07',
+      'membership_id'             => $membership['id'],
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
@@ -461,6 +464,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
     $this->createContribution([
       'amount'                    => 10.0,
       'date'                      => '2023-01-17',
+      'membership_id'             => $membership['id'],
       'recurring_contribution_id' => $recurring_contribution['id'],
     ]);
 
@@ -557,6 +561,14 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
       default:
         return NULL;
     }
+
+    Api4\Membership::update(FALSE)
+      ->addWhere('id', '=', $params['membership_id'])
+      ->addValue(
+        'membership_payment.membership_recurring_contribution',
+        $recurring_contribution['id']
+      )
+      ->execute();
 
     civicrm_api3('ContractPaymentLink', 'create', [
       'contract_id'           => $params['membership_id'],

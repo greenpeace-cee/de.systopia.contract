@@ -574,29 +574,35 @@ class CRM_Contract_RecurringContribution {
   }
 
   public static function getCurrentForContract($membership_id) {
-    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
-      'contract_id' => $membership_id,
-      'is_active'   => TRUE,
-      'sequential'  => TRUE,
-    ]);
+    $membership_result = Api4\Membership::get(FALSE)
+      ->addWhere('id', '=', $membership_id)
+      ->addSelect('membership_payment.membership_recurring_contribution')
+      ->setLimit(1)
+      ->execute();
 
-    if ($payment_link['count'] < 1) return NULL;
+    if ($membership_result->count() < 1) return NULL;
 
-    return self::getById($payment_link['values'][0]['contribution_recur_id']);
+    $membership = $membership_result->first();
+
+    return self::getById($membership['membership_payment.membership_recurring_contribution']);
   }
 
   public static function getLatestContribution($membership_id) {
-    $payment_links = civicrm_api3('ContractPaymentLink', 'get', [
-      'contract_id' => $membership_id,
-      'sequential'  => TRUE,
+    $membership_payment_result = civicrm_api3('MembershipPayment', 'get', [
+      'membership_id' => $membership_id,
+      'options' => [ 'limit' => 0 ],
+      'sequential'    => 1,
     ]);
 
-    if ($payment_links['count'] < 1) return NULL;
+    if ($membership_payment_result['count'] < 1) return NULL;
 
-    $rc_ids = array_map(fn ($link) => $link['contribution_recur_id'], $payment_links['values']);
+    $contribution_ids = array_map(
+      fn ($mp) => $mp['contribution_id'],
+      $membership_payment_result['values']
+    );
 
     return Api4\Contribution::get(FALSE)
-      ->addWhere('contribution_recur_id'      , 'IN' , $rc_ids)
+      ->addWhere('id'                         , 'IN' , $contribution_ids)
       ->addWhere('contribution_status_id:name', 'IN', ['Completed', 'In Progress'])
       ->addSelect('*')
       ->addOrderBy('receive_date', 'DESC')

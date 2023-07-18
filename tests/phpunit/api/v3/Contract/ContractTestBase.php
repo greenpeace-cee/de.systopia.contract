@@ -59,7 +59,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
   }
 
   protected function createContribution(array $params) {
-    return Api4\Contribution::create(FALSE)
+    $contribution = Api4\Contribution::create(FALSE)
       ->addValue('contact_id'            , $this->contact['id'])
       ->addValue('contribution_recur_id' , $params['recurring_contribution_id'])
       ->addValue('financial_type_id.name', 'Member Dues')
@@ -67,17 +67,25 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       ->addValue('total_amount'          , $params['amount'])
       ->execute()
       ->first();
+
+    civicrm_api3('MembershipPayment', 'create', [
+      'contribution_id' => $contribution['id'],
+      'membership_id'   => $params['membership_id'],
+    ]);
+
+    return $contribution;
   }
 
   protected static function getActiveRecurringContribution(int $membership_id) {
-    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
-      'contract_id' => $membership_id,
-      'is_active'   => TRUE,
-      'sequential'  => TRUE,
-    ])['values'][0];
+    $membership = Api4\Membership::get(FALSE)
+      ->addWhere('id', '=', $membership_id)
+      ->addSelect('membership_payment.membership_recurring_contribution')
+      ->setLimit(1)
+      ->execute()
+      ->first();
 
     return Api4\ContributionRecur::get(FALSE)
-      ->addWhere('id', '=', $payment_link['contribution_recur_id'])
+      ->addWhere('id', '=', $membership['membership_payment.membership_recurring_contribution'])
       ->addSelect(
         '*',
         'contribution_status_id:name',
