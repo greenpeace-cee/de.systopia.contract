@@ -168,7 +168,8 @@ class CRM_Contract_Change_Upgrade extends CRM_Contract_Change {
         $this->setParameter($change_field, $contract_after[$membership_field]);
       }
     }
-    $this->setParameter('contract_updates.ch_annual_diff', $contract_after['membership_payment.membership_annual'] - $contract_before['membership_payment.membership_annual']);
+    // $this->setParameter('contract_updates.ch_annual_diff', $contract_after['membership_payment.membership_annual'] - $contract_before['membership_payment.membership_annual']);
+    $this->setParameter('contract_updates.ch_annual_diff', CRM_Contract_Utils::formatMoney($contract_after['membership_payment.membership_annual']) - CRM_Contract_Utils::formatMoney($contract_before['membership_payment.membership_annual']));
     $this->setParameter('subject', $this->getSubject($contract_after, $contract_before));
     $this->setParameter("activity_date_time", date('Y-m-d H:i:s'));
     $this->setStatus('Completed');

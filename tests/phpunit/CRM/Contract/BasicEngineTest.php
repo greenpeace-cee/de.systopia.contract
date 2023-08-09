@@ -1,5 +1,6 @@
 <?php
 
+use Civi\Api4\Activity;
 use CRM_Contract_ExtensionUtil as E;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
@@ -680,4 +681,32 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       'next_sched_contribution_date should be as soon as possible'
     );
   }
+
+  public function testAnnualDiff() {
+    $contract = $this->createNewContract([
+      'is_sepa'            => 1,
+      'amount'             => '10.50',
+      'frequency_unit'     => 'month',
+      'frequency_interval' => '1',
+    ]);
+
+    $this->modifyContract($contract['id'], 'update', 'now', [
+      'membership_payment.membership_annual' => '2400.60',
+    ]);
+    $this->runContractEngine($contract['id']);
+    $contract = $this->getContract($contract['id']);
+
+    $activity = Activity::get(FALSE)
+      ->addWhere('activity_type_id:name', '=', 'Contract_Updated')
+      ->addWhere('source_record_id', '=', $contract['id'])
+      ->addSelect('custom.*')
+      ->addOrderBy('activity_date_time', 'DESC')
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    $this->assertEquals($activity['contract_updates.ch_annual'], 2400.6);
+    $this->assertEquals($activity['contract_updates.ch_annual_diff'], 2274.6);
+  }
+
 }
