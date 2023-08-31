@@ -287,6 +287,8 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
       }
 
       case "psp_sepa": {
+        CRM_Sepa_Logic_Settings::setSetting(5, "batching.RCUR.notice", $this->pspCreditor['id']);
+
         $payment_instrument = self::getOptionValue('payment_instrument', 'Credit Card');
 
         $params += [
@@ -301,6 +303,8 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
       }
 
       case "sepa_mandate": {
+        CRM_Sepa_Logic_Settings::setSetting(5, "batching.RCUR.notice", $this->sepaCreditor['id']);
+
         $params += [
           'payment_method.bic'  => 'BKAUATWWXXX',
           'payment_method.iban' => 'AT340000000012345678',
