@@ -177,6 +177,10 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
     $today = new DateTimeImmutable();
     $tomorrow = new DateTimeImmutable('tomorrow');
 
+    // PSP: Set notice days
+
+    CRM_Sepa_Logic_Settings::setSetting(5, "batching.RCUR.notice", $this->pspCreditor['id']);
+
     // PSP: Create contract
 
     $encounter_medium = self::getOptionValue('encounter_medium', 'in_person');
@@ -263,6 +267,10 @@ class api_v3_Contract_SignContractTest extends api_v3_Contract_ContractTestBase 
   public function testSEPA() {
     $today = new DateTimeImmutable();
     $tomorrow = new DateTimeImmutable('tomorrow');
+
+    // SEPA: Set notice days
+
+    CRM_Sepa_Logic_Settings::setSetting(5, "batching.RCUR.notice", $this->sepaCreditor['id']);
 
     // SEPA: Create contract
 

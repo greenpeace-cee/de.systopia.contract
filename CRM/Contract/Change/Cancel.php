@@ -66,11 +66,9 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
       $payment_adapter_id = null;
       $payment_adapter = null;
 
-      if (isset($recurring_contribution_id)) {
-        $payment_adapter_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution(
-          $recurring_contribution_id
-        );
-      }
+      $payment_adapter_id = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution(
+        $recurring_contribution_id
+      );
 
       if (isset($payment_adapter_id)) {
         $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($payment_adapter_id);
@@ -86,6 +84,17 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
           "cancel_reason"          => $cancel_reason,
           "contribution_status_id" => 1,
         ]);
+      }
+
+      // end the contract payment link
+      $contract_payment_link = civicrm_api3('ContractPaymentLink', 'getsingle', [
+        'contract_id'           => $contract['id'],
+        'contribution_recur_id' => $recurring_contribution_id,
+        'return'                => ['id'],
+      ]);
+
+      if (isset($contract_payment_link['id'])) {
+        CRM_Contract_BAO_ContractPaymentLink::endPaymentLink($contract_payment_link['id']);
       }
     }
 
