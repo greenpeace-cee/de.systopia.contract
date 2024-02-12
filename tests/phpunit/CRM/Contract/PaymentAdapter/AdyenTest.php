@@ -19,14 +19,14 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
   private $paymentProcessor;
   private $paymentToken;
 
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
 
     $this->createPaymentProcessor();
     $this->createPaymentToken();
   }
 
-  public function tearDown() {
+  public function tearDown(): void {
     parent::tearDown();
   }
 
