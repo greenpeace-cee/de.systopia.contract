@@ -85,13 +85,17 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
           "contribution_status_id" => 1,
         ]);
       }
-
       // end the contract payment link
-      $contract_payment_link = civicrm_api3('ContractPaymentLink', 'getsingle', [
-        'contract_id'           => $contract['id'],
-        'contribution_recur_id' => $recurring_contribution_id,
-        'return'                => ['id'],
-      ]);
+      $contract_payment_link = [];
+      try {
+        $contract_payment_link = civicrm_api3('ContractPaymentLink', 'getsingle', [
+          'contract_id'           => $contract['id'],
+          'contribution_recur_id' => $recurring_contribution_id,
+          'return'                => ['id'],
+        ]);
+      } catch (CiviCRM_API3_Exception $e) {
+        Civi::log()->warning("Unable to determine ContractPaymentLink when cancelling contract {$contract['id']} with ContributionRecur {$recurring_contribution_id}: {$e->getMessage()}");
+      }
 
       if (isset($contract_payment_link['id'])) {
         CRM_Contract_BAO_ContractPaymentLink::endPaymentLink($contract_payment_link['id']);
