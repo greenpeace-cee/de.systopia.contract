@@ -41,7 +41,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
         ->apply(TRUE);
   }
 
-  public function setUp()
+  public function setUp(): void
   {
     parent::setUp();
 
@@ -63,7 +63,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
     $this->assertNotEmpty($default_creditor_id, "There is no default SEPA creditor set");
   }
 
-  public function tearDown()
+  public function tearDown(): void
   {
     parent::tearDown();
   }
@@ -109,7 +109,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
     $this->assertNotEmpty($result['failed'], "Contract Engine should report failure(s)");
     if (!is_null($expectedError)) {
       $errorDetails = implode("\n", $result['error_details']);
-      $this->assertContains(
+      $this->assertStringContainsString(
         $expectedError,
         $errorDetails,
         '$expectedError should be included in error_details'

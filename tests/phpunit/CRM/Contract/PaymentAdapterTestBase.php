@@ -29,7 +29,7 @@ class CRM_Contract_PaymentAdapterTestBase
       ->apply(TRUE);
   }
 
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
 
     $this->defaultErrorHandler = set_error_handler(function ($errno, $errstr) {
@@ -41,7 +41,7 @@ class CRM_Contract_PaymentAdapterTestBase
     $this->createRequiredOptionValues();
   }
 
-  public function tearDown() {
+  public function tearDown(): void {
     set_error_handler($this->defaultErrorHandler, E_USER_DEPRECATED);
 
     parent::tearDown();
