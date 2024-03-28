@@ -33,19 +33,11 @@ function _civicrm_api3_Contract_start_date_validate_params(&$params) {
       throw new API_Exception("Membership with ID $membership_id not found");
     }
 
-    $membership = $membership_result->first();
+    $rc_id = CRM_Contract_RecurringContribution::getCurrentForContract($membership_id)['id'] ?? NULL;
 
-    $payment_link = civicrm_api3('ContractPaymentLink', 'get', [
-      'contract_id' => $membership_id,
-      'is_active'   => TRUE,
-      'sequential'  => TRUE,
-    ]);
-
-    if ($payment_link['count'] < 1) {
+    if (empty($rc_id)) {
       throw new API_Exception("No recurring contribution found for this contract");
     }
-
-    $rc_id = $payment_link['values'][0]['contribution_recur_id'];
     $adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id);
     $params['payment_adapter'] = $adapter;
 
@@ -149,5 +141,3 @@ function _civicrm_api3_Contract_start_date_spec(&$params) {
     'type'         => CRM_Utils_Type::T_STRING,
   ];
 }
-
-?>
