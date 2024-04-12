@@ -164,6 +164,28 @@ class CRM_Contract_Form_RapidCreate_PL extends CRM_Core_Form {
     if (!empty($submitted['bic']) && CRM_Sepa_Logic_Verification::verifyBIC($submitted['bic']) !== null) {
       HTML_QuickForm::setElementError('bic', 'Please enter a valid BIC');
     }
+    if (!empty($submitted['iban'])) {
+      // fetch bank belonging to this IBAN
+      $bank = civicrm_api3('Bic', 'findbyiban', [
+        'iban' => $submitted['iban'],
+      ]);
+      // build value string in OptionValues for this bank
+      $value = ($bank['country'] ?? NULL) . ($bank['nbid'] ?? NULL);
+      if (empty($value)) {
+        HTML_QuickForm::setElementError('iban', 'IBAN belongs to an unknown bank');
+      }
+      $optionValue = \Civi\Api4\OptionValue::get(FALSE)
+        ->addSelect('id', 'is_active')
+        ->addWhere('option_group_id:name', '=', 'bank_list')
+        ->addWhere('value', '=', $value)
+        ->execute()
+        ->first();
+      if (empty($optionValue['id'])) {
+        HTML_QuickForm::setElementError('iban', 'IBAN belongs to an unknown bank');
+      } else if (empty($optionValue['is_active'])) {
+        HTML_QuickForm::setElementError('iban', 'IBAN belongs to a bank that is not whitelisted');
+      }
+    }
 
     $join_date = isset($submitted["join_date"]) ? strtotime($submitted["join_date"]) : null;
     $now = time();
