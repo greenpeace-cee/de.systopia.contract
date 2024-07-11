@@ -22,9 +22,6 @@ class CRM_Contract_Upgrader extends CRM_Extension_Upgrader_Base {
   }
 
   public function enable() {
-    require_once 'CRM/Contract/CustomData.php';
-    $customData = new CRM_Contract_CustomData('de.systopia.contract');
-
     // create sub-type 'Dialoger'
     $dialoger_exists = civicrm_api3('ContactType', 'getcount', ['name' => 'Dialoger']);
     if (!$dialoger_exists) {
@@ -41,18 +38,6 @@ class CRM_Contract_Upgrader extends CRM_Extension_Upgrader_Base {
   public function uninstall() {
   }
 
-  /**
-   * Add custom field "defer_payment_start"
-   *
-   * @return TRUE on success
-   * @throws Exception
-   */
-  public function upgrade_1360() {
-    $this->ctx->log->info('Applying update 1360');
-    $customData = new CRM_Contract_CustomData('de.systopia.contract');
-    return TRUE;
-  }
-
   public function upgrade_1370() {
     $this->ctx->log->info('Applying update 1370');
     $this->executeSqlFile('sql/contract.sql');
@@ -66,19 +51,13 @@ class CRM_Contract_Upgrader extends CRM_Extension_Upgrader_Base {
     return TRUE;
   }
 
-  public function upgrade_1402() {
-    $this->ctx->log->info('Applying updates for 14xx');
-    $customData = new CRM_Contract_CustomData('de.systopia.contract');
-    return TRUE;
-  }
-
   /**
    * Convert scheduled legacy update activities by adding ch_payment_changes
    *
    * @throws \CiviCRM_API3_Exception
    */
   protected function convertLegacyUpdates() {
-    $paymentChangeField = \CRM_Contract_CustomData::getCustomFieldKey(
+    $paymentChangeField = CRM_Contract_CustomData::getCustomFieldKey(
       'contract_updates',
       'ch_payment_changes'
     );
@@ -118,9 +97,4 @@ class CRM_Contract_Upgrader extends CRM_Extension_Upgrader_Base {
     return TRUE;
   }
 
-  public function upgrade_1510() {
-    $this->ctx->log->info('Applying update 1510');
-    $customData = new CRM_Contract_CustomData('de.systopia.contract');
-    return TRUE;
-  }
 }
