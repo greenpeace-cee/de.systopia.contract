@@ -47,7 +47,7 @@ class CRM_Contract_FormUtils {
     if (isset($details[$result['custom_group_id']])) {
       $customGroupTableId = key($details[$result['custom_group_id']]);
       if (!empty($details[$result['custom_group_id']][$customGroupTableId]['fields'][$result['id']]['field_value'])) {
-        $entityId = $details[$result['custom_group_id']][$customGroupTableId]['fields'][$result['id']]['field_value'];
+        $entityId = $details[$result['custom_group_id']][$customGroupTableId]['fields'][$result['id']]['data'];
         if ($entity == 'ContributionRecur') {
           try {
             $entityResult = civicrm_api3($entity, 'getsingle', ['id' => $entityId]);
@@ -87,7 +87,7 @@ class CRM_Contract_FormUtils {
     ]);
     $details = $this->form->get_template_vars('viewCustomData');
     $customGroupTableId = key($details[$result['custom_group_id']]);
-    $recContributionId = $details[$result['custom_group_id']][$customGroupTableId]['fields'][$result['id']]['field_value'];
+    $recContributionId = $details[$result['custom_group_id']][$customGroupTableId]['fields'][$result['id']]['data'];
 
     if (empty($recContributionId)) return;
 
