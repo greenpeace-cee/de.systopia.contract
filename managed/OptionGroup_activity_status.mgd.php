@@ -13,7 +13,6 @@ return [
       'values' => [
         'option_group_id.name' => 'activity_status',
         'label' => E::ts('Needs Review'),
-        'value' => '9',
         'name' => 'Needs Review',
         'is_reserved' => TRUE,
         'is_active' => TRUE,
@@ -34,7 +33,6 @@ return [
       'values' => [
         'option_group_id.name' => 'activity_status',
         'label' => E::ts('Failed'),
-        'value' => '10',
         'name' => 'Failed',
         'is_reserved' => TRUE,
         'is_active' => TRUE,
