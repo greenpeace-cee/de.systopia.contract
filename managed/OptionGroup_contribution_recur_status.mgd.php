@@ -13,7 +13,6 @@ return [
       'values' => [
         'option_group_id.name' => 'contribution_recur_status',
         'label' => E::ts('Paused'),
-        'value' => '9',
         'name' => 'Paused',
         'is_reserved' => TRUE,
         'is_active' => TRUE,
