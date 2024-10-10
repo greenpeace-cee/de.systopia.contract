@@ -1,6 +1,11 @@
 name: "Run unit tests"
 
-on: ["push"]
+on:
+  push:
+    branches:
+      - master
+    tags:
+  pull_request:
 
 env:
   CIVI_CI_CIVICRM: ${{ vars.CIVI_CI_CIVICRM || '["master"]' }}
@@ -50,9 +55,8 @@ jobs:
     steps:
       - id: clone-repo
         name: "Clone the repository"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
-          ref: "${{ github.ref_name }}"
           path: "de.systopia.contract"
       - id: build-ci
         uses: greenpeace-cee/civi-ci@main
@@ -71,6 +75,8 @@ jobs:
           cp -R "$GITHUB_WORKSPACE/de.systopia.contract" "$EXT_DIR/de.systopia.contract"
           git clone https://github.com/Project60/org.project60.banking.git "$EXT_DIR/org.project60.banking"
           git clone https://github.com/Project60/org.project60.sepa.git "$EXT_DIR/org.project60.sepa"
+          git clone https://lab.civicrm.org/extensions/mjwshared.git "$EXT_DIR/mjwshared"
+          git clone https://github.com/greenpeace-cee/adyen.git "$EXT_DIR/adyen"
           cv en de.systopia.contract
       - id: run-tests
         name: "Run Tests"
