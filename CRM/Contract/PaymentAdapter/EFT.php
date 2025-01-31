@@ -303,7 +303,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             );
 
             $last_regular_date = CRM_Contract_DateHelper::findLastOfDays(
-                [(int) $latest_contribution_rc['cycle_day']],
+                [min((int) $latest_contribution_rc['cycle_day'], max(self::cycleDays()))],
                 $latest_contribution['receive_date']
             );
 
