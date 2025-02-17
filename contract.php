@@ -322,11 +322,9 @@ function contract_civicrm_searchTasks($objectType, &$tasks) {
  * @param $permissions
  */
 function contract_civicrm_permission(&$permissions) {
-  $permissions += [
-    'edit core membership CiviContract' => [
-      ts('CiviContract: Edit core membership', ['domain' => 'de.systopia.contract']),
-      ts('Allow editing memberships using the core membership form', array('domain' => 'de.systopia.contract')),
-    ]
+  $permissions['edit core membership CiviContract'] = [
+    'label' => ts('CiviContract: Edit core membership', [ 'domain' => 'de.systopia.contract' ]),
+    'description' => ts('Allow editing memberships using the core membership form', [ 'domain' => 'de.systopia.contract' ]),
   ];
 }
 
