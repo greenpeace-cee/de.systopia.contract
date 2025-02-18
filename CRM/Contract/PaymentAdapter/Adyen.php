@@ -716,14 +716,19 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'expiry_date',
         'masked_account_number',
         'payment_processor_id.name',
-        'payment_processor_id.payment_instrument_id:label'
+        'contribution_recur.payment_instrument_id:label'
+      )
+      ->addJoin(
+        'ContributionRecur AS contribution_recur',
+        'INNER',
+        ['id', '=', 'contribution_recur.payment_token_id']
       )
       ->execute();
 
     foreach ($ptResult as $token) {
       $processorName = $token['payment_processor_id.name'];
       $accountNumber = $token['masked_account_number'];
-      $paymentInstrument = $token['payment_processor_id.payment_instrument_id:label'];
+      $paymentInstrument = $token['contribution_recur.payment_instrument_id:label'];
       $paymentTokens[$token['id']] = "$processorName: $paymentInstrument $accountNumber";
 
       if ($paymentInstrument !== 'Credit Card') continue;
