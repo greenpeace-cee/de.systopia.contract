@@ -136,7 +136,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $update['start_date'] = self::startDate([
       'cycle_day'           => $cycleDay,
       'defer_payment_start' => $deferPaymentStart,
-      'membership_id'       => $update['membership_id'],
+      'membership_id'       => $update['membership_id'] ?? NULL,
       'min_date'            => $minDate,
     ])->format('Y-m-d');
 
@@ -610,7 +610,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $startDate = self::startDate([
       'cycle_day'           => $cycleDay,
       'defer_payment_start' => $deferPaymentStart,
-      'membership_id'       => $params['membership_id'],
+      'membership_id'       => $params['membership_id'] ?? NULL,
       'min_date'            => $minDate,
     ]);
 

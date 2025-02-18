@@ -168,7 +168,7 @@ class CRM_Contract_CompatibilityTest extends CRM_Contract_ContractTestBase
       $this->assertEmpty($next_activity_id, "A system activity was generated after contract update event though it's supposed to be suppressed");
 
       // pause contract
-      $this->modifyContract($contract['id'], 'pause', '+2 days');
+      $this->modifyContract($contract['id'], 'pause', '+2 days', [ 'resume_date' => '+1 week' ]);
       $this->runContractEngine($contract['id'], '+4 days');
       $next_activity_id = $this->getLastActivityID([
           'activity_type_id'  => ['IN' => $suppressed_types],
