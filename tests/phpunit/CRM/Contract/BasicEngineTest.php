@@ -155,7 +155,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       $contract = $this->createNewContract(['is_sepa' => $is_sepa]);
 
       // schedule and update for tomorrow
-      $this->modifyContract($contract['id'], 'pause', 'tomorrow');
+      $this->modifyContract($contract['id'], 'pause', 'tomorrow', [ 'resume_date' => '+2 days' ]);
       $changes = $this->callAPISuccess('Activity', 'get', ['source_record_id' => $contract['id']]);
 
 
@@ -422,6 +422,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->modifyContract($contract['id'], 'pause', 'tomorrow', [
       'membership_payment.membership_annual' => '240.00',
       'membership_payment.cycle_day'         => 10,
+      'resume_date'                          => '+2 days',
     ]);
     $resume_activity_id = $this->callAPISuccess('Activity', 'getvalue', [
       'return'           => 'id',

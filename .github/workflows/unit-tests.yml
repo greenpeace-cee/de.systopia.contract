@@ -71,6 +71,8 @@ jobs:
           cp -R "$GITHUB_WORKSPACE/de.systopia.contract" "$EXT_DIR/de.systopia.contract"
           git clone https://github.com/Project60/org.project60.banking.git "$EXT_DIR/org.project60.banking"
           git clone https://github.com/Project60/org.project60.sepa.git "$EXT_DIR/org.project60.sepa"
+          git clone https://github.com/greenpeace-cee/adyen.git "$EXT_DIR/adyen"
+          git clone https://github.com/greenpeace-cee/mjwshared.git "$EXT_DIR/mjwshared"
           cv en de.systopia.contract
       - id: run-tests
         name: "Run Tests"
