@@ -43,6 +43,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
     $this->setAdyenProcessor();
     $this->setDefaultPspCreditor();
     $this->setDefaultSepaCreditor();
+    $this->defineCancelReasons();
   }
 
   public function tearDown(): void {
@@ -170,6 +171,32 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       ->first();
 
     $this->contact['email'] = 'test-contact@example.org';
+  }
+
+  private function defineCancelReasons() {
+    Api4\OptionValue::create(FALSE)
+      ->addValue('label', 'Adyen: Refused')
+      ->addValue('name', 'adyen_refused')
+      ->addValue('option_group_id.name', 'contract_cancel_reason')
+      ->execute();
+
+    Api4\OptionValue::create(FALSE)
+      ->addValue('label', 'Cancellation via bank')
+      ->addValue('name', 'cancellation_via_bank')
+      ->addValue('option_group_id.name', 'contract_cancel_reason')
+      ->execute();
+
+    Api4\OptionValue::create(FALSE)
+      ->addValue('label', 'RDNCC: Card expired')
+      ->addValue('name', 'rdncc_card_expired')
+      ->addValue('option_group_id.name', 'contract_cancel_reason')
+      ->execute();
+
+    Api4\OptionValue::create(FALSE)
+      ->addValue('label', 'RDN: Insufficient Funds')
+      ->addValue('name', 'rdn_insufficient_funds')
+      ->addValue('option_group_id.name', 'contract_cancel_reason')
+      ->execute();
   }
 
   private function setAdyenProcessor() {
