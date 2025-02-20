@@ -6,7 +6,7 @@ function civicrm_api3_Contract_start_date($params) {
   try {
     _civicrm_api3_Contract_start_date_validate_params($params);
 
-    $today = CRM_Utils_Array::value('_today', $params);
+    $today = CRM_Utils_Array::value('_today', $params, 'now');
     $payment_adapter = CRM_Contract_Utils::getPaymentAdapterClass($params['payment_adapter']);
     $start_date = $payment_adapter::startDate($params, $today);
 

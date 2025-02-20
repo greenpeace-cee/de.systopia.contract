@@ -1,6 +1,11 @@
 name: "Run unit tests"
 
-on: ["push"]
+on:
+  push:
+    branches:
+      - master
+    tags:
+  pull_request:
 
 env:
   CIVI_CI_CIVICRM: ${{ vars.CIVI_CI_CIVICRM || '["master"]' }}
@@ -50,9 +55,8 @@ jobs:
     steps:
       - id: clone-repo
         name: "Clone the repository"
-        uses: "actions/checkout@v3"
+        uses: "actions/checkout@v4"
         with:
-          ref: "${{ github.ref_name }}"
           path: "de.systopia.contract"
       - id: build-ci
         uses: greenpeace-cee/civi-ci@main
