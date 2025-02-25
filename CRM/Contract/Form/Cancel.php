@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4;
+
 class CRM_Contract_Form_Cancel extends CRM_Core_Form {
   function preProcess () {
     $contract_id = CRM_Utils_Request::retrieve("id", "Integer");
@@ -50,6 +52,21 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
       $medium_id_options,
       true,
       [ "class" => "crm-select2" ]
+    );
+
+    // Cancellation tags
+    $cancel_tags = (array) Api4\Tag::get(FALSE)
+      ->addWhere('parent_id:name', '=', 'contract_cancellation')
+      ->addSelect('name', 'label', 'description')
+      ->execute();
+
+    $this->add(
+      "select2",
+      "cancel_tags",
+      ts("Cancellation tags"),
+      $cancel_tags,
+      false,
+      [ "class" => "crm-select2", "multiple" => true, ]
     );
 
     // Notes (note)
@@ -138,11 +155,19 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
     $contract_id = $this->get("id");
     $submitted = $this->exportValues();
 
+    $cancel_tags = (array) Api4\Tag::get(FALSE)
+      ->addWhere('id', 'IN', explode(',', $submitted['cancel_tags']))
+      ->addSelect('name')
+      ->execute();
+
+    $tag_names = array_map(fn ($tag) => $tag['name'], $cancel_tags);
+
     $modify_params = [
       "action"                                           => "cancel",
       "id"                                               => $contract_id,
       "medium_id"                                        => $submitted["medium_id"],
       "membership_cancellation.membership_cancel_reason" => $submitted["cancel_reason"],
+      "membership_cancellation.cancel_tags"              => $tag_names,
       "note"                                             => $submitted["note"],
     ];
 

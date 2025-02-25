@@ -25,6 +25,12 @@
         <div class="clear"></div>
     </div>
 
+    <div class="crm-section" id="cancel_tags">
+        <div class="label">{$form.cancel_tags.label}</div>
+        <div class="content">{$form.cancel_tags.html}</div>
+        <div class="clear"></div>
+    </div>
+
     <div class="crm-section" id="note">
         <div class="label">{$form.note.label}</div>
         <div class="content">{$form.note.html}</div>
