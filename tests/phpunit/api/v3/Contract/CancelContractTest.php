@@ -61,8 +61,11 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       'id'                                               => $membership['id'],
       'date'                                             => 'now',
       'medium_id'                                        => $encounter_medium,
+      'membership_cancellation.cancel_tags'              => [],
       'membership_cancellation.membership_cancel_reason' => $cancel_reason,
     ]);
+
+    $cancel_activity_id = $contract_cancel_result['values'][1]['change_activity_id'];
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
@@ -83,6 +86,18 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       ->first()['contribution_status_id:name'];
 
     $this->assertEquals('Completed', $updated_rc_status, 'Recurring contribution should be completed');
+
+    $cancel_activities = (array) Api4\Activity::get(FALSE)
+      ->addJoin('EntityTag AS et', 'INNER', ['id', '=', 'et.entity_id'])
+      ->addWhere('id', '=', $cancel_activity_id)
+      ->addWhere('et.entity_table', '=', 'civicrm_activity')
+      ->addSelect('et.tag_id:name')
+      ->addOrderBy('et.tag_id:name', 'ASC')
+      ->execute();
+
+    $cancel_tags = array_map(fn ($a) => $a['et.tag_id:name'], $cancel_activities);
+
+    $this->assertEquals([], $cancel_tags);
   }
 
   public function testEFT() {
@@ -126,8 +141,11 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       'id'                                               => $membership['id'],
       'date'                                             => 'now',
       'medium_id'                                        => $encounter_medium,
+      'membership_cancellation.cancel_tags'              => ['cancel_tag_1'],
       'membership_cancellation.membership_cancel_reason' => $cancel_reason,
     ]);
+
+    $cancel_activity_id = $contract_cancel_result['values'][1]['change_activity_id'];
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
@@ -148,6 +166,18 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       ->first()['contribution_status_id:name'];
 
     $this->assertEquals('Completed', $updated_rc_status, 'Recurring contribution should be completed');
+
+    $cancel_activities = (array) Api4\Activity::get(FALSE)
+      ->addJoin('EntityTag AS et', 'INNER', ['id', '=', 'et.entity_id'])
+      ->addWhere('id', '=', $cancel_activity_id)
+      ->addWhere('et.entity_table', '=', 'civicrm_activity')
+      ->addSelect('et.tag_id:name')
+      ->addOrderBy('et.tag_id:name', 'ASC')
+      ->execute();
+
+    $cancel_tags = array_map(fn ($a) => $a['et.tag_id:name'], $cancel_activities);
+
+    $this->assertEquals(['cancel_tag_1'], $cancel_tags);
   }
 
   public function testPSP() {
@@ -205,8 +235,11 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       'id'                                               => $membership['id'],
       'date'                                             => 'now',
       'medium_id'                                        => $encounter_medium,
+      'membership_cancellation.cancel_tags'              => ['cancel_tag_2', 'cancel_tag_3'],
       'membership_cancellation.membership_cancel_reason' => $cancel_reason,
     ]);
+
+    $cancel_activity_id = $contract_cancel_result['values'][1]['change_activity_id'];
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
@@ -235,6 +268,18 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       ->first()['status'];
 
     $this->assertEquals('COMPLETE', $updated_mandate_status);
+
+    $cancel_activities = (array) Api4\Activity::get(FALSE)
+      ->addJoin('EntityTag AS et', 'INNER', ['id', '=', 'et.entity_id'])
+      ->addWhere('id', '=', $cancel_activity_id)
+      ->addWhere('et.entity_table', '=', 'civicrm_activity')
+      ->addSelect('et.tag_id:name')
+      ->addOrderBy('et.tag_id:name', 'ASC')
+      ->execute();
+
+    $cancel_tags = array_map(fn ($a) => $a['et.tag_id:name'], $cancel_activities);
+
+    $this->assertEquals(['cancel_tag_2', 'cancel_tag_3'], $cancel_tags);
   }
 
   public function testSEPA() {
@@ -290,8 +335,11 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       'id'                                               => $membership['id'],
       'date'                                             => 'now',
       'medium_id'                                        => $encounter_medium,
+      'membership_cancellation.cancel_tags'              => ['cancel_tag_1', 'cancel_tag_2', 'cancel_tag_3'],
       'membership_cancellation.membership_cancel_reason' => $cancel_reason,
     ]);
+
+    $cancel_activity_id = $contract_cancel_result['values'][1]['change_activity_id'];
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
@@ -320,6 +368,18 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       ->first()['status'];
 
     $this->assertEquals('COMPLETE', $updated_mandate_status);
+
+    $cancel_activities = (array) Api4\Activity::get(FALSE)
+      ->addJoin('EntityTag AS et', 'INNER', ['id', '=', 'et.entity_id'])
+      ->addWhere('id', '=', $cancel_activity_id)
+      ->addWhere('et.entity_table', '=', 'civicrm_activity')
+      ->addSelect('et.tag_id:name')
+      ->addOrderBy('et.tag_id:name', 'ASC')
+      ->execute();
+
+    $cancel_tags = array_map(fn ($a) => $a['et.tag_id:name'], $cancel_activities);
+
+    $this->assertEquals(['cancel_tag_1', 'cancel_tag_2', 'cancel_tag_3'], $cancel_tags);
   }
 
 }

@@ -6,6 +6,7 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
 use CRM_Contract_ExtensionUtil as E;
 
 /**
@@ -216,6 +217,23 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
           'bit'   => CRM_Core_Action::UPDATE,
           'qs'    => "id=%%id%%",
       ];
+    }
+  }
+
+  public function save() {
+    parent::save();
+
+    $activity_id = $this->data['id'] ?? NULL;
+    $cancel_tags = $this->data['membership_cancellation.cancel_tags'] ?? [];
+
+    if (empty($activity_id) || empty($cancel_tags)) return;
+
+    foreach ($cancel_tags as $tag) {
+      Api4\EntityTag::create(FALSE)
+        ->addValue('entity_table', 'civicrm_activity')
+        ->addValue('entity_id', $activity_id)
+        ->addValue('tag_id.name', $tag)
+        ->execute();
     }
   }
 }

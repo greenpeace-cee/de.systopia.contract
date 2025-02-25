@@ -43,7 +43,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
     $this->setAdyenProcessor();
     $this->setDefaultPspCreditor();
     $this->setDefaultSepaCreditor();
-    $this->defineCancelReasons();
+    $this->defineCancelReasonsAndTags();
   }
 
   public function tearDown(): void {
@@ -173,7 +173,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
     $this->contact['email'] = 'test-contact@example.org';
   }
 
-  private function defineCancelReasons() {
+  private function defineCancelReasonsAndTags() {
     Api4\OptionValue::create(FALSE)
       ->addValue('label', 'Adyen: Refused')
       ->addValue('name', 'adyen_refused')
@@ -197,6 +197,14 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       ->addValue('name', 'rdn_insufficient_funds')
       ->addValue('option_group_id.name', 'contract_cancel_reason')
       ->execute();
+
+    for ($i = 1; $i < 4; $i++) {
+      Api4\Tag::create(FALSE)
+        ->addValue('name', "cancel_tag_$i")
+        ->addValue('label', "Cancel Tag $i")
+        ->addValue('parent_id:name', 'contract_cancellation')
+        ->execute();
+    }
   }
 
   private function setAdyenProcessor() {
