@@ -16,12 +16,13 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
   function buildQuickForm () {
 
     // Cancellation reason (cancel_reason)
-    $options_result = CRM_Contract_FormUtils::getOptionValueLabels("contract_cancel_reason", 0);
-
-    $cancel_reason_options = [ "" => "- none -" ] + $options_result;
+    $cancel_reason_options = (array) Api4\OptionValue::get(FALSE)
+      ->addWhere('option_group_id:name', '=', 'contract_cancel_reason')
+      ->addSelect('value', 'label', 'description')
+      ->execute();
 
     $this->add(
-      "select",
+      "select2",
       "cancel_reason",
       ts("Cancellation reason"),
       $cancel_reason_options,
@@ -155,6 +156,12 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
     $contract_id = $this->get("id");
     $submitted = $this->exportValues();
 
+    $cancel_reason = Api4\OptionValue::get(FALSE)
+      ->addWhere('id', '=', $submitted['cancel_reason'])
+      ->addSelect('value')
+      ->execute()
+      ->first();
+
     $cancel_tags = (array) Api4\Tag::get(FALSE)
       ->addWhere('id', 'IN', explode(',', $submitted['cancel_tags']))
       ->addSelect('name')
@@ -166,8 +173,8 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
       "action"                                           => "cancel",
       "id"                                               => $contract_id,
       "medium_id"                                        => $submitted["medium_id"],
-      "membership_cancellation.membership_cancel_reason" => $submitted["cancel_reason"],
       "membership_cancellation.cancel_tags"              => $tag_names,
+      "membership_cancellation.membership_cancel_reason" => $cancel_reason['value'],
       "note"                                             => $submitted["note"],
     ];
 
