@@ -17,8 +17,11 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
 
     // Cancellation reason (cancel_reason)
     $cancel_reason_options = (array) Api4\OptionValue::get(FALSE)
-      ->addWhere('option_group_id:name', '=', 'contract_cancel_reason')
       ->addSelect('value', 'label', 'description')
+      ->addWhere('option_group_id:name', '=', 'contract_cancel_reason')
+      ->addWhere('is_active', '=', TRUE)
+      ->addWhere('filter', '=', 0)
+      ->addOrderBy('weight', 'ASC')
       ->execute();
 
     $this->add(
@@ -40,6 +43,21 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
       [ "time" => true ]
     );
 
+    // Cancellation tags
+    $cancel_tags = (array) Api4\Tag::get(FALSE)
+      ->addWhere('parent_id:name', '=', 'contract_cancellation')
+      ->addWhere('is_selectable', '=', TRUE)
+      ->addSelect('name', 'label', 'description', 'color')
+      ->execute();
+
+    $this->add(
+      "select2",
+      "cancel_tags",
+      ts("Cancellation tags"),
+      $cancel_tags,
+      false,
+      [ "class" => "crm-select2", "multiple" => true, ]
+    );
 
     // Source media (medium_id)
     $options_result = CRM_Contract_FormUtils::getOptionValueLabels("encounter_medium");
@@ -53,21 +71,6 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
       $medium_id_options,
       true,
       [ "class" => "crm-select2" ]
-    );
-
-    // Cancellation tags
-    $cancel_tags = (array) Api4\Tag::get(FALSE)
-      ->addWhere('parent_id:name', '=', 'contract_cancellation')
-      ->addSelect('name', 'label', 'description')
-      ->execute();
-
-    $this->add(
-      "select2",
-      "cancel_tags",
-      ts("Cancellation tags"),
-      $cancel_tags,
-      false,
-      [ "class" => "crm-select2", "multiple" => true, ]
     );
 
     // Notes (note)

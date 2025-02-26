@@ -5,6 +5,12 @@
         <div class="clear"></div>
     </div>
 
+    <div class="crm-section" id="cancel_tags">
+        <div class="label">{$form.cancel_tags.label}</div>
+        <div class="content">{$form.cancel_tags.html}</div>
+        <div class="clear"></div>
+    </div>
+
     <div class="crm-section" id="activity_date">
         <div class="label">
             {$form.activity_date.label}
@@ -22,12 +28,6 @@
     <div class="crm-section" id="medium_id">
         <div class="label">{$form.medium_id.label}</div>
         <div class="content">{$form.medium_id.html}</div>
-        <div class="clear"></div>
-    </div>
-
-    <div class="crm-section" id="cancel_tags">
-        <div class="label">{$form.cancel_tags.label}</div>
-        <div class="content">{$form.cancel_tags.html}</div>
         <div class="clear"></div>
     </div>
 
