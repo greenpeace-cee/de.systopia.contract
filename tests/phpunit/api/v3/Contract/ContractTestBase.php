@@ -27,7 +27,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       ->install('org.project60.banking')
       ->install('mjwshared')
       ->install('adyen')
-      ->apply(TRUE);
+      ->apply();
   }
 
   public function setUp(): void {

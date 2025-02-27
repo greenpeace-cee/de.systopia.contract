@@ -38,7 +38,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
         ->installMe(__DIR__)
         ->install('org.project60.sepa')
         ->install('org.project60.banking')
-        ->apply(TRUE);
+        ->apply();
   }
 
   public function setUp(): void
