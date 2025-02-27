@@ -51,7 +51,13 @@
       <td>{$activityStatuses[$a.status_id]}</td>
       <td nowrap="nowrap">
         <a href="{crmURL p='civicrm/activity' q="action=view&reset=1&id=`$a.id`&context=activity&searchContext=activity&cid=`$a.target_contact_id.0`"}" class="action-item crm-hover-button" title="View Activity">View</a>
-        {if $activityStatuses[$a.status_id] neq 'Completed'} <a href="{crmURL p='civicrm/activity/add' q="action=update&reset=1&id=`$a.id`&context=activity&searchContext=activity&cid=`$a.target_contact_id.0`"}" class="action-item crm-hover-button" title="Edit Activity">Edit</a> {/if}</td>
+
+        {if $activityStatuses[$a.status_id] != 'Completed'}
+          <a href="{crmURL p='civicrm/activity/add' q="action=update&reset=1&id=`$a.id`&context=activity&searchContext=activity&cid=`$a.target_contact_id.0`"}" class="action-item crm-hover-button" title="Edit Activity">Edit</a>
+        {elseif $activityTypes[$a.activity_type_id] == 'Cancel Contract'}
+          <a href="{crmURL p='civicrm/contract/amend-cancel' q="activity_id=`$a.id`"}" class="action-item crm-hover-button" title="Amend Cancellation">Amend</a>
+        {/if}
+      </td>
     </tr>
   {/foreach}
 </table>

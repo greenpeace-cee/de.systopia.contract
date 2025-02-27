@@ -65,4 +65,10 @@
     <page_callback>CRM_Contract_Form_Cancel</page_callback>
     <access_arguments>edit memberships</access_arguments>
   </item>
+  <item>
+    <path>civicrm/contract/amend-cancel</path>
+    <title>Amend contract cancellation</title>
+    <page_callback>CRM_Contract_Form_AmendCancel</page_callback>
+    <access_arguments>edit memberships</access_arguments>
+  </item>
 </menu>
