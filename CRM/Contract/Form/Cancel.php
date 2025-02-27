@@ -33,16 +33,6 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
       [ "class" => "crm-select2 huge" ]
     );
 
-    // Schedule date (activity_date)
-    $this->add(
-      "datepicker",
-      "activity_date",
-      ts("Schedule date"),
-      [],
-      true,
-      [ "time" => true ]
-    );
-
     // Cancellation tags
     $cancel_tags = (array) Api4\Tag::get(FALSE)
       ->addWhere('parent_id:name', '=', 'contract_cancellation')
@@ -57,6 +47,16 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
       $cancel_tags,
       false,
       [ "class" => "crm-select2", "multiple" => true, ]
+    );
+
+    // Schedule date (activity_date)
+    $this->add(
+      "datepicker",
+      "activity_date",
+      ts("Schedule date"),
+      [],
+      true,
+      [ "time" => true ]
     );
 
     // Source media (medium_id)
