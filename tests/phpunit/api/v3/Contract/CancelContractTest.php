@@ -65,7 +65,7 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       'membership_cancellation.membership_cancel_reason' => $cancel_reason,
     ]);
 
-    $cancel_activity_id = $contract_cancel_result['values'][1]['change_activity_id'];
+    $cancel_activity_id = reset($contract_cancel_result['values'])['change_activity_id'];
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
@@ -145,7 +145,7 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       'membership_cancellation.membership_cancel_reason' => $cancel_reason,
     ]);
 
-    $cancel_activity_id = $contract_cancel_result['values'][1]['change_activity_id'];
+    $cancel_activity_id = reset($contract_cancel_result['values'])['change_activity_id'];
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
@@ -239,7 +239,7 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       'membership_cancellation.membership_cancel_reason' => $cancel_reason,
     ]);
 
-    $cancel_activity_id = $contract_cancel_result['values'][1]['change_activity_id'];
+    $cancel_activity_id = reset($contract_cancel_result['values'])['change_activity_id'];
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
@@ -339,7 +339,7 @@ class api_v3_Contract_CancelContractTest extends api_v3_Contract_ContractTestBas
       'membership_cancellation.membership_cancel_reason' => $cancel_reason,
     ]);
 
-    $cancel_activity_id = $contract_cancel_result['values'][1]['change_activity_id'];
+    $cancel_activity_id = reset($contract_cancel_result['values'])['change_activity_id'];
 
     civicrm_api3('Contract', 'process_scheduled_modifications');
 
