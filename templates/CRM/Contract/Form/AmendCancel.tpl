@@ -17,6 +17,18 @@
         <div class="clear"></div>
     </div>
 
+    <div class="crm-section" id="medium_id">
+        <div class="label">{$form.medium_id.label}</div>
+        <div class="content">{$form.medium_id.html}</div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="crm-section" id="details">
+        <div class="label">{$form.details.label}</div>
+        <div class="content">{$form.details.html}</div>
+        <div class="clear"></div>
+    </div>
+
     <div class="crm-submit-buttons">
         {include file="CRM/common/formButtons.tpl" location="bottom"}
     </div>

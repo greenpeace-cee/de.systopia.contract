@@ -12,6 +12,8 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
     $activity = Api4\Activity::get(FALSE)
       ->addSelect(
         'activity_type_id',
+        'medium_id',
+        'details',
         'source_record_id',
         'contract_cancellation.contact_history_cancel_reason',
         'GROUP_CONCAT(entity_tag.tag_id) AS cancel_tags'
@@ -98,6 +100,25 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
       [ 'class' => 'crm-select2', 'multiple' => TRUE ]
     );
 
+    // Source medium (medium_id)
+    $encounter_media = CRM_Contract_FormUtils::getOptionValueLabels("encounter_medium");
+
+    $this->add(
+      'select',
+      'medium_id',
+      ts('Source media'),
+      $encounter_media,
+      TRUE,
+      [ 'class' => 'crm-select2' ]
+    );
+
+    // Notes (details)
+    if (version_compare(CRM_Utils_System::version(), '4.7', '<')) {
+      $this->addWysiwyg('details', ts('Notes'), []);
+    } else {
+      $this->add('wysiwyg', 'details', ts('Notes'));
+    }
+
     // Discard/Confirm buttons
     $this->addButtons([
       [
@@ -121,7 +142,9 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
 
     parent::setDefaults([
       'cancel_reason' => $activity['cancel_reason'],
-      'cancel_tags' => implode(',', $activity['cancel_tags'] ?? []),
+      'cancel_tags'   => implode(',', $activity['cancel_tags'] ?? []),
+      'details'       => $activity['details'],
+      'medium_id'     => $activity['medium_id'],
     ]);
   }
 
@@ -142,6 +165,8 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
       ->first()['value'];
 
     $cancel_tags = empty($submitted['cancel_tags']) ? [] : explode(',', $submitted['cancel_tags']);
+    $details = $submitted['details'];
+    $medium_id = $submitted['medium_id'];
 
     // Create an instance of CRM_Contract_Change_Cancel to render its default activity subject
     $change = CRM_Contract_Change::getChangeForData($activity);
@@ -150,6 +175,8 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
     // Update cancel reason and subject of the activity
     Api4\Activity::update(FALSE)
       ->addValue('contract_cancellation.contact_history_cancel_reason', $cancel_reason)
+      ->addValue('details', $details)
+      ->addValue('medium_id', $medium_id)
       ->addValue('subject', $change->renderDefaultSubject(NULL))
       ->addWhere('id', '=', $activity['id'])
       ->execute();
