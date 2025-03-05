@@ -26,7 +26,7 @@ class CRM_Contract_PaymentAdapterTestBase
       ->install('org.project60.banking')
       ->install('mjwshared')
       ->install('adyen')
-      ->apply(TRUE);
+      ->apply();
   }
 
   public function setUp(): void {

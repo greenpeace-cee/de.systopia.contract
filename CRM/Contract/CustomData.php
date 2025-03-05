@@ -14,13 +14,13 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 
-define('CUSTOM_DATA_HELPER_VERSION', '0.6');
-define('CUSTOM_DATA_HELPER_LOG_LEVEL', 0);
+defined('CUSTOM_DATA_HELPER_VERSION') or define('CUSTOM_DATA_HELPER_VERSION', '0.6');
+defined('CUSTOM_DATA_HELPER_LOG_LEVEL') or define('CUSTOM_DATA_HELPER_LOG_LEVEL', 0);
 
 // log levels
-define('CUSTOM_DATA_HELPER_LOG_DEBUG', 1);
-define('CUSTOM_DATA_HELPER_LOG_INFO',  3);
-define('CUSTOM_DATA_HELPER_LOG_ERROR', 5);
+defined('CUSTOM_DATA_HELPER_LOG_DEBUG') or define('CUSTOM_DATA_HELPER_LOG_DEBUG', 1);
+defined('CUSTOM_DATA_HELPER_LOG_INFO') or define('CUSTOM_DATA_HELPER_LOG_INFO',  3);
+defined('CUSTOM_DATA_HELPER_LOG_ERROR') or define('CUSTOM_DATA_HELPER_LOG_ERROR', 5);
 
 class CRM_Contract_CustomData {
 

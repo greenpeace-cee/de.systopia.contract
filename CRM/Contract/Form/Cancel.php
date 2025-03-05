@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4;
+
 class CRM_Contract_Form_Cancel extends CRM_Core_Form {
   function preProcess () {
     $contract_id = CRM_Utils_Request::retrieve("id", "Integer");
@@ -14,17 +16,37 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
   function buildQuickForm () {
 
     // Cancellation reason (cancel_reason)
-    $options_result = CRM_Contract_FormUtils::getOptionValueLabels("contract_cancel_reason", 0);
-
-    $cancel_reason_options = [ "" => "- none -" ] + $options_result;
+    $cancel_reason_options = (array) Api4\OptionValue::get(FALSE)
+      ->addSelect('value', 'label', 'description')
+      ->addWhere('option_group_id:name', '=', 'contract_cancel_reason')
+      ->addWhere('is_active', '=', TRUE)
+      ->addWhere('filter', '=', 0)
+      ->addOrderBy('weight', 'ASC')
+      ->execute();
 
     $this->add(
-      "select",
+      "select2",
       "cancel_reason",
       ts("Cancellation reason"),
       $cancel_reason_options,
       true,
       [ "class" => "crm-select2 huge" ]
+    );
+
+    // Cancellation tags
+    $cancel_tags = (array) Api4\Tag::get(FALSE)
+      ->addWhere('parent_id:name', '=', 'contract_cancellation')
+      ->addWhere('is_selectable', '=', TRUE)
+      ->addSelect('name', 'label', 'description', 'color')
+      ->execute();
+
+    $this->add(
+      "select2",
+      "cancel_tags",
+      ts("Cancellation tags"),
+      $cancel_tags,
+      false,
+      [ "class" => "crm-select2", "multiple" => true, ]
     );
 
     // Schedule date (activity_date)
@@ -36,7 +58,6 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
       true,
       [ "time" => true ]
     );
-
 
     // Source media (medium_id)
     $options_result = CRM_Contract_FormUtils::getOptionValueLabels("encounter_medium");
@@ -138,11 +159,25 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
     $contract_id = $this->get("id");
     $submitted = $this->exportValues();
 
+    $cancel_reason = Api4\OptionValue::get(FALSE)
+      ->addWhere('id', '=', $submitted['cancel_reason'])
+      ->addSelect('value')
+      ->execute()
+      ->first();
+
+    $cancel_tags = (array) Api4\Tag::get(FALSE)
+      ->addWhere('id', 'IN', explode(',', $submitted['cancel_tags']))
+      ->addSelect('name')
+      ->execute();
+
+    $tag_names = array_map(fn ($tag) => $tag['name'], $cancel_tags);
+
     $modify_params = [
       "action"                                           => "cancel",
       "id"                                               => $contract_id,
       "medium_id"                                        => $submitted["medium_id"],
-      "membership_cancellation.membership_cancel_reason" => $submitted["cancel_reason"],
+      "membership_cancellation.cancel_tags"              => $tag_names,
+      "membership_cancellation.membership_cancel_reason" => $cancel_reason['value'],
       "note"                                             => $submitted["note"],
     ];
 

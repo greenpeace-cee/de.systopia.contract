@@ -6,6 +6,7 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
 use CRM_Contract_ExtensionUtil as E;
 
 /**
@@ -162,24 +163,25 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
   /**
    * Render the default subject
    *
-   * @param $contract_after       array  data of the contract after
-   * @param $contract_before      array  data of the contract before
-   * @return                      string the subject line
+   * @param $contract_after array     not used
+   * @param $contract_before array    not used
+   * @return string                   the subject line
    */
   public function renderDefaultSubject($contract_after, $contract_before = NULL) {
     if ($this->isNew()) {
       return 'Cancel Contract';
-    } else {
-      $contract_id = $this->getContractID();
-      $subject = "id{$contract_id}:";
-      if (!empty($this->data['contract_cancellation.contact_history_cancel_reason'])) {
-        // TODO: not needed any more? (see https://redmine.greenpeace.at/issues/1276#note-74)
-        // FIXME: replicating weird behaviour by old engine
-        //$subject .= ' cancel reason ' . $this->resolveValue($this->data['contract_cancellation.contact_history_cancel_reason'], 'contract_cancellation.contact_history_cancel_reason');
-        $subject .= ' cancel reason ' . $this->labelValue($this->data['contract_cancellation.contact_history_cancel_reason'], 'contract_cancellation.contact_history_cancel_reason');
-      }
-      return $subject;
     }
+
+    $contract_id = $this->getContractID();
+    $column_name = 'contract_cancellation.contact_history_cancel_reason';
+
+    if (empty($this->data[$column_name])) {
+      return "id$contract_id:";
+    }
+
+    $cancel_reason = $this->labelValue($this->data[$column_name], $column_name);
+
+    return "id$contract_id: cancel reason $cancel_reason";
   }
 
   /**
@@ -216,6 +218,23 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
           'bit'   => CRM_Core_Action::UPDATE,
           'qs'    => "id=%%id%%",
       ];
+    }
+  }
+
+  public function save() {
+    parent::save();
+
+    $activity_id = $this->data['id'] ?? NULL;
+    $cancel_tags = $this->data['membership_cancellation.cancel_tags'] ?? [];
+
+    if (empty($activity_id) || empty($cancel_tags)) return;
+
+    foreach ($cancel_tags as $tag) {
+      Api4\EntityTag::create(FALSE)
+        ->addValue('entity_table', 'civicrm_activity')
+        ->addValue('entity_id', $activity_id)
+        ->addValue('tag_id.name', $tag)
+        ->execute();
     }
   }
 }
