@@ -6,8 +6,8 @@ return [
   [
     'name' => 'Tag_contract_cancellation',
     'entity' => 'Tag',
-    'cleanup' => 'unused',
-    'update' => 'unmodified',
+    'cleanup' => 'never',
+    'update' => 'always',
     'params' => [
       'version' => 4,
       'values' => [
