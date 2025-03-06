@@ -46,7 +46,7 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
       ts("Cancellation tags"),
       $cancel_tags,
       false,
-      [ "class" => "crm-select2", "multiple" => true, ]
+      [ "class" => "crm-select2 huge", "multiple" => true, ]
     );
 
     // Schedule date (activity_date)

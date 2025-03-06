@@ -137,7 +137,7 @@ return [
         'option_group_id.name' => 'contact_channel',
         'label' => E::ts('DD-TFR'),
         'value' => 'DD-TFR',
-        'name' => 'DD_TFR',
+        'name' => 'DD-TFR',
         'is_active' => TRUE,
       ],
       'match' => [

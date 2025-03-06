@@ -97,7 +97,7 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
       ts('Cancellation tags'),
       $cancel_tags,
       FALSE,
-      [ 'class' => 'crm-select2', 'multiple' => TRUE ]
+      [ 'class' => 'crm-select2 huge', 'multiple' => TRUE ]
     );
 
     // Source medium (medium_id)
