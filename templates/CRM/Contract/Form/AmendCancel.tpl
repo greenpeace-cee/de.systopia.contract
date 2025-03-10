@@ -5,6 +5,12 @@
         </div>
     {/if}
 
+    {if !$reason_editable}
+        <div class="messages warning">
+            The cancel reason for this contract cannot be changed
+        </div>
+    {/if}
+
     <div class="crm-section" id="cancel_reason">
         <div class="label">{$form.cancel_reason.label}</div>
         <div class="content">{$form.cancel_reason.html}</div>
