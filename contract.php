@@ -191,9 +191,6 @@ function contract_civicrm_buildForm($formName, &$form) {
         $formUtils->replaceIdWithLabel('contract_updates.ch_from_ba', 'BankAccountReference');
         $formUtils->replaceIdWithLabel('contract_updates.ch_to_ba', 'BankAccountReference');
 
-        // Show membership label, not id
-        $formUtils->showMembershipTypeLabel();
-
       }elseif($form->getAction() == CRM_Core_Action::UPDATE){
         CRM_Core_Resources::singleton()->addScriptFile( 'de.systopia.contract', 'templates/CRM/Activity/Form/Edit.js' );
       }
