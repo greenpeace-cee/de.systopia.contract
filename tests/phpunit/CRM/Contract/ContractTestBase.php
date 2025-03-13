@@ -61,6 +61,14 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
     // check again
     $default_creditor_id = (int) CRM_Sepa_Logic_Settings::getSetting('batching_default_creditor');
     $this->assertNotEmpty($default_creditor_id, "There is no default SEPA creditor set");
+
+    \Civi\Api4\OptionValue::create(FALSE)
+      ->addValue('option_group_id:name', 'contract_cancel_reason')
+      ->addValue('label', 'Unknown')
+      ->addValue('value', '1')
+      ->addValue('name', 'Unknown')
+      ->addValue('is_active', TRUE)
+      ->execute();
   }
 
   public function tearDown(): void
