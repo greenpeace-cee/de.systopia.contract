@@ -39,7 +39,7 @@ return [
         'label' => E::ts('Unknown'),
         'value' => '1',
         'name' => 'Unknown',
-        'is_active' => TRUE,
+        'is_active' => FALSE,
       ],
       'match' => [
         'name',
