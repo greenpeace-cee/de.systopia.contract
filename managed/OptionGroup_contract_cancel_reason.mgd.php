@@ -27,24 +27,4 @@ return [
       ],
     ],
   ],
-  [
-    'name' => 'OptionGroup_contract_cancel_reason_OptionValue_Unknown',
-    'entity' => 'OptionValue',
-    'cleanup' => 'never',
-    'update' => 'always',
-    'params' => [
-      'version' => 4,
-      'values' => [
-        'option_group_id.name' => 'contract_cancel_reason',
-        'label' => E::ts('Unknown'),
-        'value' => '1',
-        'name' => 'Unknown',
-        'is_active' => TRUE,
-      ],
-      'match' => [
-        'name',
-        'option_group_id',
-      ],
-    ],
-  ],
 ];
