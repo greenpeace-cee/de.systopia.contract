@@ -31,11 +31,6 @@
     <access_arguments>edit memberships</access_arguments>
   </item>
   <item>
-    <path>civicrm/contract/recurringContributions</path>
-    <page_callback>CRM_Contract_Page_RecurringContributions</page_callback>
-    <access_arguments>edit memberships,access CiviContribute</access_arguments>
-  </item>
-  <item>
     <path>civicrm/contract/review</path>
     <page_callback>CRM_Contract_Page_Review</page_callback>
     <title>Contract Review</title>
@@ -69,6 +64,12 @@
     <path>civicrm/contract/amend-cancel</path>
     <title>Amend contract cancellation</title>
     <page_callback>CRM_Contract_Form_AmendCancel</page_callback>
+    <access_arguments>edit memberships</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/contract/resume</path>
+    <title>Resume contract</title>
+    <page_callback>CRM_Contract_Form_Resume</page_callback>
     <access_arguments>edit memberships</access_arguments>
   </item>
 </menu>

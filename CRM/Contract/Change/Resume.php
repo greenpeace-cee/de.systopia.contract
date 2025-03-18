@@ -174,7 +174,15 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
    * @param array $membership_data
    */
   public static function modifyMembershipActionLinks(&$links, $current_status_name, $membership_data) {
-    // no-op
+    if (in_array($current_status_name, self::getStartStatusList())) {
+      $links[] = [
+          'name'  => E::ts("Resume"),
+          'title' => self::getChangeTitle(),
+          'url'   => "civicrm/contract/resume",
+          'bit'   => CRM_Core_Action::UPDATE,
+          'qs'    => "membership_id=%%id%%",
+      ];
+    }
   }
 
   public function renderDefaultSubject($contract_after, $contract_before = null) {
