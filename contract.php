@@ -23,7 +23,7 @@ function contract_civicrm_config(&$config) {
 
   Civi::dispatcher()->addListener(
     'civi.recur.nextschedcontributiondatealter',
-    ['CRM_Contract_PaymentAdapter_Adyen', 'nextScheduledContributionDate']
+    ['CRM_Contract_PaymentAdapter_Adyen', 'updateNextScheduledContributionDate']
   );
 }
 

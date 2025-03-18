@@ -500,4 +500,37 @@ class CRM_Contract_RecurringContribution {
       ->first();
   }
 
+  public static function nextScheduledContributionDate($recurring_contribution_id) {
+    $recurring_contribution = Api4\ContributionRecur::get(FALSE)
+      ->addSelect('cycle_day', 'frequency_interval', 'frequency_unit')
+      ->addWhere('id', '=', $recurring_contribution_id)
+      ->execute()
+      ->first();
+
+    if (is_null($recurring_contribution)) return;
+
+    $latest_contribution = Api4\Contribution::get(FALSE)
+      ->addWhere('contribution_recur_id', '=', $recurring_contribution_id)
+      ->addSelect('receive_date')
+      ->addOrderBy('receive_date', 'DESC')
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    $covered_until = is_null($latest_contribution)
+      ? new DateTimeImmutable('now')
+      : CRM_Contract_DateHelper::nextRegularDate(
+        $latest_contribution['receive_date'],
+        (int) $recurring_contribution['frequency_interval'],
+        $recurring_contribution['frequency_unit']
+      );
+
+    $next_sched_contrib_date = CRM_Contract_DateHelper::findNextOfDays(
+      [(int) $recurring_contribution['cycle_day']],
+      $covered_until->format('Y-m-d')
+    );
+
+    return $next_sched_contrib_date;
+  }
+
 }
