@@ -318,6 +318,8 @@ class CRM_Contract_PaymentAdapter_PSPSEPA implements CRM_Contract_PaymentAdapter
             "id" => $params["recurring_contribution_id"],
         ])["payment_instrument_id"];
 
+        $result["payment_frequencies"] = CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 4, 12]);
+
         return $result;
     }
 

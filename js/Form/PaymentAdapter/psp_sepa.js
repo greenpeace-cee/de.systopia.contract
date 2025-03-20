@@ -1,8 +1,8 @@
 import {
-    mapPaymentFrequency,
     parseMoney,
     registerPaymentAdapter,
     updateCycleDayField,
+    updateFrequencyField,
 } from "../utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
@@ -13,7 +13,7 @@ class PSP {
         const currency = EXT_VARS.default_currency;
         const amount = parseMoney(formFields["amount"].val());
         const frequency = parseInt(formFields["frequency"].val());
-        const frequencyLabel = mapPaymentFrequency(frequency);
+        const frequencyLabel = EXT_VARS.frequency_labels[frequency];
         const annualAmount = (amount * frequency).toFixed(2);
         const piField = formFields["pa-psp_sepa-payment_instrument"];
         const paymentInstrumentID = piField.val();
@@ -74,11 +74,10 @@ class PSP {
         cj("span#currency").text(currency);
 
         // Cycle days
-        updateCycleDayField(
-            formFields,
-            ADAPTER_VARS.cycle_days[selectedCreditor],
-            EXT_VARS.current_cycle_day
-        );
+        updateCycleDayField(formFields, ADAPTER_VARS.cycle_days[selectedCreditor] ?? [], EXT_VARS.current_cycle_day);
+
+        // Payment frequencies
+        updateFrequencyField(formFields, ADAPTER_VARS.payment_frequencies, EXT_VARS.current_frequency);
 
         // Payment instruments
         const paymentInstrumentField = formFields["pa-psp_sepa-payment_instrument"];
@@ -136,7 +135,7 @@ class PSP {
 
         // Frequency
         const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequencies[frequency]);
+        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequency_labels[frequency]);
 
         // Currency
         const currency = ADAPTER_VARS.currencies[creditorId] || EXT_VARS.default_currency;

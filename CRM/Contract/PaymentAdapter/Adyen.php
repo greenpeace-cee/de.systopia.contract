@@ -303,6 +303,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     return [
       'cycle_days'           => self::cycleDays(),
       'default_currency'     => Civi::settings()->get('defaultCurrency'),
+      "payment_frequencies"  => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
       'payment_token_fields' => $paymentTokenFields,
     ];
   }

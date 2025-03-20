@@ -509,21 +509,18 @@ class CRM_Contract_RecurringContribution {
   /**
    * Get a list of (accepted) payment frequencies
    *
-   * @return array list of payment frequencies
+   * @param $values array   Optional list of requested frequency values
+   * @return array          List of payment frequencies
    */
-  public static function getPaymentFrequencies() {
-    // this is a hand-picked list of options
-    $optionValues = civicrm_api3('OptionValue', 'get', array(
-      'value'           => array('IN' => array(1, 2, 4, 12)),
-      'return'          => 'label,value',
-      'option_group_id' => 'payment_frequency',
-    ));
+  public static function getPaymentFrequencies($values = [1, 2, 4, 12]) {
+    $payment_frequencies = Api4\OptionValue::get(FALSE)
+      ->addSelect('value', 'label')
+      ->addWhere('option_group_id:name', '=', 'payment_frequency')
+      ->addWhere('value', 'IN', $values)
+      ->execute()
+      ->indexBy('value');
 
-    $options = array();
-    foreach ($optionValues['values'] as $value) {
-      $options[$value['value']] = $value['label'];
-    }
-    return $options;
+    return array_map(fn ($pf) => $pf['label'], (array) $payment_frequencies);
   }
 
   /**

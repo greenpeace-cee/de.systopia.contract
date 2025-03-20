@@ -1,8 +1,8 @@
 import {
-    mapPaymentFrequency,
     parseMoney,
     registerPaymentAdapter,
     updateCycleDayField,
+    updateFrequencyField,
 } from "../utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
@@ -13,7 +13,7 @@ class SEPA {
         const currency = EXT_VARS.default_currency;
         const amount = parseMoney(formFields["amount"].val());
         const frequency = parseInt(formFields["frequency"].val());
-        const frequencyLabel = mapPaymentFrequency(frequency);
+        const frequencyLabel = EXT_VARS.frequency_labels[frequency];
         const annualAmount = (amount * frequency).toFixed(2);
         const cycleDay = formFields["cycle_day"].val();
         const deferPaymentStart = formFields["defer_payment_start"]?.prop("checked");
@@ -65,6 +65,9 @@ class SEPA {
         // Cycle days
         updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
 
+        // Payment frequencies
+        updateFrequencyField(formFields, ADAPTER_VARS.payment_frequencies, EXT_VARS.current_frequency);
+
         // Payment preview
         this.updatePaymentPreview(formFields);
     }
@@ -90,7 +93,7 @@ class SEPA {
 
         // Frequency
         const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequencies[frequency]);
+        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequency_labels[frequency]);
 
         // Annual amount
         const amount = parseMoney(formFields["amount"].val());
