@@ -174,7 +174,29 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
    * @param array $membership_data
    */
   public static function modifyMembershipActionLinks(&$links, $current_status_name, $membership_data) {
-    if (in_array($current_status_name, self::getStartStatusList())) {
+    $not_completed_contract_activities = Api4\Activity::get(FALSE)
+      ->addSelect('activity_type_id:name', 'status_id:name')
+      ->addWhere('activity_type_id:name', 'IN', [
+        'Contract_Cancelled',
+        'Contract_Paused',
+        'Contract_Resumed',
+        'Contract_Revived',
+        'Contract_Signed',
+        'Contract_Updated',
+      ])
+      ->addWhere('source_record_id', '=', $membership_data['id'])
+      ->addWhere('status_id:name', '!=', 'Completed')
+      ->execute();
+
+    $ncca_count = $not_completed_contract_activities->count();
+    $first_ncca = $not_completed_contract_activities->first();
+
+    if (
+      in_array($current_status_name, self::getStartStatusList())
+      && $ncca_count === 1
+      && $first_ncca['activity_type_id:name'] === 'Contract_Resumed'
+      && $first_ncca['status_id:name'] === 'Scheduled'
+    ) {
       $links[] = [
           'name'  => E::ts("Resume"),
           'title' => self::getChangeTitle(),
