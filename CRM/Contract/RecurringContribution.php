@@ -396,117 +396,6 @@ class CRM_Contract_RecurringContribution {
   }
 
   /**
-   * Return the date of the last successfully collected contribution
-   *  of the give recurring contribution
-   * If no such contribution is found, the current date is returned
-   *
-   * @return string date ('Y-m-d H:i:s')
-   */
-  public static function getNextInstallmentDate($contribution_recur_id, $cycle_days) {
-    $now = date('Y-m-d H:i:s');
-
-    if (!$contribution_recur_id) {
-      return $now;
-    }
-
-    // load last successull collection for the recurring contribution
-    $last_collection_search = civicrm_api3('Contribution', 'get', array(
-      'contribution_recur_id'  => $contribution_recur_id,
-      'contribution_status_id' => array('IN' => array(1,5)), // status Completed or In Progres
-      'options'                => array('sort'  => 'receive_date desc',
-                                        'limit' => 1),
-      'return'                 => 'id,receive_date',
-      ));
-
-    if ($last_collection_search['count'] > 0) {
-      $last_collection = reset($last_collection_search['values']);
-
-      // load recurring contribution
-      $contribution_recur = civicrm_api3('ContributionRecur', 'getsingle', array(
-        'id'     => $contribution_recur_id,
-        'return' => 'frequency_unit,frequency_interval'));
-
-      // GP-1094: go back to last cycle day
-      $safety_counter = 35;
-      $last_collection_date = strtotime($last_collection['receive_date']);
-      while (!in_array(date('j', $last_collection_date), array_keys($cycle_days)) && $safety_counter > 0) {
-        $last_collection_date = strtotime("-1 day", $last_collection_date);
-        $safety_counter -= 1;
-      }
-      if ($safety_counter == 0) {
-        // something went wrong, reset:
-        $last_collection_date = strtotime($last_collection['receive_date']);
-      }
-
-      // now calculate the next collection date
-      $next_collection = date('Y-m-d H:i:s', strtotime("+{$contribution_recur['frequency_interval']} {$contribution_recur['frequency_unit']}", $last_collection_date));
-      if ($next_collection > $now) {
-        // only makes sense if in the future
-        return $next_collection;
-      }
-    }
-
-    // check recurring contribution start date
-    $contribution_recur = civicrm_api3('ContributionRecur', 'getsingle', array(
-      'id'     => $contribution_recur_id,
-      'return' => 'start_date,contribution_status_id'));
-    if (!empty($contribution_recur['start_date']) && !empty($contribution_recur['contribution_status_id'])) {
-      $status_id = (int) $contribution_recur['contribution_status_id'];
-      // only consider active recurring contributions (2=Pending, 5=in Progress)
-      if ($status_id == 2 || $status_id == 5) {
-        $start_date = date('Y-m-d H:i:s', strtotime($contribution_recur['start_date']));
-        if ($start_date > $now) {
-          return $start_date;
-        }
-      }
-    }
-
-    return $now;
-  }
-
-  /**
-   * Calculate the new contributions's start date.
-   * In most cases this is simply 'now', but in the case of a update
-   * the membership period already paid by the donor should be respected
-   *
-   * @see https://redmine.greenpeace.at/issues/771
-   */
-  public static function getUpdateStartDate($current_state, $desired_state, $activity, $cycle_days) {
-    $now = date('YmdHis');
-
-    $update_activity_type  = CRM_Core_PseudoConstant::getKey(
-      'CRM_Activity_BAO_Activity',
-      'activity_type_id',
-      'Contract_Updated'
-    );
-
-    $revive_activity_type  = CRM_Core_PseudoConstant::getKey(
-      'CRM_Activity_BAO_Activity',
-      'activity_type_id',
-      'Contract_Revived'
-    );
-
-    $contribution_recur_id = CRM_Utils_Array::value('membership_payment.membership_recurring_contribution', $current_state);
-
-    // check if it is a proper update/revive and if we should defer the start date to respect already paid periods
-    if (
-      $contribution_recur_id
-      && in_array($activity['activity_type_id'], [$update_activity_type, $revive_activity_type], true)
-      && $desired_state['contract_updates.ch_defer_payment_start'] == '1'
-    ) {
-      // load last successull collection for the recurring contribution
-      $calculated_date = CRM_Contract_RecurringContribution::getNextInstallmentDate(
-        $contribution_recur_id,
-        $cycle_days
-      );
-      // re-format date (returned as 'Y-m-d H:i:s') and return
-      return date('YmdHis', strtotime($calculated_date));
-    }
-
-    return $now;
-  }
-
-  /**
    * Get a list of (accepted) payment frequencies
    *
    * @return array list of payment frequencies
@@ -609,6 +498,39 @@ class CRM_Contract_RecurringContribution {
       ->setLimit(1)
       ->execute()
       ->first();
+  }
+
+  public static function nextScheduledContributionDate($recurring_contribution_id) {
+    $recurring_contribution = Api4\ContributionRecur::get(FALSE)
+      ->addSelect('cycle_day', 'frequency_interval', 'frequency_unit')
+      ->addWhere('id', '=', $recurring_contribution_id)
+      ->execute()
+      ->first();
+
+    if (is_null($recurring_contribution)) return;
+
+    $latest_contribution = Api4\Contribution::get(FALSE)
+      ->addWhere('contribution_recur_id', '=', $recurring_contribution_id)
+      ->addSelect('receive_date')
+      ->addOrderBy('receive_date', 'DESC')
+      ->setLimit(1)
+      ->execute()
+      ->first();
+
+    $covered_until = is_null($latest_contribution)
+      ? new DateTimeImmutable('now')
+      : CRM_Contract_DateHelper::nextRegularDate(
+        $latest_contribution['receive_date'],
+        (int) $recurring_contribution['frequency_interval'],
+        $recurring_contribution['frequency_unit']
+      );
+
+    $next_sched_contrib_date = CRM_Contract_DateHelper::findNextOfDays(
+      [(int) $recurring_contribution['cycle_day']],
+      $covered_until->format('Y-m-d')
+    );
+
+    return $next_sched_contrib_date;
   }
 
 }

@@ -746,24 +746,4 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
     return implode(',', $field_names);
   }
 
-  /**
-   * Convert the given contract data and convert it to change activity data
-   *
-   * @param $data array       the data
-   * @param $reverse boolean  reverse the transition
-   */
-  public static function convertContract2ChangeData($data, $reverse = FALSE) {
-    $mapping = self::$field_mapping_change_contract;
-    if ($reverse) {
-      $mapping = array_flip($mapping);
-    }
-
-    foreach ($mapping as $old_attribute => $new_attribute) {
-      if (isset($data[$old_attribute])) {
-        $data[$new_attribute] = $data[$old_attribute];
-        unset($data[$old_attribute]);
-      }
-    }
-    return $data;
-  }
 }

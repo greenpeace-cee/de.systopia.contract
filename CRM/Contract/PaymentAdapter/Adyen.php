@@ -373,37 +373,13 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     }
   }
 
-  public static function nextScheduledContributionDate($event) {
-    $cycle_day = (int) $event->cycle_day;
-    $frequency_interval = (int) $event->frequency_interval;
-    $frequency_unit = $event->frequency_unit;
+  public static function updateNextScheduledContributionDate($event) {
     $rc_id = $event->contribution_recur_id;
-
-    $latestContribResult = Api4\Contribution::get(FALSE)
-      ->addWhere('contribution_recur_id', '=', $rc_id)
-      ->addSelect('receive_date')
-      ->addOrderBy('receive_date', 'DESC')
-      ->setLimit(1)
-      ->execute();
-
-    if ($latestContribResult->count() < 1) return;
-
-    $latestContribution = $latestContribResult->first();
-
-    $coveredUntil = CRM_Contract_DateHelper::nextRegularDate(
-      $latestContribution['receive_date'],
-      (int) $frequency_interval,
-      $frequency_unit
-    );
-
-    $nextSchedContribDate = CRM_Contract_DateHelper::findNextOfDays(
-      [$cycle_day],
-      $coveredUntil->format('Y-m-d')
-    );
+    $nsc_date = CRM_Contract_RecurringContribution::nextScheduledContributionDate($rc_id);
 
     Api4\ContributionRecur::update(FALSE)
       ->addWhere('id', '=', $rc_id)
-      ->addValue('next_sched_contribution_date', $nextSchedContribDate->format('Y-m-d'))
+      ->addValue('next_sched_contribution_date', $nsc_date->format('Y-m-d'))
       ->execute();
   }
 
