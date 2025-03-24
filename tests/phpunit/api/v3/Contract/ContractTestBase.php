@@ -202,7 +202,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       Api4\Tag::create(FALSE)
         ->addValue('name', "cancel_tag_$i")
         ->addValue('label', "Cancel Tag $i")
-        ->addValue('parent_id:name', 'contract_cancellation')
+        ->addValue('parent_id:name', 'Contract Cancellation')
         ->execute();
     }
   }

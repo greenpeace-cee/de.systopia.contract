@@ -48,7 +48,7 @@ return [
         'label' => E::ts('Cancel Reason'),
         'html_type' => 'Select',
         'is_searchable' => TRUE,
-        'is_search_range' => TRUE,
+        'is_search_range' => FALSE,
         'column_name' => 'contact_history_cancel_reason',
         'option_group_id.name' => 'contract_cancel_reason',
         'in_selector' => TRUE,
