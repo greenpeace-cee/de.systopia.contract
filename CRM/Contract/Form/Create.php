@@ -84,7 +84,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             "debitor_name"            => $this->contact["display_name"],
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
-            "frequencies"             => CRM_Contract_RecurringContribution::getPaymentFrequencies(),
+            "frequency_labels"        => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
             "payment_adapter_fields"  => $paymentAdapterFields,
             "payment_adapters"        => CRM_Contract_Configuration::getPaymentAdapters(),
             "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($this->contact["id"]),
@@ -170,12 +170,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $this->add("text", "amount", ts("Installment amount"), [ "size" => 6 ]);
 
         // Payment frequency (frequency)
-        $this->add(
-            "select",
-            "frequency",
-            ts("Payment frequency"),
-            CRM_Contract_RecurringContribution::getPaymentFrequencies()
-        );
+        $this->add("select", "frequency", ts("Payment frequency"), []);
 
         // Member since (join_date)
         $this->add("datepicker", "join_date", ts("Member since"), [], true, [ "time" => false ]);
@@ -351,9 +346,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
         // Payment adapter (payment_adapter)
         $defaults["payment_adapter"] = "sepa_mandate";
-
-        // Payment frequency (frequency)
-        $defaults["frequency"] = "12"; // monthly
 
         // Member since (join_date)
         $defaults["join_date"] = date("Y-m-d H:i:s");

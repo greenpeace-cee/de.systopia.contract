@@ -236,20 +236,13 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      *
      * @return array - Form variables
      */
-    public static function formVars ($params = []) {
-        $result = [];
-
-        // Creditor
-        $default_creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
-        $result["creditor"] = $default_creditor;
-
-        // Cycle days
-        $result["cycle_days"] = self::cycleDays();
-
-        // Default currency
-        $result["default_currency"] = $default_creditor->currency;
-
-        return $result;
+    public static function formVars($params = []) {
+        return [
+            "creditor"            => CRM_Sepa_Logic_Settings::defaultCreditor(),
+            "cycle_days"          => self::cycleDays(),
+            "default_currency"    => $default_creditor->currency,
+            "payment_frequencies" => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 4, 12]),
+        ];
     }
 
     /**

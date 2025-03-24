@@ -59,14 +59,6 @@ export function getFormFields (fieldIDs) {
     return formFields;
 }
 
-export function mapPaymentFrequency (frequency) {
-    if (frequency === 1) return "annually";
-    if (frequency === 2) return "semi-annually";
-    if (frequency === 4) return "quarterly";
-    if (frequency === 12) return "monthly";
-    return "";
-}
-
 export function parseMoney(raw_value) {
     if (raw_value.length == 0) return 0.0;
 
@@ -114,6 +106,24 @@ export function updateCycleDayField (formFields, cycleDays, currentCycleDay) {
 
         if (selectedCycleDay === cycleDay) {
             cycleDayField.val(cycleDay);
+        }
+    }
+}
+
+export function updateFrequencyField(formFields, frequencyOptions, currentFrequency) {
+    const frequencyField = formFields["frequency"];
+    const selectedFrequency = parseInt(frequencyField.val() ?? currentFrequency);
+
+    frequencyField.empty();
+
+    const optionEntries = Object.entries(frequencyOptions)
+        .sort(([valA], [valB]) => parseInt(valB) - parseInt(valA));
+
+    for (const [value, label] of optionEntries) {
+        frequencyField.append(`<option value="${value}">${label}</option>`);
+
+        if (parseInt(value) === selectedFrequency) {
+            frequencyField.val(value);
         }
     }
 }

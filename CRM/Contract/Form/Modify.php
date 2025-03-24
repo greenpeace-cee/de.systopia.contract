@@ -145,27 +145,23 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             }
         }
 
-        $current_contract = CRM_Contract_RecurringContribution::getCurrentContract($contact_id, $rc_id);
-        $frequencies = CRM_Contract_RecurringContribution::getPaymentFrequencies();
-
-        $recurring_contributions = CRM_Contract_RecurringContribution::getAllForContact($contact_id, true);
-
         $resources->addVars("de.systopia.contract", [
             "action"                  => $this->modify_action,
             "cid"                     => $contact_id,
             "current_amount"          => $this->recurring_contribution["amount"],
-            "current_contract"        => $current_contract,
+            "current_contract"        => CRM_Contract_RecurringContribution::getCurrentContract($contact_id, $rc_id),
             "current_cycle_day"       => (int) $this->recurring_contribution["cycle_day"],
+            "current_frequency"       => CRM_Contract_FormUtils::numberOfAnnualPayments($this->recurring_contribution),
             "current_payment_adapter" => CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id),
             "current_recurring"       => $rc_id,
             "debitor_name"            => $this->contact["display_name"],
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
-            "frequencies"             => $frequencies,
+            "frequency_labels"        => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
             "membership_id"           => $contract_id,
             "payment_adapter_fields"  => $paymentAdapterFields,
             "payment_adapters"        => CRM_Contract_Configuration::getPaymentAdapters(),
-            "recurring_contributions" => $recurring_contributions,
+            "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($contact_id, true),
         ]);
     }
 
@@ -247,12 +243,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->add("text", "amount", ts("Installment amount"), [ "size" => 6 ]);
 
         // Payment frequency (frequency)
-        $this->add(
-            "select",
-            "frequency",
-            ts("Payment frequency"),
-            CRM_Contract_RecurringContribution::getPaymentFrequencies()
-        );
+        $this->add("select", "frequency", ts("Payment frequency"), []);
 
         // Defer payment start (defer_payment_start)
         $this->add(
@@ -344,9 +335,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Installment amount (amount)
         $defaults["amount"] = $this->recurring_contribution["amount"];
-
-        // Payment frequency (frequency)
-        $defaults["frequency"] = CRM_Contract_FormUtils::numberOfAnnualPayments($this->recurring_contribution);
 
         // Defer payment start (defer_payment_start)
         $defaults["defer_payment_start"] = $this->modify_action === "update";

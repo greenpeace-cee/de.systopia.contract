@@ -1,8 +1,8 @@
 import {
-    mapPaymentFrequency,
     parseMoney,
     registerPaymentAdapter,
     updateCycleDayField,
+    updateFrequencyField,
 } from "../utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
@@ -13,7 +13,7 @@ class Adyen {
         const currency = EXT_VARS.default_currency;
         const amount = parseMoney(formFields["amount"].val());
         const frequency = parseInt(formFields["frequency"].val());
-        const frequencyLabel = mapPaymentFrequency(frequency);
+        const frequencyLabel = EXT_VARS.frequency_labels[frequency];
         const annualAmount = (amount * frequency).toFixed(2);
         const paymentInstrument = await this.#getSelectedPaymentInstrument(formFields);
         const cycleDay = formFields["cycle_day"].val();
@@ -63,6 +63,9 @@ class Adyen {
         // Cycle days
         updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
 
+        // Payment frequencies
+        updateFrequencyField(formFields, ADAPTER_VARS.payment_frequencies, EXT_VARS.current_frequency);
+
         // Payment token fields
         if (EXT_VARS.action === "sign") {
             const useExistingToken = formFields["pa-adyen-use_existing_token"].val() === '0';
@@ -95,13 +98,11 @@ class Adyen {
         paymentPreviewContainer.find("span#installment").text(installment);
 
         // Frequency
-        const freqField = formFields["frequency"];
-        const selectedFreqValue = freqField.val();
-        const selectedFreqLabel = freqField.find(`option[value=${selectedFreqValue}]`).text();
-        paymentPreviewContainer.find("span#frequency").text(selectedFreqLabel);
+        const frequency = Number(formFields["frequency"].val());
+        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequency_labels[frequency]);
 
         // Annual amount
-        const annualAmount = amount * Number(selectedFreqValue);
+        const annualAmount = amount * Number(frequency);
         paymentPreviewContainer.find("span#annual").text(`${annualAmount.toFixed(2)} ${currency}`);
 
         // Cycle day
