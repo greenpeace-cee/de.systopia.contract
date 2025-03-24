@@ -11,7 +11,7 @@ return [
     'params' => [
       'version' => 4,
       'values' => [
-        'name' => 'contract_cancellation',
+        'name' => 'Contract Cancellation',
         'label' => E::ts('Contract Cancellation'),
         'description' => E::ts('Tag Set for contract cancellation activities'),
         'is_reserved' => TRUE,

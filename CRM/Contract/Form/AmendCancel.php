@@ -100,7 +100,7 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
 
     // Cancellation tags (cancel_tags)
     $cancel_tags = (array) Api4\Tag::get(FALSE)
-      ->addWhere('parent_id:name', '=', 'contract_cancellation')
+      ->addWhere('parent_id:name', '=', 'Contract Cancellation')
       ->addWhere('is_selectable', '=', TRUE)
       ->addSelect('name', 'label', 'description', 'color')
       ->execute();
