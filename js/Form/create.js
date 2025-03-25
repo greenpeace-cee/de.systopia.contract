@@ -1,20 +1,10 @@
-import {
-    addConfirmDialog,
-    displayRelevantFormFields,
-    getCurrentPaymentAdapter,
-    getFormFields,
-} from "./utils.js";
+import { displayRelevantFormFields } from "./utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 
-let formFields = null;
-let adapter = null;
-
-export function initForm () {
-    const paymentAdapterFields = EXT_VARS.payment_adapter_fields;
-    const paFieldIds = Object.values(paymentAdapterFields).flat();
-
-    const formFieldIDs = [
+export async function initForm () {
+    // Reference all relevant form fields in the DOM
+    const formFields = Object.fromEntries([
         "activity_details",
         "activity_medium",
         "amount",
@@ -31,29 +21,45 @@ export function initForm () {
         "payment_option",
         "payment_adapter",
         "start_date",
-        ...paFieldIds,
-    ];
+        ...Object.values(EXT_VARS.payment_adapter_fields).flat(),
+    ].map(name => [name, cj(`div.form-field div.content *[name=${name}]`)]));
 
-    formFields = getFormFields(formFieldIDs);
-
-    Object.values(formFields).forEach(field => field.change(updateForm));
+    // Load & register all available payment adapters
+    const paymentAdapters = Object.fromEntries(
+        await Promise.all(Object.keys(EXT_VARS.payment_adapters).map((adapter) =>
+            import(`${EXT_VARS.ext_base_url}/js/Form/PaymentAdapter/${adapter}.js`)
+                .then(({ createAdapter }) => [adapter, createAdapter(formFields)])
+    )));
 
     const confirmButton = cj("button[data-identifier=_qf_Create_submit]");
-    addConfirmDialog(confirmButton, formFields);
+    const clonedButton = confirmButton.clone();
+    confirmButton.hide();
+    confirmButton.parent().append(clonedButton);
 
-    updateForm();
-}
+    clonedButton.on("click", () => {
+        const selectedAdapter = formFields["payment_adapter"].val();
 
-function updateForm () {
-    // Show only fields relevant to the currently selected payment option / adapter
-    const selectedPaymentOption = formFields["payment_option"].val();
-    const selectedPaymentAdapter = formFields["payment_adapter"].val();
-
-    displayRelevantFormFields({
-        "data-payment-option": selectedPaymentOption,
-        "data-payment-adapter": selectedPaymentAdapter,
+        paymentAdapters[selectedAdapter].onSubmit()
+            .then(() => confirmButton.click())
+            .catch(() => { /* Form submission cancelled */ });
     });
 
-    adapter = getCurrentPaymentAdapter(formFields);
-    adapter.onFormChange(formFields);
+    // Trigger 'udpateForm' on every change of a form field
+    Object.values(formFields).forEach(
+        field => field.change(updateForm.bind(null, formFields, paymentAdapters))
+    );
+
+    updateForm(formFields, paymentAdapters);
+}
+
+function updateForm (formFields, paymentAdapters) {
+    const selectedAdapter = formFields["payment_adapter"].val();
+
+    // Show only fields relevant to the currently selected payment option / adapter
+    displayRelevantFormFields({
+        "data-payment-adapter": selectedAdapter,
+        "data-payment-option": formFields["payment_option"].val(),
+    });
+
+    paymentAdapters[selectedAdapter].onFormChange();
 }

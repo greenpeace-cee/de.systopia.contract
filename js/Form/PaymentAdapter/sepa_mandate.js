@@ -1,128 +1,161 @@
-import {
-    parseMoney,
-    registerPaymentAdapter,
-    updateCycleDayField,
-    updateFrequencyField,
-} from "../utils.js";
+import { nextCollectionDate, parseMoney } from "../utils.js";
+import { PaymentAdapter } from "./payment-adapter.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/sepa_mandate"];
 
-class SEPA {
-    async confirmDialog (formFields) {
-        const currency = EXT_VARS.default_currency;
-        const amount = parseMoney(formFields["amount"].val());
-        const frequency = parseInt(formFields["frequency"].val());
-        const frequencyLabel = EXT_VARS.frequency_labels[frequency];
-        const annualAmount = (amount * frequency).toFixed(2);
-        const cycleDay = formFields["cycle_day"].val();
-        const deferPaymentStart = formFields["defer_payment_start"]?.prop("checked");
-        const startDate = (formFields["start_date"] || formFields["activity_date"]).val();
+export function createAdapter(formFields) {
+    return new SEPA(formFields);
+}
 
-        const firstDebit = await this.nextCollectionDate({
-            cycle_day: cycleDay,
-            defer_payment_start: deferPaymentStart,
-            min_date: startDate,
-        })
+class SEPA extends PaymentAdapter {
+    cycleDays = ADAPTER_VARS.cycle_days;
+    frequencyOptions = ADAPTER_VARS.payment_frequencies;
 
-        return `
-            <ul>
-                <li>
-                    We will debit <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b>
-                    via <b>SEPA Direct Debit</b>
-                </li>
-
-                <li>The first debit is on <b>${firstDebit}</b></li>
-                <li>The total annual amount will be <b>${currency} ${annualAmount}</b></li>
-            </ul>
-        `;
+    constructor(formFields) {
+        super(formFields);
     }
 
-    async nextCollectionDate ({ cycle_day, defer_payment_start, min_date }) {
-        if (!cycle_day) return "";
-        if (!min_date) return "";
-
-        return await CRM.api3("Contract", "start_date", {
-            cycle_day,
-            defer_payment_start,
-            membership_id: EXT_VARS.membership_id,
-            min_date,
-            payment_adapter: "sepa_mandate",
-            prev_recur_contrib_id: EXT_VARS.current_recurring,
-        }).then(
-            result => {
-                if (result.is_error) console.error(result.error_message);
-                return result?.values?.[0];
-            },
-            error => console.error(error.message),
-        );
-    }
-
-    onFormChange (formFields) {
+    onFormChange () {
         // Currency
         cj("span#currency").text(ADAPTER_VARS.default_currency);
 
         // Cycle days
-        updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
+        this.updateCycleDayField();
 
         // Payment frequencies
-        updateFrequencyField(formFields, ADAPTER_VARS.payment_frequencies, EXT_VARS.current_frequency);
+        this.updateFrequencyField();
+
+        if (EXT_VARS.action !== "sign") {
+            // Debit before update warning
+            const warning = cj("div.form-field#activity_date div#debit_before_update");
+            const nextContribDate = new Date(EXT_VARS.next_sched_contribution_date);
+            const scheduleDate = new Date(this.formFields["activity_date"].val());
+            nextContribDate.getTime() < scheduleDate.getTime() ? warning.show() : warning.hide();
+        }
 
         // Payment preview
-        this.updatePaymentPreview(formFields);
+        this.#updatePaymentPreview();
     }
 
-    async updatePaymentPreview (formFields) {
-        const paymentPreviewContainer = cj(
-            "div.payment-preview[data-payment-adapter=sepa_mandate]"
-        );
+    async onSubmit() {
+        const activityTime = new Date(this.formFields["activity_date"]?.val() ?? 0).getTime();
+        const nextContribTime = new Date(EXT_VARS.next_sched_contribution_date).getTime();
+
+        if (EXT_VARS.action === "sign" || activityTime < nextContribTime) {
+            return new Promise(async (resolve, reject) => {
+                const message = await this.#renderSummary();
+
+                CRM.confirm({
+                    title: "Payment preview",
+                    message,
+                    options: { yes: "Confirm", no: "Edit" },
+                })
+                .on("crmConfirm:yes", resolve)
+                .on("crmConfirm:no", reject);
+            });
+        } else {
+            return new Promise((resolve, reject) => {
+                CRM.loadForm("/civicrm/contract/confirm-update", {
+                    dialog: { width: 600 },
+                    ajaxForm: {
+                        data: {
+                            "activity_date": this.formFields["activity_date"].val(),
+                            "next_sched_contribution_date": EXT_VARS.next_sched_contribution_date,
+                        },
+                    }
+                })
+                .on("crmFormSubmit", (event, ...submitted) => console.debug({submitted}))
+                .on("crmFormCancel", reject)
+                .on("crmFormSuccess", resolve);
+            });
+        }
+    }
+
+    async #renderSummary() {
+        const amount = parseMoney(this.formFields["amount"].val());
+        const frequency = parseInt(this.formFields["frequency"].val());
+        const annualAmount = amount * frequency;
+
+        const currency = EXT_VARS.default_currency;
+        const frequencyLabel = EXT_VARS.frequency_labels[frequency];
+        const isNew = EXT_VARS.action === "sign";
+
+        const nextDebit = isNew
+            ? await nextCollectionDate({
+                cycle_day: this.formFields["cycle_day"].val(),
+                min_date: this.formFields["start_date"].val(),
+                payment_adapter: "sepa_mandate",
+            })
+            : await nextCollectionDate({
+                cycle_day: this.formFields["cycle_day"].val(),
+                defer_payment_start: this.formFields["defer_payment_start"]?.prop("checked"),
+                membership_id: EXT_VARS.membership_id,
+                min_date: this.formFields["activity_date"].val(),
+                payment_adapter: "sepa_mandate",
+                prev_recur_contrib_id: EXT_VARS.current_recurring,
+            });
+
+        return `
+            <ul style="margin:20px;padding:0px">
+                <li>We will debit <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b> via <b>SEPA Direct Debit</b></li>
+                <li>The ${isNew ? "first" : "next"} debit will be on <b>${nextDebit}</b></li>
+                <li>The total annual amount will be <b>${currency} ${annualAmount.toFixed(2)}</b></li>
+            </ul>
+        `;
+    }
+
+    async #updatePaymentPreview () {
+        const previewContainer = cj("div.payment-preview[data-payment-adapter=sepa_mandate]");
 
         // Debitor name
-        paymentPreviewContainer.find("span#debitor_name").text(EXT_VARS.debitor_name);
+        previewContainer.find("span#debitor_name").text(EXT_VARS.debitor_name);
 
         // Debitor account
-        const iban = formFields["pa-sepa_mandate-iban"].val();
-        paymentPreviewContainer.find("span#iban").text(iban);
+        const iban = this.formFields["pa-sepa_mandate-iban"].val();
+        previewContainer.find("span#iban").text(iban);
 
         // Creditor name
         const creditor = ADAPTER_VARS.creditor;
-        paymentPreviewContainer.find("span#creditor_name").text(creditor.name);
+        previewContainer.find("span#creditor_name").text(creditor.name);
 
         // Creditor account
-        paymentPreviewContainer.find("span#creditor_iban").text(creditor.iban);
+        previewContainer.find("span#creditor_iban").text(creditor.iban);
 
         // Frequency
-        const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequency_labels[frequency]);
+        const frequency = Number(this.formFields["frequency"].val());
+        previewContainer.find("span#frequency").text(EXT_VARS.frequency_labels[frequency]);
 
         // Annual amount
-        const amount = parseMoney(formFields["amount"].val());
+        const amount = parseMoney(this.formFields["amount"].val());
         const annualAmount = `${(amount * frequency).toFixed(2)} ${creditor.currency}`;
-        paymentPreviewContainer.find("span#annual").text(annualAmount);
+        previewContainer.find("span#annual").text(annualAmount);
 
         // Installment amount
         const installmentAmount = `${amount.toFixed(2)} ${creditor.currency}`;
-        paymentPreviewContainer.find("span#installment").text(installmentAmount);
+        previewContainer.find("span#installment").text(installmentAmount);
 
-        // Next debit
-        const deferPaymentStart = formFields["defer_payment_start"]
-            ? formFields["defer_payment_start"].prop("checked")
-            : false;
+        if (EXT_VARS.action === "sign") {
+            // First regular debit
+            const firstRegularDebit = await nextCollectionDate({
+                cycle_day: this.formFields["cycle_day"].val(),
+                min_date: this.formFields["start_date"].val(),
+                payment_adapter: "sepa_mandate",
+            });
 
-        const cycleDay = formFields["cycle_day"].val();
+            previewContainer.find("span#first_regular_debit").text(firstRegularDebit ?? "");
+        } else {
+            // First debit after update
+            const firstDebitAfterUpdate = await nextCollectionDate({
+                cycle_day: this.formFields["cycle_day"].val(),
+                defer_payment_start: this.formFields["defer_payment_start"].prop("checked"),
+                membership_id: EXT_VARS.membership_id,
+                min_date: this.formFields["activity_date"].val(),
+                payment_adapter: "sepa_mandate",
+                prev_recur_contrib_id: EXT_VARS.current_recurring,
+            });
 
-        const startDate = formFields["start_date"]
-            ? formFields["start_date"].val()
-            : formFields["activity_date"].val();
-
-        const nextDebit = await this.nextCollectionDate({
-            cycle_day: cycleDay,
-            defer_payment_start: deferPaymentStart,
-            min_date: startDate,
-        });
-
-        paymentPreviewContainer.find("span#next_debit").text(nextDebit);
+            previewContainer.find("span#first_debit_after_update").text(firstDebitAfterUpdate ?? "");
+        }
     }
 }
-
-registerPaymentAdapter("sepa_mandate", new SEPA());

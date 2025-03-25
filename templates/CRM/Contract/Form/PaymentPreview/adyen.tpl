@@ -6,5 +6,10 @@
     Frequency: <span id="frequency"></span><br />
     Annual amount: <span id="annual"></span><br />
     Cycle day: <span id="cycle_day"></span><br />
-    Next debit: <span id="next_debit"></span><br />
+
+    {if $parent_form == "create"}
+        First regular debit: <span id="first_regular_debit"></span><br />
+    {else}
+        First debit after update: <span id="first_debit_after_update"></span><br />
+    {/if}
 </div>

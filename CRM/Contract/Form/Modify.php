@@ -145,6 +145,14 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             }
         }
 
+        $current_payment_adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id);
+        $this->set('current_payment_adapter', $current_payment_adapter);
+
+        // Next scheduled contribution date
+        $next_sched_contribution_date = date("Y-m-d", strtotime($this->recurring_contribution["next_sched_contribution_date"]));
+        $this->assign('next_sched_contribution_date', $next_sched_contribution_date);
+
+        // Set front-end JS variables (EXT_VARS)
         $resources->addVars("de.systopia.contract", [
             "action"                  => $this->modify_action,
             "cid"                     => $contact_id,
@@ -152,13 +160,14 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "current_contract"        => CRM_Contract_RecurringContribution::getCurrentContract($contact_id, $rc_id),
             "current_cycle_day"       => (int) $this->recurring_contribution["cycle_day"],
             "current_frequency"       => CRM_Contract_FormUtils::numberOfAnnualPayments($this->recurring_contribution),
-            "current_payment_adapter" => CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id),
+            "current_payment_adapter" => $current_payment_adapter,
             "current_recurring"       => $rc_id,
             "debitor_name"            => $this->contact["display_name"],
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
             "frequency_labels"        => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
             "membership_id"           => $contract_id,
+            "next_sched_contribution_date" => $next_sched_contribution_date,
             "payment_adapter_fields"  => $paymentAdapterFields,
             "payment_adapters"        => CRM_Contract_Configuration::getPaymentAdapters(),
             "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($contact_id, true),
@@ -325,6 +334,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
 
         // Payment change (payment_change)
         $defaults["payment_change"] = "modify";
+
+        // Payment adapter
+        $defaults["payment_adapter"] = $this->get('current_payment_adapter');
 
         // Recurring contribution (recurring_contribution)
         $rc_id = $this->recurring_contribution["id"];
@@ -513,8 +525,11 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
                 break;
         }
 
-        civicrm_api3("Contract", "modify", $contract_modify_params);
-        civicrm_api3("Contract", "process_scheduled_modifications", [ "id" => $this->get("id") ]);
+        // civicrm_api3("Contract", "modify", $contract_modify_params);
+        // civicrm_api3("Contract", "process_scheduled_modifications", [ "id" => $this->get("id") ]);
+
+        // $membership_id = $this->get("id");
+        // CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/contract/pause', "id=$membership_id", true));
     }
 
 }

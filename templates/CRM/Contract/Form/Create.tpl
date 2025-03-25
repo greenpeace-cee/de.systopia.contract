@@ -7,24 +7,12 @@
 | http://www.systopia.de/                                      |
 +-------------------------------------------------------------*}
 
-{include file="CRM/Contract/Form/FormUtils.tpl"}
-
 {literal}
 
 <script>
-    (async () => {
-        const EXT_VARS = CRM.vars["de.systopia.contract"];
-        const extBaseURL = EXT_VARS.ext_base_url;
-        const paymentAdapters = Object.keys(EXT_VARS.payment_adapters);
+    const EXT_VARS = CRM.vars["de.systopia.contract"];
 
-        await Promise.all(paymentAdapters.map(
-            adapter => import(`${extBaseURL}/js/Form/PaymentAdapter/${adapter}.js`)
-        ));
-
-        const { initForm } = await import(`${extBaseURL}/js/Form/create.js`);
-
-        initForm();
-    })();
+    import(`${EXT_VARS.ext_base_url}/js/Form/create.js`).then(({ initForm }) => initForm());
 </script>
 
 {/literal}
@@ -37,7 +25,7 @@
 
         <div class="content">
             {foreach from=$payment_adapter_fields key=pa_name item=_}
-                {include file="CRM/Contract/Form/PaymentPreview/$pa_name.tpl"}
+                {include file="CRM/Contract/Form/PaymentPreview/$pa_name.tpl" parent_form="create"}
             {/foreach}
         </div>
 
