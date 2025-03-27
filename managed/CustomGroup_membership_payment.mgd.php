@@ -43,6 +43,7 @@ return [
         'column_name' => 'membership_annual',
         'in_selector' => TRUE,
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
@@ -67,6 +68,7 @@ return [
         'option_group_id.name' => 'payment_frequency',
         'in_selector' => TRUE,
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
@@ -92,6 +94,7 @@ return [
         'in_selector' => TRUE,
         'fk_entity' => 'ContributionRecur',
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
@@ -117,6 +120,7 @@ return [
         'in_selector' => TRUE,
         'fk_entity' => 'BankAccount',
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
@@ -142,6 +146,7 @@ return [
         'in_selector' => TRUE,
         'fk_entity' => 'BankAccount',
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
@@ -166,6 +171,7 @@ return [
         'column_name' => 'cycle_day',
         'in_selector' => TRUE,
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
@@ -190,6 +196,7 @@ return [
         'option_group_id.name' => 'payment_instrument',
         'in_selector' => TRUE,
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
@@ -215,6 +222,7 @@ return [
         'column_name' => 'defer_payment_start',
         'in_selector' => TRUE,
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
