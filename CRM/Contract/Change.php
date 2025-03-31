@@ -597,6 +597,15 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
         $change_class::modifyMembershipActionLinks($links, $status_name, $membership_data);
       }
     }
+    if (CRM_Core_Permission::check('edit core membership CiviContract')) {
+      $links[] = [
+        'name'  => E::ts("Edit Membership"),
+        'title' => E::ts("Edit Membership"),
+        'url'   => "civicrm/member/edit",
+        'bit'   => CRM_Core_Action::UPDATE,
+        'qs'    => "Membership1=%%id%%",
+      ];
+    }
   }
 
   /**
