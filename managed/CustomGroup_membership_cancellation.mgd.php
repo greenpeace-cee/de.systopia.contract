@@ -43,6 +43,7 @@ return [
         'option_group_id.name' => 'contract_cancel_reason',
         'in_selector' => TRUE,
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
@@ -69,6 +70,7 @@ return [
         'column_name' => 'membership_cancel_date',
         'in_selector' => TRUE,
         'is_active' => TRUE,
+        'is_view' => TRUE,
       ],
       'match' => [
         'custom_group_id',
