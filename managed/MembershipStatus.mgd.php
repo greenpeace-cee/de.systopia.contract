@@ -62,7 +62,7 @@ return [
         'is_current_member' => TRUE,
         'weight' => 5,
         'is_reserved' => TRUE,
-        'is_active' => FALSE,
+        'is_active' => TRUE,
       ],
       'match' => [
         'name',
