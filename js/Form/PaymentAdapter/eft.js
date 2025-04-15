@@ -1,99 +1,109 @@
-import {
-    parseMoney,
-    registerPaymentAdapter,
-    updateCycleDayField,
-    updateFrequencyField,
-} from "../utils.js";
+import { nextCollectionDate, parseMoney } from "../utils.js";
+import { PaymentAdapter } from "./payment-adapter.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/eft"];
 
-class EFT {
-    async confirmDialog (formFields) {
-        const currency = EXT_VARS.default_currency;
-        const amount = parseMoney(formFields["amount"].val());
-        const frequency = parseInt(formFields["frequency"].val());
-        const frequencyLabel = EXT_VARS.frequency_labels[frequency];
-        const annualAmount = (amount * frequency).toFixed(2);
-        const cycleDay = formFields["cycle_day"].val();
-        const startDate = (formFields["start_date"] || formFields["activity_date"]).val();
+export function createAdapter(parameters) {
+    return new EFT(parameters);
+}
 
-        const firstDebit = await this.nextCollectionDate({
-            cycle_day: cycleDay,
-            min_date: startDate,
-        })
+class EFT extends PaymentAdapter {
+    cycleDays = ADAPTER_VARS.cycle_days;
+    frequencyOptions = ADAPTER_VARS.payment_frequencies;
 
-        return `
-            <ul>
-                <li>
-                    We will receive <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b>
-                    via <b>EFT</b>
-                </li>
-
-                <li>The next payment is on <b>${firstDebit}</b></li>
-                <li>The total annual amount will be <b>${currency} ${annualAmount}</b></li>
-            </ul>
-        `;
-    }
-
-    async nextCollectionDate ({ cycle_day, min_date }) {
-        if (!cycle_day) return "";
-        if (!min_date) return "";
-
-        return await CRM.api3("Contract", "start_date", {
-            cycle_day,
-            defer_payment_start: false,
-            membership_id: EXT_VARS.membership_id,
-            min_date,
-            payment_adapter: "eft",
-            prev_recur_contrib_id: EXT_VARS.current_recurring,
-        }).then(
-            result => {
-                if (result.is_error) console.error(result.error_message);
-                return result?.values?.[0];
-            },
-            error => console.error(error.message),
-        );
-    }
-
-    onFormChange (formFields) {
+    onFormChange () {
         // Currency
         cj("span#currency").text(ADAPTER_VARS.default_currency);
 
         // Cycle days
-        updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
+        this.updateCycleDayField();
 
         // Payment frequencies
-        updateFrequencyField(formFields, ADAPTER_VARS.payment_frequencies, EXT_VARS.current_frequency);
+        this.updateFrequencyField();
 
         // Payment preview
-        this.updatePaymentPreview(formFields);
+        this.#updatePaymentPreview();
     }
 
-    updatePaymentPreview (formFields) {
-        const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=eft]");
+    onSubmit() {
+        return new Promise(async (resolve, reject) => {
+            const { amount, annualAmount, frequency, nextPayment } = await this.#compileSummary();
 
-        // Debitor name
-        paymentPreviewContainer.find("span#debitor_name").text(EXT_VARS.debitor_name);
+            const currency = EXT_VARS.default_currency;
+            const frequencyLabel = EXT_VARS.frequency_labels[frequency];
+
+            const isNew = this.formType === "Create";
+
+            const message = `
+                <ul style="list-style:inside;margin:20px;padding:0px">
+                    <li>We will receive <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b> via <b>EFT</b></li>
+                    <li>The first payment ${isNew ? "" : "after the update"} will be received on <b>${nextPayment}</b></li>
+                    <li>The total annual amount will be <b>${currency} ${annualAmount}</b></li>
+                </ul>
+            `;
+
+            CRM.confirm({
+                title: "Payment preview",
+                message,
+                options: { yes: "Confirm", no: "Edit" },
+            })
+            .on("crmConfirm:yes", () => resolve())
+            .on("crmConfirm:no", () => reject());
+        });
+    }
+
+    async #compileSummary() {
+        const activityDate = this.formFields["activity_date"]?.val();
+        const amount = parseMoney(this.formFields["amount"].val());
+        const cycleDay = this.formFields["cycle_day"].val();
+        const frequency = parseInt(this.formFields["frequency"].val());
+        const startDate = this.formFields["start_date"]?.val();
+        const annualAmount = amount * frequency;
+
+        const nextPayment = this.formType === "Create"
+            ? await nextCollectionDate({
+                cycle_day: cycleDay,
+                min_date: startDate,
+                payment_adapter: "eft",
+            })
+            : await nextCollectionDate({
+                cycle_day: cycleDay,
+                membership_id: EXT_VARS.membership_id,
+                min_date: activityDate,
+                payment_adapter: "eft",
+                prev_recur_contrib_id: EXT_VARS.current_recurring,
+            });
+
+        return {
+            activityDate,
+            amount,
+            annualAmount,
+            cycleDay,
+            frequency,
+            nextPayment,
+            startDate,
+        };
+    }
+
+    async #updatePaymentPreview () {
+        const { amount, annualAmount, cycleDay, frequency } = await this.#compileSummary();
+
+        const currency = ADAPTER_VARS.default_currency;
+        const frequencyLabel = EXT_VARS.frequency_labels[frequency];
+
+        const previewContainer = cj("div.payment-preview[data-payment-adapter=eft]");
 
         // Frequency
-        const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequency_labels[frequency]);
+        previewContainer.find("div#frequency span.value").text(frequencyLabel);
 
         // Annual amount
-        const amount = parseMoney(formFields["amount"].val());
-        const currency = ADAPTER_VARS.default_currency;
-        const annualAmount = `${(amount * frequency).toFixed(2)} ${currency}`;
-        paymentPreviewContainer.find("span#annual").text(annualAmount);
+        previewContainer.find("div#annual span.value").text(`${annualAmount.toFixed(2)} ${currency}`);
 
         // Installment amount
-        const installmentAmount = `${amount.toFixed(2)} ${currency}`;
-        paymentPreviewContainer.find("span#installment").text(installmentAmount);
+        previewContainer.find("div#installment span.value").text(`${amount.toFixed(2)} ${currency}`);
 
         // Cycle day
-        const cycleDay = formFields["cycle_day"].val();
-        paymentPreviewContainer.find("span#cycle_day").text(cycleDay);
+        previewContainer.find("div#cycle_day span.value").text(cycleDay);
     }
 }
-
-registerPaymentAdapter("eft", new EFT());

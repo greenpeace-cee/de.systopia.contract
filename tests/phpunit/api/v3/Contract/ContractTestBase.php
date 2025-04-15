@@ -15,7 +15,6 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
   protected $adyenProcessor;
   protected $campaign;
   protected $contact;
-  protected $pspCreditor;
   protected $sepaCreditor;
 
   private $defaultErrorHandler;
@@ -41,7 +40,6 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
     $this->createTestCampaign();
     $this->createTestContact();
     $this->setAdyenProcessor();
-    $this->setDefaultPspCreditor();
     $this->setDefaultSepaCreditor();
     $this->defineCancelReasonsAndTags();
   }
@@ -222,25 +220,6 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
       ->addValue('title'                    , 'Adyen')
       ->execute()
       ->first();
-  }
-
-  private function setDefaultPspCreditor() {
-    $this->pspCreditor = Api4\SepaCreditor::create()
-      ->addValue('creditor_type' , 'PSP')
-      ->addValue('currency'      , 'EUR')
-      ->addValue('iban'          , 'AT613200000000005678')
-      ->addValue('mandate_active', TRUE)
-      ->addValue('mandate_prefix', 'PSP')
-      ->addValue('pi_ooff'       , '1')
-      ->addValue('pi_rcur'       , '1,2,3,4')
-      ->execute()
-      ->first();
-
-    CRM_Sepa_Logic_Settings::setSetting(
-      implode(',', [5, 10, 15, 20, 25]),
-      'cycledays',
-      $this->pspCreditor['id']
-    );
   }
 
   private function setDefaultSepaCreditor() {

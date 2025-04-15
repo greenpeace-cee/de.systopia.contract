@@ -61,7 +61,9 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $paymentAdapterFields = [];
 
         foreach ($this->payment_adapters as $paName => $paClass) {
-            $resources->addVars("de.systopia.contract/$paName", $paClass::formVars());
+            $resources->addVars("de.systopia.contract/$paName", $paClass::formVars([
+                "contact_id" => $contact_id,
+            ]));
 
             $paymentAdapterFields[$paName] = [];
             $formFields = $paClass::formFields([ "form" => "sign" ]);
@@ -78,15 +80,11 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
         // JS variables
         $resources->addVars("de.systopia.contract", [
-            "action"                  => "sign",
-            "cid"                     => $this->contact["id"],
-            "current_recurring"       => NULL,
-            "debitor_name"            => $this->contact["display_name"],
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
             "frequency_labels"        => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
             "payment_adapter_fields"  => $paymentAdapterFields,
-            "payment_adapters"        => CRM_Contract_Configuration::getPaymentAdapters(),
+            "payment_adapters"        => array_keys(CRM_Contract_Configuration::getPaymentAdapters()),
             "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($this->contact["id"]),
         ]);
 
@@ -125,10 +123,10 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         );
 
         // Payment-adapter-specific fields
-        $pa_form_template_var = [];
+        $payment_adapter_fields = [];
 
         foreach ($this->payment_adapters as $pa_name => $pa_class) {
-            $pa_form_template_var[$pa_name] = [];
+            $payment_adapter_fields[$pa_name] = [];
 
             $form_fields = $pa_class::formFields([
               "contact_id" => $this->contact["id"],
@@ -140,13 +138,13 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
 
                 $field["id"] = "pa-$pa_name-" . $field["name"];
 
-                array_push($pa_form_template_var[$pa_name], $field["id"]);
+                array_push($payment_adapter_fields[$pa_name], $field);
 
                 CRM_Contract_FormUtils::addFormField($this, $field);
             }
         }
 
-        $this->assign("payment_adapter_fields", $pa_form_template_var);
+        $this->assign("payment_adapter_fields", $payment_adapter_fields);
 
         // Recurring contribution (existing_recurring_contribution)
         $form_utils = new CRM_Contract_FormUtils($this, "Membership");

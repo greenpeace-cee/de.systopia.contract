@@ -96,7 +96,7 @@ function civicrm_api3_Contract_modify($params) {
   $change->save();
 
   // make sure any newly created conflicts are marked
-  $change->checkForConflicts();
+  CRM_Contract_Handler_ModificationConflicts::checkForConflicts($change->getContractID());
 
   // return contract (legacy behaviour)
   $contract = $change->getContract();

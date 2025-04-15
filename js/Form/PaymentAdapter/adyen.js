@@ -1,166 +1,189 @@
-import {
-    parseMoney,
-    registerPaymentAdapter,
-    updateCycleDayField,
-    updateFrequencyField,
-} from "../utils.js";
+import { displayRelevantFormFields, nextCollectionDate, parseMoney } from "../utils.js";
+import { PaymentAdapter } from "./payment-adapter.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/adyen"];
 
-class Adyen {
-    async confirmDialog (formFields) {
-        const currency = EXT_VARS.default_currency;
-        const amount = parseMoney(formFields["amount"].val());
-        const frequency = parseInt(formFields["frequency"].val());
-        const frequencyLabel = EXT_VARS.frequency_labels[frequency];
-        const annualAmount = (amount * frequency).toFixed(2);
-        const paymentInstrument = await this.#getSelectedPaymentInstrument(formFields);
-        const cycleDay = formFields["cycle_day"].val();
-        const deferPaymentStart = formFields["defer_payment_start"]?.prop("checked");
-        const startDate = (formFields["start_date"] || formFields["activity_date"]).val();
+export function createAdapter(parameters) {
+    return new Adyen(parameters);
+}
 
-        const firstDebit = await this.nextCollectionDate({
-            cycle_day: cycleDay,
-            defer_payment_start: deferPaymentStart,
-            min_date: startDate,
-        })
+class Adyen extends PaymentAdapter {
+    cycleDays = ADAPTER_VARS.cycle_days;
+    frequencyOptions = ADAPTER_VARS.payment_frequencies;
 
-        return `
-            <ul>
-                <li>
-                    We will debit <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b>
-                    via <b>${paymentInstrument} (Adyen)</b>
-                </li>
-
-                <li>The first debit is on <b>${firstDebit}</b></li>
-                <li>The total annual amount will be <b>${currency} ${annualAmount}</b></li>
-            </ul>
-        `;
-    }
-
-    async nextCollectionDate ({ cycle_day, defer_payment_start, min_date }) {
-        if (!cycle_day) return "";
-        if (!min_date) return "";
-
-        return await CRM.api3("Contract", "start_date", {
-            cycle_day,
-            defer_payment_start,
-            membership_id: EXT_VARS.membership_id,
-            min_date,
-            payment_adapter: "adyen",
-            prev_recur_contrib_id: EXT_VARS.current_recurring,
-        }).then(
-            result => {
-                if (result.is_error) console.error(result.error_message);
-                return result?.values?.[0];
-            },
-            error => console.error(error.message),
-        );
-    }
-
-    onFormChange (formFields) {
+    onFormChange () {
         // Cycle days
-        updateCycleDayField(formFields, ADAPTER_VARS.cycle_days, EXT_VARS.current_cycle_day);
+        this.updateCycleDayField();
 
         // Payment frequencies
-        updateFrequencyField(formFields, ADAPTER_VARS.payment_frequencies, EXT_VARS.current_frequency);
+        this.updateFrequencyField();
 
         // Payment token fields
-        if (EXT_VARS.action === "sign") {
-            const useExistingToken = formFields["pa-adyen-use_existing_token"].val() === '0';
-            const paymentTokenFields = ADAPTER_VARS.payment_token_fields;
+        if (this.formType === "Create") {
+            const createNewToken = this.formFields["pa-adyen-use_existing_token"].val() === "1";
+            displayRelevantFormFields({ "data-new-adyen-token": createNewToken });
+        }
 
-            paymentTokenFields.forEach(fieldID => {
-                const container = cj(`div.form-field#pa-adyen-${fieldID}`);
-                useExistingToken ? container.hide() : container.show();
-            });
-
-            const tokenIDContainer = cj(`div.form-field#pa-adyen-payment_token_id`);
-            useExistingToken ? tokenIDContainer.show() : tokenIDContainer.hide();
+        // Debit before update warning
+        if (this.formType === "Modify") {
+            const warning = cj("div.form-field#activity_date div#debit_before_update");
+            const nextContribDate = new Date(EXT_VARS.next_sched_contribution_date);
+            const scheduleDate = new Date(this.formFields["activity_date"].val());
+            nextContribDate.getTime() < scheduleDate.getTime() ? warning.show() : warning.hide();
         }
 
         // Payment preview
-        this.updatePaymentPreview(formFields);
+        this.#updatePaymentPreview();
     }
 
-    async updatePaymentPreview (formFields) {
-        const paymentPreviewContainer = cj("div.payment-preview[data-payment-adapter=adyen]");
+    onSubmit() {
+        return new Promise(async (resolve, reject) => {
+            const {
+                activityDate,
+                amount,
+                annualAmount,
+                frequency,
+                nextDebit,
+                paymentInstrument,
+            } = await this.#compileSummary();
 
-        // Payment instrument
-        let paymentInstrument = await this.#getSelectedPaymentInstrument(formFields);
-        paymentPreviewContainer.find("span#payment_instrument").text(paymentInstrument);
+            const currency = EXT_VARS.default_currency;
+            const frequencyLabel = EXT_VARS.frequency_labels[frequency];
+            const nextSchedContributionDate = EXT_VARS.next_sched_contribution_date;
 
-        // Installment amount
-        const amount = parseMoney(formFields["amount"].val());
-        const currency = ADAPTER_VARS.default_currency;
-        const installment = `${amount.toFixed(2)} ${currency}`;
-        paymentPreviewContainer.find("span#installment").text(installment);
+            const isNew = this.formType === "Create";
+            const activityTime = new Date(activityDate ?? 0).getTime();
+            const nextSchedContribTime = new Date(nextSchedContributionDate).getTime();
 
-        // Frequency
-        const frequency = Number(formFields["frequency"].val());
-        paymentPreviewContainer.find("span#frequency").text(EXT_VARS.frequency_labels[frequency]);
+            if (isNew || activityTime < nextSchedContribTime) {
+                const message = `
+                    <ul style="list-style:inside;margin:20px;padding:0px">
+                        <li>We will debit <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b> via <b>${paymentInstrument} (Adyen)</b></li>
+                        <li>The first debit ${isNew ? "" : "after the update"} is on <b>${nextDebit}</b></li>
+                        <li>The total annual amount will be <b>${currency} ${annualAmount.toFixed(2)}</b></li>
+                    </ul>
+                `;
 
-        // Annual amount
-        const annualAmount = amount * Number(frequency);
-        paymentPreviewContainer.find("span#annual").text(`${annualAmount.toFixed(2)} ${currency}`);
+                CRM.confirm({
+                    title: "Payment preview",
+                    message,
+                    options: { yes: "Confirm", no: "Edit" },
+                })
+                .on("crmConfirm:yes", () => resolve())
+                .on("crmConfirm:no", () => reject());
+            } else {
+                const urlParams = new URLSearchParams({
+                    "activity_date": activityDate,
+                    "amount": amount.toFixed(2),
+                    "annual_amount": annualAmount.toFixed(2),
+                    "currency": currency,
+                    "first_debit_after_update": nextDebit,
+                    "frequency": frequencyLabel,
+                    "membership_id": EXT_VARS.membership_id,
+                    "next_sched_contribution_date": nextSchedContributionDate,
+                    "payment_instrument": `${paymentInstrument} (Adyen)`,
+                });
 
-        // Cycle day
-        const cycleDay = formFields["cycle_day"].val();
-        paymentPreviewContainer.find("span#cycle_day").text(cycleDay);
-
-        // Next debit
-        const deferPaymentStart = formFields["defer_payment_start"]
-            ? formFields["defer_payment_start"].prop("checked")
-            : false;
-
-        const startDate = formFields["start_date"]
-            ? formFields["start_date"].val()
-            : formFields["activity_date"].val();
-
-        const nextDebit = await this.nextCollectionDate({
-            cycle_day: cycleDay,
-            defer_payment_start: deferPaymentStart,
-            min_date: startDate,
-        });
-
-        paymentPreviewContainer.find("span#next_debit").text(nextDebit);
-    }
-
-    async #getSelectedPaymentInstrument (formFields) {
-        try {
-            const useExistingToken = formFields["pa-adyen-use_existing_token"]?.val() === "1";
-
-            if (EXT_VARS.action === "sign" && useExistingToken) {
-                const piField = formFields["pa-adyen-payment_instrument_id"];
-                const paymentInstrumentID = piField.val();
-
-                return piField.find(`option[value=${paymentInstrumentID}]`).text();
+                CRM.loadForm(`/civicrm/contract/confirm-update?${urlParams}`, {
+                    dialog: { width: 600 },
+                })
+                .on("crmFormSubmit", (event, ...submitted) => resolve({
+                    pause_until_update: submitted.find(({ name }) => name === "pause_until_update")?.value ?? "no",
+                }))
+                .on("crmFormCancel", () => reject());
             }
+        });
+    }
 
-            const paymentTokenID = formFields["pa-adyen-payment_token_id"].val();
+    async #compileSummary() {
+        const activityDate = this.formFields["activity_date"]?.val();
+        const amount = parseMoney(this.formFields["amount"].val());
+        const cycleDay = this.formFields["cycle_day"].val();
+        const frequency = parseInt(this.formFields["frequency"].val());
+        const startDate = this.formFields["start_date"]?.val();
+        const annualAmount = amount * frequency;
 
-            if (!paymentTokenID) return "";
-
-            const rcResult = await CRM.api4('ContributionRecur', 'get', {
-              select: ["payment_instrument_id:label"],
-              where: [["payment_token_id", "=", paymentTokenID]],
-              limit: 1,
+        const nextDebit = this.formType === "Create"
+            ? await nextCollectionDate({
+                cycle_day: cycleDay,
+                min_date: startDate,
+                payment_adapter: "adyen",
+            })
+            : await nextCollectionDate({
+                cycle_day: cycleDay,
+                defer_payment_start: this.formFields["defer_payment_start"]?.prop("checked"),
+                membership_id: EXT_VARS.membership_id,
+                min_date: activityDate,
+                payment_adapter: "adyen",
+                prev_recur_contrib_id: EXT_VARS.current_recurring,
             });
 
-            if (rcResult.length < 1) {
-                throw new Error(
-                    `No recurring contribution found for payment token with ID ${paymentTokenID}`
-                );
+        const createNewToken = this.formFields["pa-adyen-use_existing_token"]?.val() === "1";
+        const paymentInstrumentID = this.formFields["pa-adyen-payment_instrument_id"]?.val();
+        const paymentTokenID = this.formFields["pa-adyen-payment_token_id"]?.val();
+
+        const paymentInstrument = this.formType === "Create" && createNewToken
+            ? ADAPTER_VARS.payment_instruments[paymentInstrumentID]
+            : (ADAPTER_VARS.payment_tokens[paymentTokenID] ?? {})['contribution_recur.payment_instrument_id:label'];
+
+        return {
+            activityDate,
+            amount,
+            annualAmount,
+            cycleDay,
+            frequency,
+            nextDebit,
+            paymentInstrument,
+            startDate,
+        }
+    }
+
+    async #updatePaymentPreview () {
+        const {
+            activityDate,
+            amount,
+            annualAmount,
+            cycleDay,
+            frequency,
+            nextDebit,
+            paymentInstrument,
+        } = await this.#compileSummary();
+
+        const currency = ADAPTER_VARS.default_currency;
+        const frequencyLabel = EXT_VARS.frequency_labels[frequency];
+        const nextSchedContributionDate = EXT_VARS.next_sched_contribution_date;
+
+        const previewContainer = cj("div.payment-preview[data-payment-adapter=adyen]");
+
+        // Payment instrument
+        previewContainer.find("div#payment_instrument span.value").text(paymentInstrument);
+
+        // Installment amount
+        previewContainer.find("div#installment span.value").text(`${amount.toFixed(2)} ${currency}`);
+
+        // Frequency
+        previewContainer.find("div#frequency span.value").text(frequencyLabel);
+
+        // Annual amount
+        previewContainer.find("div#annual span.value").text(`${annualAmount.toFixed(2)} ${currency}`);
+
+        // Cycle day
+        previewContainer.find("div#cycle_day span.value").text(cycleDay);
+
+        if (this.formType === "Create") {
+            // First regular debit
+            previewContainer.find("div#first_regular_debit span.value").text(nextDebit ?? "");
+        } else {
+            // First debit after update
+            previewContainer.find("div#first_debit_after_update span.value").text(nextDebit ?? "");
+
+            // Next schduled debit (only if it's before the update)
+            if (new Date(activityDate).getTime() > new Date(nextSchedContributionDate).getTime()) {
+                previewContainer.find("div#next_sched_contribution_date").show();
+            } else {
+                previewContainer.find("div#next_sched_contribution_date").hide();
             }
-
-            return rcResult[0]["payment_instrument_id:label"];
-        } catch (error) {
-            console.error(error);
-
-            return "";
         }
     }
 }
-
-registerPaymentAdapter("adyen", new Adyen());
