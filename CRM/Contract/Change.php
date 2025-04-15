@@ -603,7 +603,7 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
         'title' => E::ts("Edit Membership"),
         'url'   => "civicrm/member/edit",
         'bit'   => CRM_Core_Action::UPDATE,
-        'qs'    => "Membership1=%%id%%",
+        'qs'    => "membership_id=%%id%%",
       ];
     }
   }
