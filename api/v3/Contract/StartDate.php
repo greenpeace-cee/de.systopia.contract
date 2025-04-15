@@ -40,18 +40,6 @@ function _civicrm_api3_Contract_start_date_validate_params(&$params) {
     }
     $adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id);
     $params['payment_adapter'] = $adapter;
-
-    if ($adapter === 'psp_sepa' && empty($params['creditor_id'])) {
-      $sepa_mandate = Api4\SepaMandate::get()
-        ->addWhere('entity_id'   , '=', $rc_id)
-        ->addWhere('entity_table', '=', 'civicrm_contribution_recur')
-        ->addSelect('creditor_id')
-        ->setLimit(1)
-        ->execute()
-        ->first();
-
-      $params['creditor_id'] = $sepa_mandate['creditor_id'];
-    }
   }
 
   // Defer payment start
@@ -68,38 +56,9 @@ function _civicrm_api3_Contract_start_date_validate_params(&$params) {
   if (empty($params['payment_adapter'])) {
     throw new API_Exception("Missing parameter 'payment_adapter'");
   }
-
-  // PSP creditor ID
-
-  if ($params['payment_adapter'] === 'psp_sepa') {
-    if (empty($params['creditor_id'])) {
-      throw new Exception("Missing parameter 'creditor_id'");
-    }
-
-    $creditor_id = $params['creditor_id'];
-
-    $creditor_count = Api4\SepaCreditor::get()
-      ->selectRowCount()
-      ->addWhere('id', '=', $creditor_id)
-      ->execute()
-      ->rowCount;
-
-    if ($creditor_count < 1) {
-      throw new Exception("PSP creditor with ID $creditor_id not found");
-    }
-  }
-
 }
 
 function _civicrm_api3_Contract_start_date_spec(&$params) {
-  $params['creditor_id'] = [
-    'api.default'  => NULL,
-    'api.required' => FALSE,
-    'description'  => 'ID of the PSP creditor',
-    'name'         => 'creditor_id',
-    'title'        => 'Creditor ID (PSP)',
-    'type'         => CRM_Utils_Type::T_INT,
-  ];
   $params['cycle_day'] = [
     'api.default'  => NULL,
     'api.required' => FALSE,

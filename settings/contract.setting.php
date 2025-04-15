@@ -85,7 +85,6 @@ return array(
     'default' => [
       'adyen'        => 'CRM_Contract_PaymentAdapter_Adyen',
       'eft'          => 'CRM_Contract_PaymentAdapter_EFT',
-      'psp_sepa'     => 'CRM_Contract_PaymentAdapter_PSPSEPA',
       'sepa_mandate' => 'CRM_Contract_PaymentAdapter_SEPAMandate',
     ],
     'add' => '1.6',

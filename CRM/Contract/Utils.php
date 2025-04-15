@@ -494,10 +494,6 @@ class CRM_Contract_Utils
       case 'eft':
         return 'eft';
 
-      case 'psp':
-      case 'psp_sepa':
-        return 'psp_sepa';
-
       case 'sepa':
       case 'sepa_mandate':
         return 'sepa_mandate';
