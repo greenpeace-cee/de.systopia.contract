@@ -14,7 +14,7 @@ class SEPA extends PaymentAdapter {
 
     onFormChange () {
         // Currency
-        cj("span#currency").text(ADAPTER_VARS.default_currency);
+        cj("span#currency").text(ADAPTER_VARS.creditor.currency);
 
         // Cycle days
         this.updateCycleDayField();
@@ -44,7 +44,7 @@ class SEPA extends PaymentAdapter {
                 nextDebit,
             } = await this.#compileSummary();
 
-            const currency = EXT_VARS.default_currency;
+            const currency = ADAPTER_VARS.creditor.currency;
             const frequencyLabel = EXT_VARS.frequency_labels[frequency];
             const nextSchedContributionDate = EXT_VARS.next_sched_contribution_date;
 
@@ -140,7 +140,6 @@ class SEPA extends PaymentAdapter {
         } = await this.#compileSummary();
 
         const creditor = ADAPTER_VARS.creditor;
-        const currency = ADAPTER_VARS.default_currency;
         const frequencyLabel = EXT_VARS.frequency_labels[frequency];
         const nextSchedContributionDate = EXT_VARS.next_sched_contribution_date;
 

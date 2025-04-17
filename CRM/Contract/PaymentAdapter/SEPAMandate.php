@@ -240,7 +240,6 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         return [
             "creditor"            => CRM_Sepa_Logic_Settings::defaultCreditor(),
             "cycle_days"          => self::cycleDays(),
-            "default_currency"    => $default_creditor->currency,
             "payment_frequencies" => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 4, 12]),
         ];
     }

@@ -48,7 +48,7 @@ class Adyen extends PaymentAdapter {
                 paymentInstrument,
             } = await this.#compileSummary();
 
-            const currency = EXT_VARS.default_currency;
+            const currency = ADAPTER_VARS.default_currency;
             const frequencyLabel = EXT_VARS.frequency_labels[frequency];
             const nextSchedContributionDate = EXT_VARS.next_sched_contribution_date;
 

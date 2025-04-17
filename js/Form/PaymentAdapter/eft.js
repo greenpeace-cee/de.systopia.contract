@@ -30,7 +30,7 @@ class EFT extends PaymentAdapter {
         return new Promise(async (resolve, reject) => {
             const { amount, annualAmount, frequency, nextPayment } = await this.#compileSummary();
 
-            const currency = EXT_VARS.default_currency;
+            const currency = ADAPTER_VARS.default_currency;
             const frequencyLabel = EXT_VARS.frequency_labels[frequency];
 
             const isNew = this.formType === "Create";
