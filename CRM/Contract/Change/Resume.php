@@ -203,6 +203,7 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
           'url'   => "civicrm/contract/resume",
           'bit'   => CRM_Core_Action::UPDATE,
           'qs'    => "membership_id=%%id%%",
+          'weight' => 15,
       ];
     }
   }

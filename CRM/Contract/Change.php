@@ -604,6 +604,7 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
         'url'   => "civicrm/member/edit",
         'bit'   => CRM_Core_Action::UPDATE,
         'qs'    => "membership_id=%%id%%",
+        'weight' => 30,
       ];
     }
   }
