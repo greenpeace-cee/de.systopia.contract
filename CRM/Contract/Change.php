@@ -435,12 +435,6 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
     $this->data['status_id'] = $status;
   }
 
-  public function checkForConflicts() {
-    // TODO: refactor CRM_Contract_Handler_ModificationConflicts
-    $conflictHandler = new CRM_Contract_Handler_ModificationConflicts();
-    $conflictHandler->checkForConflicts($this->getContractID());
-  }
-
   /**
    * Cached query for API lookups
    *
