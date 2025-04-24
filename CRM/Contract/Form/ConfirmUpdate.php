@@ -44,8 +44,8 @@ class CRM_Contract_Form_ConfirmUpdate extends CRM_Core_Form {
       $dbu_fmt = $day_before_update->format('Y-m-d');
 
       $this->addRadio('pause_until_update', NULL, [
-        'yes' => "Yes, pause the contract from $mcd_fmt until the day before the update ($dbu_fmt)",
-        'no'  => 'No, continue debiting until the update',
+        'yes' => "Pause the contract from $mcd_fmt until the day before the update ($dbu_fmt)",
+        'no'  => 'Continue debiting until the update',
       ], [ 'options_per_line' => 1 ], '', TRUE);
     } else {
       $this->assign('automatic_pause_before_update', FALSE);

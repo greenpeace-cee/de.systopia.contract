@@ -13,7 +13,10 @@
         </p>
 
         <div class="crm-section" id="pause_until_update">
-            <div class="content" style="margin:0px">{$form.pause_until_update.html}</div>
+            <div class="content" style="margin:0px">
+              <div>{$form.pause_until_update.yes.html}</div>
+              <div>{$form.pause_until_update.no.html}</div>
+            </div>
             <div class="clear"></div>
         </div>
     {else}
