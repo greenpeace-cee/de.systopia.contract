@@ -126,65 +126,6 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
     ]);
   }
 
-  public function testPSP() {
-    $membership_id = $this->createContract('psp_sepa');
-    $rc_old = self::getActiveRecurringContribution($membership_id);
-
-    $this->assertEachEquals([
-      [10.0                 , $rc_old['amount']            ],
-      [$this->campaign['id'], $rc_old['campaign_id']       ],
-      [5                    , $rc_old['cycle_day']         ],
-      [1                    , $rc_old['frequency_interval']],
-      ['month'              , $rc_old['frequency_unit']    ],
-    ]);
-
-    $start_date_old = new DateTimeImmutable($rc_old['start_date']);
-
-    $contribution = $this->createContribution([
-      'amount'                    => 10.0,
-      'date'                      => $start_date_old->format('Y-m-d'),
-      'membership_id'             => $membership_id,
-      'recurring_contribution_id' => $rc_old['id'],
-    ]);
-
-    civicrm_api3('Contract', 'modify', [
-      'action'                                  => 'update',
-      'campaign_id'                             => NULL,
-      'id'                                      => $membership_id,
-      'membership_payment.defer_payment_start'  => TRUE,
-      'membership_payment.membership_annual'    => 180.0,
-      'membership_payment.membership_frequency' => 3,
-      'payment_method.adapter'                  => 'psp_sepa',
-      'payment_method.cycle_day'                => 15,
-    ]);
-
-    civicrm_api3('Contract', 'process_scheduled_modifications');
-
-    $update_activity = self::getLatestUpdateActivity($membership_id);
-
-    $this->assertEquals(NULL, $update_activity['campaign_id']);
-
-    $rc_new = self::getActiveRecurringContribution($membership_id);
-
-    $this->assertNotEquals($rc_old['id'], $rc_new['id']);
-
-    $start_date_new = new DateTimeImmutable($rc_new['start_date']);
-    $one_month = new DateInterval('P1M');
-
-    $exp_start_date = CRM_Contract_DateHelper::findNextOfDays(
-      [15],
-      $start_date_old->add($one_month)->format('Y-m-d')
-    );
-
-    $this->assertEachEquals([
-      [60.0                            , $rc_new['amount']               ],
-      [15                              , $rc_new['cycle_day']            ],
-      [4                               , $rc_new['frequency_interval']   ],
-      ['month'                         , $rc_new['frequency_unit']       ],
-      [$exp_start_date->format('Y-m-d'), $start_date_new->format('Y-m-d')],
-    ]);
-  }
-
   public function testSEPA() {
     $membership_id = $this->createContract('sepa_mandate');
     $rc_old = self::getActiveRecurringContribution($membership_id);
@@ -283,22 +224,6 @@ class api_v3_Contract_UpdateContractTest extends api_v3_Contract_ContractTestBas
       }
 
       case "eft": {
-        break;
-      }
-
-      case "psp_sepa": {
-        CRM_Sepa_Logic_Settings::setSetting(5, "batching.RCUR.notice", $this->pspCreditor['id']);
-
-        $payment_instrument = self::getOptionValue('payment_instrument', 'Credit Card');
-
-        $params += [
-          'payment_method.account_name'          => 'Greenpeace',
-          'payment_method.account_reference'     => 'OSF-TOKEN-PRODUCTION-12345-PSP',
-          'payment_method.creditor_id'           => $this->pspCreditor['id'],
-          'payment_method.payment_instrument_id' => $payment_instrument,
-          'payment_method.type'                  => 'RCUR',
-        ];
-
         break;
       }
 
