@@ -43,7 +43,7 @@ export async function initForm () {
             .catch(() => { /* Form submission cancelled */ });
     });
 
-    // Trigger 'udpateForm' on every change of a form field
+    // Trigger 'updateForm' on every change of a form field
     Object.values(formFields).forEach(
         field => field.change(updateForm.bind(null, formFields, paymentAdapters))
     );

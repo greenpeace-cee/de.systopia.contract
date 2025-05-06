@@ -19,6 +19,14 @@ export function displayRelevantFormFields (dataAttributes) {
     });
 }
 
+export function formatDateYMD(date) {
+    const year = date.getFullYear().toString(10);
+    const month = (date.getMonth() + 1).toString(10).padStart(2, "0");
+    const day = date.getDate().toString(10).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
 export function nextCollectionDate(params) {
     return CRM.api3("Contract", "start_date", params).then(
         result => result?.values?.at(0),
