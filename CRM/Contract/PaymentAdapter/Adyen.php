@@ -158,7 +158,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       isset($submitted['pa-adyen-use_existing_token'])
       && $submitted['pa-adyen-use_existing_token'] === '0';
 
-    $paymentTokenOptions = is_null($contactID) ? [] : self::getPaymentTokensForContact($contactID);
+    $paymentTokenOptions = is_null($contactID)
+      ? []
+      : array_map(fn ($token) => $token['label'], self::getPaymentTokensForContact($contactID));
 
     $defaults = [];
 
@@ -191,6 +193,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'payment_token_id',
         'options'      => $paymentTokenOptions,
         'required'     => FALSE,
+        'attributes'   => [ 'data-new-adyen-token' => 'false' ],
         'type'         => 'select',
       ],
       'payment_processor_id' => [
@@ -200,6 +203,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'payment_processor_id',
         'options'      => self::getPaymentProcessors(),
         'required'     => !$useExistingToken,
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'select',
       ],
       'payment_instrument_id' => [
@@ -209,6 +213,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'payment_instrument_id',
         'options'      => CRM_Contract_FormUtils::getOptionValueLabels('payment_instrument'),
         'required'     => FALSE,
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'select',
       ],
       'stored_payment_method_id' => [
@@ -218,6 +223,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'stored_payment_method_id',
         'required'     => !$useExistingToken,
         'settings'     => [],
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'text',
       ],
       'shopper_reference' => [
@@ -227,6 +233,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'shopper_reference',
         'required'     => !$useExistingToken,
         'settings'     => [ 'class' => 'huge' ],
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'text',
       ],
       'billing_first_name' => [
@@ -236,6 +243,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'billing_first_name',
         'required'     => FALSE,
         'settings'     => [],
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'text',
       ],
       'billing_last_name' => [
@@ -245,6 +253,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'billing_last_name',
         'required'     => FALSE,
         'settings'     => [],
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'text',
       ],
       'email' => [
@@ -254,6 +263,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'email',
         'required'     => FALSE,
         'settings'     => [ 'class' => 'big' ],
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'text',
       ],
       'account_number' => [
@@ -263,6 +273,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'account_number',
         'required'     => FALSE,
         'settings'     => [ 'class' => 'big' ],
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'text',
       ],
       'expiry_date' => [
@@ -272,6 +283,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'expiry_date',
         'required'     => FALSE,
         'settings'     => [],
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'date',
       ],
       'ip_address' => [
@@ -281,6 +293,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'name'         => 'ip_address',
         'required'     => FALSE,
         'settings'     => [],
+        'attributes'   => [ 'data-new-adyen-token' => 'true' ],
         'type'         => 'text',
       ],
     ];
@@ -303,8 +316,10 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     return [
       'cycle_days'           => self::cycleDays(),
       'default_currency'     => Civi::settings()->get('defaultCurrency'),
-      "payment_frequencies"  => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
+      'payment_frequencies'  => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
+      'payment_instruments'  => CRM_Contract_FormUtils::getOptionValueLabels('payment_instrument'),
       'payment_token_fields' => $paymentTokenFields,
+      'payment_tokens'       => self::getPaymentTokensForContact($params['contact_id'] ?? NULL),
     ];
   }
 
@@ -685,9 +700,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   private static function getPaymentTokensForContact($contactID) {
-    $paymentTokens = [];
-
-    $ptResult = Api4\PaymentToken::get(FALSE)
+    $paymentTokens = (array) Api4\PaymentToken::get(FALSE)
       ->addWhere('contact_id', '=', $contactID)
       ->addSelect(
         'expiry_date',
@@ -700,18 +713,19 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'INNER',
         ['id', '=', 'contribution_recur.payment_token_id']
       )
-      ->execute();
+      ->execute()
+      ->indexBy('id');
 
-    foreach ($ptResult as $token) {
+    foreach ($paymentTokens as &$token) {
       $processorName = $token['payment_processor_id.name'];
       $accountNumber = $token['masked_account_number'];
       $paymentInstrument = $token['contribution_recur.payment_instrument_id:label'];
-      $paymentTokens[$token['id']] = "$processorName: $paymentInstrument $accountNumber";
+      $token['label'] = "$processorName: $paymentInstrument $accountNumber";
 
       if ($paymentInstrument !== 'Credit Card') continue;
 
       $expiryDate = (new Datetime($token['expiry_date']))->format('m/Y');
-      $paymentTokens[$token['id']] .= " ($expiryDate)";
+      $token['label'] .= " ($expiryDate)";
     }
 
     return $paymentTokens;

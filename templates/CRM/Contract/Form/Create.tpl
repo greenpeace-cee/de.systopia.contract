@@ -7,24 +7,12 @@
 | http://www.systopia.de/                                      |
 +-------------------------------------------------------------*}
 
-{include file="CRM/Contract/Form/FormUtils.tpl"}
-
 {literal}
 
 <script>
-    (async () => {
-        const EXT_VARS = CRM.vars["de.systopia.contract"];
-        const extBaseURL = EXT_VARS.ext_base_url;
-        const paymentAdapters = Object.keys(EXT_VARS.payment_adapters);
+    const EXT_VARS = CRM.vars["de.systopia.contract"];
 
-        await Promise.all(paymentAdapters.map(
-            adapter => import(`${extBaseURL}/js/Form/PaymentAdapter/${adapter}.js`)
-        ));
-
-        const { initForm } = await import(`${extBaseURL}/js/Form/create.js`);
-
-        initForm();
-    })();
+    import(`${EXT_VARS.ext_base_url}/js/Form/create.js`).then(({ initForm }) => initForm());
 </script>
 
 {/literal}
@@ -36,8 +24,8 @@
         </div>
 
         <div class="content">
-            {foreach from=$payment_adapter_fields key=pa_name item=_}
-                {include file="CRM/Contract/Form/PaymentPreview/$pa_name.tpl"}
+            {foreach from=$payment_adapter_fields key=adapter item=_}
+                {include file="CRM/Contract/Form/PaymentPreview/$adapter.tpl" parent_form="Create"}
             {/foreach}
         </div>
 
@@ -66,16 +54,19 @@
         <div class="clear"></div>
     </div>
 
-    {foreach from=$payment_adapter_fields key=pa_name item=field_ids}
-        {foreach from=$field_ids item=field_id}
+    {foreach from=$payment_adapter_fields key=adapter item=fields}
+        {foreach from=$fields item=field}
             <div
                 class="crm-section form-field"
-                id="{$field_id}"
+                id="{$field.id}"
                 data-payment-option="create"
-                data-payment-adapter="{$pa_name}"
+                data-payment-adapter="{$adapter}"
+                {foreach from=$field.attributes key=attr_name item=attr_value}
+                    {$attr_name}="{$attr_value}"
+                {/foreach}
             >
-                <div class="label">{$form[$field_id].label}</div>
-                <div class="content">{$form[$field_id].html}</div>
+                <div class="label">{$form[$field.id].label}</div>
+                <div class="content">{$form[$field.id].html}</div>
                 <div class="clear"></div>
             </div>
         {/foreach}

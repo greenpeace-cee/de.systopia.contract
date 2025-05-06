@@ -217,6 +217,7 @@ class CRM_Contract_Change_Cancel extends CRM_Contract_Change {
           'url'   => "civicrm/contract/cancel",
           'bit'   => CRM_Core_Action::UPDATE,
           'qs'    => "id=%%id%%",
+          'weight' => 10,
       ];
     }
   }
