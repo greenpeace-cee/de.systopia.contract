@@ -150,7 +150,8 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->set('current_payment_adapter', $current_payment_adapter);
 
         // Next scheduled contribution date
-        $next_sched_contribution_date = date("Y-m-d", strtotime($this->recurring_contribution["next_sched_contribution_date"]));
+        $nscd = $this->recurring_contribution["next_sched_contribution_date"];
+        $next_sched_contribution_date = is_null($nscd) ? NULL : date("Y-m-d", strtotime($nscd));
         $this->assign('next_sched_contribution_date', $next_sched_contribution_date);
 
         // Set front-end JS variables (EXT_VARS)
@@ -164,7 +165,9 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
             "frequency_labels"        => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
+            "latest_contribution_date" => CRM_Contract_RecurringContribution::getLatestContribution($contract_id)["receive_date"],
             "membership_id"           => $contract_id,
+            "minimum_change_date"     => CRM_Contract_DateHelper::minimumChangeDate()->format("Y-m-d"),
             "next_sched_contribution_date" => $next_sched_contribution_date,
             "payment_adapter_fields"  => $paymentAdapterFields,
             "payment_adapters"        => array_keys(CRM_Contract_Configuration::getPaymentAdapters()),

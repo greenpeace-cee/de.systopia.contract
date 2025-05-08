@@ -2,7 +2,7 @@ import { formatDateYMD } from "./utils.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 
-export function initForm() {
+export async function initForm() {
     // Reference all relevant form fields in the DOM
     const formFields = Object.fromEntries([
         "activity_date",
@@ -10,6 +10,10 @@ export function initForm() {
         "note",
         "resume_date",
     ].map(name => [name, cj(`div.form-field div.content *[name=${name}]`)]));
+
+    // Instantiate payment adapter
+    const paymentAdapter = await import(`${EXT_VARS.ext_base_url}/js/Form/PaymentAdapter/${EXT_VARS.payment_adapter}.js`)
+        .then(({ createAdapter }) => createAdapter({ formType: "Pause", formFields }));
 
     // Substitute the default 'Submit' button to trigger the 'onSubmit' hook
     const confirmButton = cj("button[data-identifier=_qf_Pause_submit]");
@@ -23,9 +27,9 @@ export function initForm() {
     );
 
     // Trigger 'updateForm' on every change of a form field
-    Object.values(formFields).forEach(field => field.change(updateForm.bind(null, formFields)));
+    Object.values(formFields).forEach(field => field.change(updateForm.bind(null, formFields, paymentAdapter)));
 
-    updateForm(formFields);
+    updateForm(formFields, paymentAdapter);
 }
 
 function onSubmit(formFields) {
@@ -54,7 +58,24 @@ function onSubmit(formFields) {
     });
 }
 
-function updateForm(formFields) {
+function updateForm(formFields, paymentAdapter) {
+    // Allowed resume dates
+    const datepickerField = formFields["resume_date"].parent().find("input.hasDatepicker");
+    const oneDayMilliseconds = 24 * 60 * 60 * 1000;
+
+    datepickerField.datepicker(
+        "option",
+        "beforeShowDay",
+        (date) => [
+            paymentAdapter.isAllowedScheduleDate(
+                new Date(date.getTime() + oneDayMilliseconds),
+                { cycleDay: EXT_VARS.cycle_day }
+            ),
+            "",
+        ]
+    );
+
+    // Debit before change warning
     if (EXT_VARS["next_sched_contribution_date"]) {
         const nextSchedContributionDate = new Date(EXT_VARS["next_sched_contribution_date"]);
         const activityDate = new Date(formFields["activity_date"].val());

@@ -1,4 +1,4 @@
-import { displayRelevantFormFields, nextCollectionDate, parseMoney } from "../utils.js";
+import { displayRelevantFormFields, formatDateYMD, nextCollectionDate, parseMoney } from "../utils.js";
 import { PaymentAdapter } from "./payment-adapter.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
@@ -11,6 +11,19 @@ export function createAdapter(parameters) {
 class Adyen extends PaymentAdapter {
     cycleDays = ADAPTER_VARS.cycle_days;
     frequencyOptions = ADAPTER_VARS.payment_frequencies;
+
+    isAllowedScheduleDate(date, options = {}) {
+        const minDate = new Date(EXT_VARS.minimum_change_date ?? Date.now());
+
+        // Reject dates in the past/before the minimum change date
+        if (date.getTime() < minDate.setHours(0, 0, 0, 0)) return false;
+
+        // Reject if a contribution exists on the same day
+        if (formatDateYMD(date) === formatDateYMD(new Date(EXT_VARS.latest_contribution_date))) return false;
+
+        // Allow dates matching the selected cycle day
+        return date.getDate() === options?.cycleDay;
+    }
 
     onFormChange () {
         // Cycle days
@@ -25,11 +38,29 @@ class Adyen extends PaymentAdapter {
             displayRelevantFormFields({ "data-new-adyen-token": createNewToken });
         }
 
-        // Debit before update warning
+        // Allowed schedule dates
         if (this.formType === "Modify") {
+            const cycleDay = parseInt(this.formFields["cycle_day"].val());
+            const datepickerField = this.formFields["activity_date"].parent().find("input.hasDatepicker");
+            const selectedScheduleDate = new Date(this.formFields["activity_date"].val());
+
+            if (!this.isAllowedScheduleDate(selectedScheduleDate, { cycleDay })) {
+                datepickerField.datepicker("setDate", undefined);
+                this.formFields["activity_date"].val(undefined);
+            }
+
+            datepickerField.datepicker(
+                "option",
+                "beforeShowDay",
+                (date) => [this.isAllowedScheduleDate(date, { cycleDay }), ""]
+            );
+        }
+
+        // Debit before update warning
+        if (this.formType === "Modify" && EXT_VARS.next_sched_contribution_date) {
             const warning = cj("div.form-field#activity_date div#debit_before_update");
             const nextContribDate = new Date(EXT_VARS.next_sched_contribution_date);
-            const scheduleDate = new Date(this.formFields["activity_date"].val());
+            const scheduleDate = new Date(this.formFields["activity_date"].val() || 0);
             nextContribDate.getTime() < scheduleDate.getTime() ? warning.show() : warning.hide();
         }
 

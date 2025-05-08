@@ -12,6 +12,10 @@ class EFT extends PaymentAdapter {
     cycleDays = ADAPTER_VARS.cycle_days;
     frequencyOptions = ADAPTER_VARS.payment_frequencies;
 
+    isAllowedScheduleDate(date, options = {}) {
+        return true;
+    }
+
     onFormChange () {
         // Currency
         cj("span#currency").text(ADAPTER_VARS.default_currency);
@@ -21,6 +25,14 @@ class EFT extends PaymentAdapter {
 
         // Payment frequencies
         this.updateFrequencyField();
+
+        // Allowed schedule dates
+        if (this.formType === "Modify") {
+            this.formFields["activity_date"]
+                .parent()
+                .find("input.hasDatepicker")
+                .datepicker("option", "beforeShowDay", (date) => [this.isAllowedScheduleDate(date), ""]);
+        }
 
         // Payment preview
         this.#updatePaymentPreview();

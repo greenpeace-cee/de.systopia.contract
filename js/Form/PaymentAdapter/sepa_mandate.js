@@ -1,4 +1,4 @@
-import { nextCollectionDate, parseMoney } from "../utils.js";
+import { formatDateYMD, nextCollectionDate, parseMoney } from "../utils.js";
 import { PaymentAdapter } from "./payment-adapter.js";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
@@ -12,6 +12,47 @@ class SEPA extends PaymentAdapter {
     cycleDays = ADAPTER_VARS.cycle_days;
     frequencyOptions = ADAPTER_VARS.payment_frequencies;
 
+    isAllowedScheduleDate(date, options = {}) {
+        const minDate = new Date(EXT_VARS.minimum_change_date ?? Date.now());
+
+        // Reject dates in the past/before the minimum change date
+        if (date.getTime() < minDate.setHours(0, 0, 0, 0)) return false;
+
+        // Reject Saturdays/Sundays
+        if (date.getDay() < 1 || date.getDay() > 5) return false;
+
+        // Reject bank holidays
+        if (ADAPTER_VARS.bank_holidays.includes(formatDateYMD(date))) return false;
+
+        // Find the next cycle day
+        const oneDayMilliseconds = 24 * 60 * 60 * 1000;
+
+        let nextCycleDay = new Date(date);
+        let safetyCounter = 0;
+
+        while (nextCycleDay.getDate() !== options?.cycleDay && safetyCounter++ < 31) {
+            nextCycleDay = new Date(nextCycleDay.getTime() + oneDayMilliseconds);
+        }
+
+        // No suitable date found within the next 30 days
+        if (safetyCounter > 30) return false;
+
+        // Walk back from the next cycle day to the next allowed schedule date
+        const noticeMilliseconds = ADAPTER_VARS.notice_days * oneDayMilliseconds;
+        let scheduleDate = new Date(nextCycleDay.getTime() - noticeMilliseconds);
+
+        while (
+            scheduleDate.getDay() < 1
+            || scheduleDate.getDay() > 5
+            || ADAPTER_VARS.bank_holidays.includes(formatDateYMD(scheduleDate))
+        ) {
+            scheduleDate = new Date(scheduleDate.getTime() - oneDayMilliseconds);
+        }
+
+        // Compare the given date to the next allowed schedule date
+        return formatDateYMD(date) === formatDateYMD(scheduleDate);
+    }
+
     onFormChange () {
         // Currency
         cj("span#currency").text(ADAPTER_VARS.creditor.currency);
@@ -22,11 +63,29 @@ class SEPA extends PaymentAdapter {
         // Payment frequencies
         this.updateFrequencyField();
 
+        // Allowed schedule dates
         if (this.formType === "Modify") {
-            // Debit before update warning
+            const cycleDay = parseInt(this.formFields["cycle_day"].val());
+            const datepickerField = this.formFields["activity_date"].parent().find("input.hasDatepicker");
+            const selectedScheduleDate = new Date(this.formFields["activity_date"].val());
+
+            if (!this.isAllowedScheduleDate(selectedScheduleDate, { cycleDay })) {
+                datepickerField.datepicker("setDate", undefined);
+                this.formFields["activity_date"].val(undefined);
+            }
+
+            datepickerField.datepicker(
+                "option",
+                "beforeShowDay",
+                (date) => [this.isAllowedScheduleDate(date, { cycleDay }), ""]
+            );
+        }
+
+        // Debit before update warning
+        if (this.formType === "Modify" && EXT_VARS.next_sched_contribution_date) {
             const warning = cj("div.form-field#activity_date div#debit_before_update");
             const nextContribDate = new Date(EXT_VARS.next_sched_contribution_date);
-            const scheduleDate = new Date(this.formFields["activity_date"].val());
+            const scheduleDate = new Date(this.formFields["activity_date"].val() || 0);
             nextContribDate.getTime() < scheduleDate.getTime() ? warning.show() : warning.hide();
         }
 
