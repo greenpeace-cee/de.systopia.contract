@@ -30,6 +30,12 @@ export async function initForm() {
     Object.values(formFields).forEach(field => field.change(updateForm.bind(null, formFields, paymentAdapter)));
 
     updateForm(formFields, paymentAdapter);
+
+    window.setTimeout(function() {
+        CRM.$('input#resume_date').parent().find("input.hasDatepicker").datepicker('show');
+    }, 500);
+
+
 }
 
 function onSubmit(formFields) {
