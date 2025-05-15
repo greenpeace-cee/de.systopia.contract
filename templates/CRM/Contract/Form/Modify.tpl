@@ -6,24 +6,12 @@
 | http://www.systopia.de/                                      |
 +-------------------------------------------------------------*}
 
-{include file="CRM/Contract/Form/FormUtils.tpl"}
-
 {literal}
 
 <script>
-    (async () => {
-        const EXT_VARS = CRM.vars["de.systopia.contract"];
-        const extBaseURL = EXT_VARS.ext_base_url;
-        const paymentAdapters = Object.keys(EXT_VARS.payment_adapters);
+    const EXT_VARS = CRM.vars["de.systopia.contract"];
 
-        await Promise.all(paymentAdapters.map(
-            adapter => import(`${extBaseURL}/js/Form/PaymentAdapter/${adapter}.js`)
-        ));
-
-        const { initForm } = await import(`${extBaseURL}/js/Form/modify.js`);
-
-        initForm();
-    })();
+    import(`${EXT_VARS.ext_base_url}/js/Form/modify.js`).then(({ initForm }) => initForm());
 </script>
 
 {/literal}
@@ -39,7 +27,7 @@
 
         <div class="content">
             {foreach from=$payment_adapter_fields key=pa_name item=_}
-                {include file="CRM/Contract/Form/PaymentPreview/$pa_name.tpl"}
+                {include file="CRM/Contract/Form/PaymentPreview/$pa_name.tpl" parent_form="Modify"}
             {/foreach}
         </div>
 
@@ -112,7 +100,7 @@
         class="crm-section form-field"
         id="defer_payment_start"
         data-payment-change="modify"
-        data-payment-adapter="adyen psp_sepa sepa_mandate"
+        data-payment-adapter="adyen sepa_mandate"
     >
         <div class="label">
           {$form.defer_payment_start.label}
@@ -143,6 +131,11 @@
     {* --- Activity fields --- *}
 
     <div class="crm-section form-field" id="activity_date">
+        <div id="debit_before_update" class="messages warning" style="display:none">
+            This update will be applied <b>after</b> the next regular debit
+            on <b>{$next_sched_contribution_date}</b>
+        </div>
+
         <div class="label">
             {$form.activity_date.label}
             {help id="scheduling" file="CRM/Contract/Form/Scheduling.hlp"}

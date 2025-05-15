@@ -237,10 +237,17 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
      * @return array - Form variables
      */
     public static function formVars($params = []) {
+        $bank_holidays = (array) Api4\SepaBankHoliday::get(FALSE)
+            ->addSelect('bank_holiday_date')
+            ->addOrderBy('bank_holiday_date', 'ASC')
+            ->setLimit(25)
+            ->execute();
+
         return [
+            "bank_holidays"       => array_map(fn ($item) => $item["bank_holiday_date"], $bank_holidays),
             "creditor"            => CRM_Sepa_Logic_Settings::defaultCreditor(),
             "cycle_days"          => self::cycleDays(),
-            "default_currency"    => $default_creditor->currency,
+            "notice_days"         => self::noticeDays()->d,
             "payment_frequencies" => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 4, 12]),
         ];
     }

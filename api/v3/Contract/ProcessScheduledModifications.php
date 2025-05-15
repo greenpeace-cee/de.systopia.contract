@@ -123,7 +123,7 @@ function civicrm_api3_Contract_process_scheduled_modifications($params) {
       CRM_Contract_Utils::deleteSystemActivities($change->getContractID());
 
       // check for new conflicts
-      $change->checkForConflicts();
+      CRM_Contract_Handler_ModificationConflicts::checkForConflicts($change->getContractID());
 
     } catch (Exception $ex) {
       // something went wrong...
