@@ -11,6 +11,26 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
     } else {
       CRM_Core_Error::fatal("Missing contract ID");
     }
+
+    $membership = Api4\Membership::get(FALSE)
+      ->addSelect("DATE(rc.next_sched_contribution_date) AS next_sched_contribution_date")
+      ->addJoin(
+        "ContributionRecur AS rc",
+        "INNER",
+        ["membership_payment.membership_recurring_contribution", "=", "rc.id"]
+      )
+      ->addWhere("id", "=", $contract_id)
+      ->execute()
+      ->first();
+
+    $this->assign("next_sched_contribution_date", $membership["next_sched_contribution_date"]);
+
+    $resources = CRM_Core_Resources::singleton();
+
+    $resources->addVars("de.systopia.contract", [
+      "ext_base_url"                 => rtrim($resources->getUrl("de.systopia.contract"), "/"),
+      "next_sched_contribution_date" => $membership["next_sched_contribution_date"],
+    ]);
   }
 
   function buildQuickForm () {

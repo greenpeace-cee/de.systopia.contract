@@ -1,5 +1,7 @@
 <?php
 
+use Civi\Api4;
+
 class CRM_Contract_Form_Pause extends CRM_Core_Form {
   function preProcess () {
     $contract_id = CRM_Utils_Request::retrieve("id", "Integer");
@@ -9,6 +11,40 @@ class CRM_Contract_Form_Pause extends CRM_Core_Form {
     } else {
       CRM_Core_Error::fatal("Missing contract ID");
     }
+
+    $membership = Api4\Membership::get(FALSE)
+      ->addSelect(
+        "contact_id",
+        "rc.cycle_day",
+        "rc.id",
+        "DATE(rc.next_sched_contribution_date) AS next_sched_contribution_date"
+      )
+      ->addJoin(
+        "ContributionRecur AS rc",
+        "INNER",
+        ["membership_payment.membership_recurring_contribution", "=", "rc.id"]
+      )
+      ->addWhere("id", "=", $contract_id)
+      ->execute()
+      ->first();
+
+    $this->assign("next_sched_contribution_date", $membership["next_sched_contribution_date"]);
+
+    $resources = CRM_Core_Resources::singleton();
+    $payment_adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($membership["rc.id"]);
+    $payment_adapter_class = CRM_Contract_Configuration::getPaymentAdapters()[$payment_adapter];
+
+    $resources->addVars("de.systopia.contract", [
+      "cycle_day"                    => (int) $membership["rc.cycle_day"],
+      "ext_base_url"                 => rtrim($resources->getUrl("de.systopia.contract"), "/"),
+      "next_sched_contribution_date" => $membership["next_sched_contribution_date"],
+      "payment_adapter"              => $payment_adapter,
+    ]);
+
+    $resources->addVars("de.systopia.contract/$payment_adapter", $payment_adapter_class::formVars([
+        "contact_id"                => $membership["contact_id"],
+        "recurring_contribution_id" => $membership["rc.id"],
+    ]));
   }
 
   function buildQuickForm () {

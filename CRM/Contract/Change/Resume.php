@@ -185,7 +185,7 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
         'Contract_Updated',
       ])
       ->addWhere('source_record_id', '=', $membership_data['id'])
-      ->addWhere('status_id:name', '!=', 'Completed')
+      ->addWhere('status_id:name', 'NOT IN', ['Completed', 'Cancelled'])
       ->execute();
 
     $ncca_count = $not_completed_contract_activities->count();
@@ -203,6 +203,7 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
           'url'   => "civicrm/contract/resume",
           'bit'   => CRM_Core_Action::UPDATE,
           'qs'    => "membership_id=%%id%%",
+          'weight' => 15,
       ];
     }
   }

@@ -105,10 +105,8 @@ function contract_civicrm_buildForm($formName, &$form) {
       // removed: $formUtils->showPaymentContractDetails();
       $formUtils->addMembershipContractFileDownloadLink($membershipId);
 
-      // GP-814 - hide 'edit' button if 'edit core membership CiviContract' is not granted
-      if (!CRM_Core_Permission::check('edit core membership CiviContract')) {
-        CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'js/membership_view_hide_edit.js');
-      }
+      // GP-814 - hide core 'edit' button
+      CRM_Core_Resources::singleton()->addScriptFile('de.systopia.contract', 'js/membership_view_hide_edit.js');
 
       break;
 

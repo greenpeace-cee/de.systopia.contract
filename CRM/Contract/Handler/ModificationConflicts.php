@@ -8,114 +8,57 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
+
 class CRM_Contract_Handler_ModificationConflicts{
 
-  private $scheduledModifications = [];
-  private $contractId = NULL;
-
-  function __construct(){
-    $this->needsReviewStatusId = civicrm_api3('OptionValue', 'getvalue', [ 'return' => "value", 'option_group_id' => "activity_status", 'name' => 'Needs Review']);;
-  }
-
-  function checkForConflicts($contractId){
-    if (empty($contractId)) {
+  public static function checkForConflicts($membership_id){
+    if (empty($membership_id)) {
       throw new Exception('Missing contract ID, cannot check for conflicts');
     }
 
-    $this->contractId = $contractId;
-    // Black and white listing happens as follows: an array of scheduled
-    // modifications (in order of execution) is retreived by
-    // getScheduledModifications.
+    $contract_status = Api4\Membership::get(FALSE)
+      ->addSelect('status_id:label')
+      ->addWhere('id', '=', $membership_id)
+      ->execute()
+      ->first()['status_id:label'];
 
-    // Various functions can inspect the scheduled modifications, removing
-    // any modifications (including combinations of modifications) that they
-    // consider to be safe. Any modifications left once all the functions have
-    // been run will be marked for review.
+    $scheduled_activities = (array) Api4\Activity::get(FALSE)
+      ->addSelect('activity_type_id:name', 'status_id:name')
+      ->addWhere('source_record_id', '=', $membership_id)
+      ->addWhere('activity_type_id:name', 'IN', array_keys(CRM_Contract_Change::$type2class))
+      ->addWhere('status_id:name', 'IN', ['Scheduled', 'Needs Review'])
+      ->addOrderBy('activity_date_time', 'ASC')
+      ->setLimit(10000)
+      ->execute();
 
-    $this->getScheduledModifications();
+    $scheduled_changes = array_map(fn ($activity) => str_replace('Contract_', '', $activity['activity_type_id:name']), $scheduled_activities);
 
-    $this->whitelistOneActivity();
+    if (count($scheduled_changes) < 2) return;
 
-    $this->whitelistPauseResume();
+    if ($scheduled_changes === ['Paused', 'Resumed']) return;
 
-    if(count($this->scheduledModifications)) {
-      foreach($this->scheduledModifications as $scheduledModification){
-        if($scheduledModification['status_id'] != $this->needsReviewStatusId){
-          $this->markForReview($scheduledModification['id']);
-        }
-      }
-    }
-  }
+    if ($scheduled_changes === ['Paused', 'Resumed', 'Updated']) return;
 
-  function getScheduledModifications(){
-    $scheduledModifications = civicrm_api3('activity', 'get', [
-      'option.limit' => 10000, // If we have more than 10,000 scheduled updates for this contract, probably time to review organisational proceedures
-      'source_record_id' => $this->contractId,
-      'activity_type_id' => ['IN' => array_keys(CRM_Contract_Change::$type2class)],
-      'status_id' => ['IN' => ['scheduled', 'needs review']]
-    ])['values'];
-    foreach($scheduledModifications as $k => &$scheduledModification){
-      $scheduledModification['activity_date_unixtime'] = strtotime($scheduledModification['activity_date_time']);
-    }
-    usort($scheduledModifications, function($a, $b){
-      return $a['activity_date_unixtime'] - $b['activity_date_unixtime'];
-    });
-    $this->scheduledModifications = $scheduledModifications;
+    if ($scheduled_changes === ['Resumed', 'Updated'] && $contract_status === 'Paused') return;
 
-  }
+    foreach($scheduled_activities as $activity){
+      if ($activity['status_id:name'] === 'Needs Review') continue;
 
-  /**
-   * Mark a given activity as "Needs Review"
-   */
-  function markForReview($id) {
-    $update_activity = [
-      'id'           => $id,
-      'status_id'    => 'Needs Review',
-      'skip_handler' => true,
-    ];
+      $reviewers_setting = Api4\Setting::get(FALSE)
+        ->addSelect('contract_modification_reviewers')
+        ->execute()
+        ->first()['value'];
 
-    // assign to reviewers
-    $reviewers = civicrm_api3('Setting', 'GetValue', [
-      'name' => 'contract_modification_reviewers',
-      'group' => 'Contract preferences'
-    ]);
-    if ($reviewers) {
-      $assignees = explode(',', $reviewers);
-      if (!empty($assignees)) {
-        $update_activity['assignee_id'] = $assignees;
-      }
-    }
+      $reviewers = empty($reviewers_setting)
+        ? []
+        : array_map('intval', explode(',', $reviewers_setting));
 
-    civicrm_api3('Activity', 'create', $update_activity);
-  }
-
-  function whitelistOneActivity(){
-    if(count($this->scheduledModifications) == 1){
-      // TODO we should perform extra validation here since we know what
-      // the start state is, we can check that this would be a valid
-      // modification and only whitelist it if so.
-      $this->scheduledModifications = [];
-    }
-  }
-
-
-  function whitelistPauseResume(){
-
-    // This whitelist only works when there are exactly two activities
-    if(count($this->scheduledModifications) != 2){
-      return;
-    }
-
-    // If the first modification is a pause and that the second activity
-    // is a resume, remove the scheduled modifications
-    $pauseActivity  = current($this->scheduledModifications);
-    $resumeActivity = next($this->scheduledModifications);
-
-    if (
-           $pauseActivity['activity_type_id']  == CRM_Contract_Change::getActivityIdForClass('CRM_Contract_Change_Pause')
-        && $resumeActivity['activity_type_id'] == CRM_Contract_Change::getActivityIdForClass('CRM_Contract_Change_Resume')
-    ){
-      $this->scheduledModifications = [];
+      Api4\Activity::update(FALSE)
+        ->addValue('assignee_contact_id', $reviewers)
+        ->addValue('status_id:name', 'Needs Review')
+        ->addWhere('id', '=', $activity['id'])
+        ->execute();
     }
   }
 }

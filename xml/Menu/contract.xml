@@ -72,4 +72,16 @@
     <page_callback>CRM_Contract_Form_Resume</page_callback>
     <access_arguments>edit memberships</access_arguments>
   </item>
+  <item>
+    <path>civicrm/contract/confirm-update</path>
+    <title>Confirm update</title>
+    <page_callback>CRM_Contract_Form_ConfirmUpdate</page_callback>
+    <access_arguments>edit memberships</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/member/edit</path>
+    <title>Edit membership</title>
+    <page_callback>CRM_Contract_Form_EditMembership</page_callback>
+    <access_arguments>edit core membership CiviContract</access_arguments>
+  </item>
 </menu>

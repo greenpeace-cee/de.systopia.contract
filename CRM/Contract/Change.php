@@ -435,12 +435,6 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
     $this->data['status_id'] = $status;
   }
 
-  public function checkForConflicts() {
-    // TODO: refactor CRM_Contract_Handler_ModificationConflicts
-    $conflictHandler = new CRM_Contract_Handler_ModificationConflicts();
-    $conflictHandler->checkForConflicts($this->getContractID());
-  }
-
   /**
    * Cached query for API lookups
    *
@@ -602,6 +596,16 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
       if (method_exists($change_class, 'modifyMembershipActionLinks')) {
         $change_class::modifyMembershipActionLinks($links, $status_name, $membership_data);
       }
+    }
+    if (CRM_Core_Permission::check('edit core membership CiviContract')) {
+      $links[] = [
+        'name'  => E::ts("Edit Membership"),
+        'title' => E::ts("Edit Membership"),
+        'url'   => "civicrm/member/edit",
+        'bit'   => CRM_Core_Action::UPDATE,
+        'qs'    => "membership_id=%%id%%",
+        'weight' => 30,
+      ];
     }
   }
 
