@@ -111,7 +111,7 @@ class SEPA extends PaymentAdapter {
             const activityTime = new Date(activityDate ?? 0).getTime();
             const nextSchedContribTime = new Date(nextSchedContributionDate).getTime();
 
-            if (isNew || activityTime < nextSchedContribTime) {
+            if (isNew || !nextSchedContributionDate || activityTime < nextSchedContribTime) {
                 const message = `
                     <ul style="list-style:inside;margin:20px;padding:0px">
                         <li>We will debit <b>${currency} ${amount.toFixed(2)} ${frequencyLabel}</b> via <b>SEPA Direct Debit</b></li>
