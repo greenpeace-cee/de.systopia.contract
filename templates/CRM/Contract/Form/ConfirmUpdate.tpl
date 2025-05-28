@@ -19,12 +19,6 @@
             </div>
             <div class="clear"></div>
         </div>
-    {else}
-        <p>
-            The update will be applied on <b>{$activity_date}</b> but the next scheduled
-            debit is on <b>{$next_sched_contribution_date}</b>. To avoid debiting until the update
-            you need to manually pause the contract!
-        </p>
     {/if}
 
     <div class="crm-submit-buttons">
