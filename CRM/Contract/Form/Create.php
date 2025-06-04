@@ -63,6 +63,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         foreach ($this->payment_adapters as $paName => $paClass) {
             $resources->addVars("de.systopia.contract/$paName", $paClass::formVars([
                 "contact_id" => $contact_id,
+                "form"       => "sign",
             ]));
 
             $paymentAdapterFields[$paName] = [];

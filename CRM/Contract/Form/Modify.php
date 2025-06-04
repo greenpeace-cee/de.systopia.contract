@@ -130,6 +130,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         foreach ($this->payment_adapters as $paName => $paClass) {
             $resources->addVars("de.systopia.contract/$paName", $paClass::formVars([
                 "contact_id"                => $contact_id,
+                "form"                      => "modify",
                 "recurring_contribution_id" => $rc_id,
             ]));
 
