@@ -43,6 +43,7 @@ class CRM_Contract_Form_Pause extends CRM_Core_Form {
 
     $resources->addVars("de.systopia.contract/$payment_adapter", $payment_adapter_class::formVars([
         "contact_id"                => $membership["contact_id"],
+        "form"                      => "pause",
         "recurring_contribution_id" => $membership["rc.id"],
     ]));
   }

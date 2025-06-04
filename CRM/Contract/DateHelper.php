@@ -32,10 +32,17 @@ class CRM_Contract_DateHelper {
     return NULL;
   }
 
-  public static function minimumChangeDate(string $offset = 'now') {
-    $min_date = Civi::settings()->get('contract_minimum_change_date');
+  public static function minimumChangeDate(string $offset = 'now', bool $exclusive = FALSE) {
     $offset_date = new DateTimeImmutable($offset);
-    $min_date = empty($min_date) ? $offset_date : new DateTimeImmutable($min_date);
+    $min_date = Civi::settings()->get('contract_minimum_change_date');
+
+    if (empty($min_date)) {
+        $min_date = $offset_date;
+    } else {
+        $min_date = $exclusive
+          ? (new DateTimeImmutable($min_date))->add(new DateInterval('P1D'))
+          : new DateTimeImmutable($min_date);
+    }
 
     return max($offset_date, $min_date);
   }
