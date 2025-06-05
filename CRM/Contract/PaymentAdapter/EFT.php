@@ -362,11 +362,12 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
         $now = date("Y-m-d H:i:s");
 
         $update_result = civicrm_api3("ContributionRecur", "create", [
-            "id"                     => $recurring_contribution_id,
-            "cancel_date"            => $now,
-            "cancel_reason"          => $reason,
-            "contribution_status_id" => "Completed",
-            "end_date"               => $now,
+            "id"                           => $recurring_contribution_id,
+            "cancel_date"                  => $now,
+            "cancel_reason"                => $reason,
+            "contribution_status_id"       => "Completed",
+            "end_date"                     => $now,
+            "next_sched_contribution_date" => NULL,
         ]);
 
         if ($update_result["is_error"]) {

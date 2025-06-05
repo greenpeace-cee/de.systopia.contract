@@ -549,10 +549,11 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $now = date('Y-m-d H:i:s');
 
     Api4\ContributionRecur::update(FALSE)
-      ->addValue('cancel_date',                 $now)
-      ->addValue('cancel_reason',               $reason)
-      ->addValue('contribution_status_id:name', 'Completed')
-      ->addValue('end_date',                    $now)
+      ->addValue('cancel_date',                  $now)
+      ->addValue('cancel_reason',                $reason)
+      ->addValue('contribution_status_id:name',  'Completed')
+      ->addValue('end_date',                     $now)
+      ->addValue('next_sched_contribution_date', NULL)
       ->addWhere('id', '=', $recurringContributionID)
       ->execute();
 
