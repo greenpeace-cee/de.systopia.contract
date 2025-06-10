@@ -10,7 +10,7 @@ on:
 env:
   CIVI_CI_CIVICRM: ${{ vars.CIVI_CI_CIVICRM || '["master"]' }}
   CIVI_CI_MYSQL: ${{ vars.CIVI_CI_MYSQL || '["8.0"]' }}
-  CIVI_CI_OS: ${{ vars.CIVI_CI_OS || '["ubuntu-22.04"]' }}
+  CIVI_CI_OS: ${{ vars.CIVI_CI_OS || '["ubuntu-24.04"]' }}
   CIVI_CI_PHP: ${{ vars.CIVI_CI_PHP || '["8.1"]' }}
   CIVI_CI_BUILD_TYPE: ${{ vars.CIVI_CI_BUILD_TYPE || '["drupal-clean"]' }}
   CIVI_CI_EXCLUDES: ${{ vars.CIVI_CI_EXCLUDES || '' }}
