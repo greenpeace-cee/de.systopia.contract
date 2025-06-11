@@ -1,6 +1,7 @@
 <?php
 
 use Civi\Api4;
+use Civi\Api4\ContributionRecur;
 
 class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
 
@@ -361,19 +362,15 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
     public static function terminate ($recurring_contribution_id, $reason = "CHNG") {
         $now = date("Y-m-d H:i:s");
 
-        $update_result = civicrm_api3("ContributionRecur", "create", [
-            "id"                           => $recurring_contribution_id,
-            "cancel_date"                  => $now,
-            "cancel_reason"                => $reason,
-            "contribution_status_id"       => "Completed",
-            "end_date"                     => $now,
-            "next_sched_contribution_date" => NULL,
-        ]);
+        ContributionRecur::update(FALSE)
+          ->addValue('cancel_date', $now)
+          ->addValue('end_date', $now)
+          ->addValue('cancel_reason', $reason)
+          ->addValue('contribution_status_id:name', 'Completed')
+          ->addValue('next_sched_contribution_date', NULL)
 
-        if ($update_result["is_error"]) {
-            $error_message = $update_result["error_message"];
-            throw new Exception("Contribution cannot be terminated: $error_message");
-        }
+          ->addWhere('id', '=', $recurring_contribution_id)
+          ->execute();
     }
 
     /**

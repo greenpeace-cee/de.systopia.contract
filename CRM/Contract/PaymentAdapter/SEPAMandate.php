@@ -1,6 +1,7 @@
 <?php
 
 use Civi\Api4;
+use Civi\Api4\ContributionRecur;
 
 class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAdapter {
 
@@ -414,7 +415,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             throw new Exception("SEPA mandate cannot be paused: $error_message");
         }
 
-        Api4\ContributionRecur::update(FALSE)
+        ContributionRecur::update(FALSE)
             ->addWhere('id', '=', $recurring_contribution_id)
             ->addValue('contribution_status_id:name', 'Paused')
             ->execute();
@@ -457,7 +458,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             throw new Exception("SEPA mandate cannot be resumed: $error_message");
         }
 
-        Api4\ContributionRecur::update(FALSE)
+        ContributionRecur::update(FALSE)
             ->addWhere('id', '=', $recurring_contribution_id)
             ->addValue('contribution_status_id:name', 'Pending')
             ->execute();
@@ -492,7 +493,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         // Notice days
 
         $start_date->add(self::noticeDays());
-        
+
         // Minimum date
 
         if (isset($params['min_date'])) {
@@ -605,10 +606,11 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
 
         // Set the cancel_reason explicitly again since
         // CRM_Sepa_BAO_SEPAMandate::terminateMandate seems to ignore this parameter,
-        civicrm_api3("ContributionRecur", "create", [
-            "id"            => $recurring_contribution_id,
-            "cancel_reason" => $reason,
-        ]);
+        ContributionRecur::update(FALSE)
+          ->addValue('next_sched_contribution_date', NULL)
+          ->addValue('cancel_reason', $reason)
+          ->addWhere('id', '=', $recurring_contribution_id)
+          ->execute();
     }
 
     /**

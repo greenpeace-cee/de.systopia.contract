@@ -393,23 +393,25 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
         'frequency_interval',
         'frequency_unit:name',
         'payment_token_id',
-        'start_date'
+        'start_date',
+        'next_sched_contribution_date',
       )
       ->addWhere('id', '=', $recurContribID)
       ->execute()
       ->first();
 
     $this->assertEquals([
-      'amount'                      => 20.0,
-      'cancel_date'                 => $cancelledRC['cancel_date'],
-      'cancel_reason'               => 'CHNG',
-      'contribution_status_id:name' => 'Completed',
-      'cycle_day'                   => 15,
-      'frequency_interval'          => 2,
-      'frequency_unit:name'         => 'month',
-      'id'                          => $recurContribID,
-      'payment_token_id'            => $cancelledRC['payment_token_id'],
-      'start_date'                  => $startDate->format('Y-m-d H:i:s'),
+      'amount'                       => 20.0,
+      'cancel_date'                  => $cancelledRC['cancel_date'],
+      'cancel_reason'                => 'CHNG',
+      'contribution_status_id:name'  => 'Completed',
+      'cycle_day'                    => 15,
+      'frequency_interval'           => 2,
+      'frequency_unit:name'          => 'month',
+      'id'                           => $recurContribID,
+      'payment_token_id'             => $cancelledRC['payment_token_id'],
+      'start_date'                   => $startDate->format('Y-m-d H:i:s'),
+      'next_sched_contribution_date' => NULL,
     ], $cancelledRC);
 
     $this->assertNotNull($cancelledRC['cancel_date']);
@@ -494,7 +496,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
         'cancel_reason',
         'contribution_status_id:name',
         'end_date',
-        // 'next_sched_contribution_date'
+        'next_sched_contribution_date',
       )
       ->addWhere('id', '=', $recurringContribution['id'])
       ->execute()
@@ -506,7 +508,7 @@ class CRM_Contract_PaymentAdapter_AdyenTest extends CRM_Contract_PaymentAdapterT
       'contribution_status_id:name'  => 'Completed',
       'end_date'                     => $recurringContribution['end_date'],
       'id'                           => $recurringContribution['id'],
-      // 'next_sched_contribution_date' => NULL,
+      'next_sched_contribution_date' => NULL,
     ], $recurringContribution);
 
     // Recurring contribution should have ended within the last minute
