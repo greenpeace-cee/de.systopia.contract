@@ -77,9 +77,12 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $mandate_url = CRM_Utils_System::url("civicrm/sepa/xmandate", "mid=$mandate_id");
         $mandate_reference = $mandate_data["reference"];
 
+        $requested_start_date = CRM_Utils_Array::value("start_date", $params, 'now');
+        $minimum_change_date = CRM_Contract_DateHelper::minimumChangeDate($requested_start_date, TRUE);
+
         $start_date = self::startDate([
             "cycle_day" => CRM_Utils_Array::value("cycle_day", $params),
-            "min_date"  => CRM_Utils_Array::value("start_date", $params),
+            "min_date"  => $minimum_change_date->format('Y-m-d'),
         ]);
 
         civicrm_api3("ContributionRecur", "create", [
@@ -248,6 +251,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "bank_holidays"       => array_map(fn ($item) => $item["bank_holiday_date"], $bank_holidays),
             "creditor"            => CRM_Sepa_Logic_Settings::defaultCreditor(),
             "cycle_days"          => self::cycleDays(),
+            "minimum_change_date" => CRM_Contract_DateHelper::minimumChangeDate()->format('Y-m-d'),
             "notice_days"         => self::noticeDays()->d,
             "payment_frequencies" => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 4, 12]),
         ];

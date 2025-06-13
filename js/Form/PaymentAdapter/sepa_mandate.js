@@ -13,7 +13,7 @@ class SEPA extends PaymentAdapter {
     frequencyOptions = ADAPTER_VARS.payment_frequencies;
 
     isAllowedScheduleDate(date, options = {}) {
-        const minDate = new Date(EXT_VARS.minimum_change_date ?? Date.now());
+        const minDate = new Date(ADAPTER_VARS.minimum_change_date ?? Date.now());
 
         // Reject dates in the past/before the minimum change date
         if (date.getTime() < minDate.setHours(0, 0, 0, 0)) return false;
@@ -163,8 +163,11 @@ class SEPA extends PaymentAdapter {
         const nextDebit = this.formType === "Create"
             ? await nextCollectionDate({
                 cycle_day: cycleDay,
-                min_date: startDate,
                 payment_adapter: "sepa_mandate",
+                min_date: formatDateYMD(new Date(Math.max(
+                    new Date(startDate).getTime(),
+                    new Date(ADAPTER_VARS.minimum_change_date).getTime() + (24 * 60 * 60 * 1000),
+                ))),
             })
             : await nextCollectionDate({
                 cycle_day: cycleDay,
