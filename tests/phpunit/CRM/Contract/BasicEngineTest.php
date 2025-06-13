@@ -53,178 +53,171 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
    * Test a simple cancellation
    */
   public function testSimpleCancel() {
-    foreach ([1] as $is_sepa) {
-      // create a new contract
-      $contract = $this->createNewContract(['is_sepa' => $is_sepa]);
+    // create a new contract
+    $contract = $this->createNewContract(['is_sepa' => TRUE]);
 
-      // schedule and update for tomorrow
-      $this->modifyContract($contract['id'], 'cancel', 'tomorrow', [
-          'membership_cancellation.membership_cancel_reason' => 'Unknown'
-      ]);
+    // schedule and update for tomorrow
+    $cancelReasonOptionValue = civicrm_api3("OptionValue", "getsingle", [
+      "option_group_id" => "contract_cancel_reason",
+      "name" => "Unknown",
+    ])["value"];
 
-      // run engine see if anything changed
-      $this->runContractEngine($contract['id']);
+    $this->modifyContract($contract['id'], 'cancel', 'tomorrow', [
+        'membership_cancellation.membership_cancel_reason' => $cancelReasonOptionValue
+    ]);
 
-      // things should not have changed
-      $contract_changed1 = $this->getContract($contract['id']);
-      $this->assertEquals($contract, $contract_changed1, "This shouldn't have changed");
+    // run engine see if anything changed
+    $this->runContractEngine($contract['id']);
 
-      // run engine again for tomorrow
-      $this->runContractEngine($contract['id'], '+2 days');
-      $contract_changed2 = $this->getContract($contract['id']);
-      $this->assertNotEquals($contract, $contract_changed2, "This should have changed");
+    // things should not have changed
+    $contract_changed1 = $this->getContract($contract['id']);
+    $this->assertEquals($contract, $contract_changed1, "This shouldn't have changed");
 
-      // make sure status is cancelled
-      $this->assertEquals($this->getMembershipStatusID('Cancelled'), $contract_changed2['status_id'], "The contract wasn't cancelled");
+    // run engine again for tomorrow
+    $this->runContractEngine($contract['id'], '+2 days');
+    $contract_changed2 = $this->getContract($contract['id']);
+    $this->assertNotEquals($contract, $contract_changed2, "This should have changed");
 
-      // make sure 'cancel_reason' of the associated recurring contribution is updated
-      $recurringContributionId = $contract_changed2["membership_payment.membership_recurring_contribution"];
-      $recurringContribution = new CRM_Contribute_DAO_ContributionRecur();
-      $recurringContribution->get("id", $recurringContributionId);
+    // make sure status is cancelled
+    $this->assertEquals($this->getMembershipStatusID('Cancelled'), $contract_changed2['status_id'], "The contract wasn't cancelled");
 
-      $cancelReasonOptionValue = civicrm_api3("OptionValue", "getsingle", [
-        "option_group_id" => "contract_cancel_reason",
-        "name" => "Unknown",
-      ])["value"];
+    // make sure 'cancel_reason' of the associated recurring contribution is updated
+    $recurringContributionId = $contract_changed2["membership_payment.membership_recurring_contribution"];
+    $recurringContribution = new CRM_Contribute_DAO_ContributionRecur();
+    $recurringContribution->get("id", $recurringContributionId);
 
-      $this->assertEquals(
-        $cancelReasonOptionValue,
-        $recurringContribution->cancel_reason,
-        "'cancel_reason' of the recurring contribution should be ${cancelReasonOptionValue} (='Unknown')"
-      );
+    $this->assertEquals(
+      $cancelReasonOptionValue,
+      $recurringContribution->cancel_reason,
+      "'cancel_reason' of the recurring contribution should be $cancelReasonOptionValue (='Unknown')"
+    );
 
-      $this->assertNotEmpty(
-        $recurringContribution->cancel_date,
-        'cancel_date should be set after cancellation'
-      );
-      $this->assertNotEmpty(
-        $recurringContribution->end_date,
-        'end_date should be set after cancellation'
-      );
+    $this->assertNotEmpty(
+      'cancel_date should be set after cancellation',
+      $recurringContribution->cancel_date
+    );
 
-      // make sure membership_cancellation fields are set
-      $this->assertEquals(
-        $contract_changed2["membership_cancellation.membership_cancel_reason"],
-        1
-      );
+    $this->assertNotEmpty(
+      'end_date should be set after cancellation',
+      $recurringContribution->end_date
+    );
 
-      $this->assertEquals(
-        $contract_changed2["membership_cancellation.membership_cancel_date"],
-        date("Y-m-d 00:00:00")
-      );
-    }
+    // make sure membership_cancellation fields are set
+    $this->assertEquals(
+      $cancelReasonOptionValue,
+      $contract_changed2["membership_cancellation.membership_cancel_reason"]
+    );
+
+    $this->assertEquals(
+      date("Y-m-d 00:00:00"),
+      $contract_changed2["membership_cancellation.membership_cancel_date"]
+    );
   }
 
   /**
    * Test a simple upgrade
    */
   public function testSimpleUpgrade() {
-    foreach ([1] as $is_sepa) {
-      // create a new contract
-      $contract = $this->createNewContract(['is_sepa' => $is_sepa]);
+    // create a new contract
+    $contract = $this->createNewContract(['is_sepa' => TRUE]);
 
-      // schedule and update for tomorrow
-      $this->modifyContract($contract['id'], 'update', 'tomorrow', [
-          'membership_payment.membership_annual'             => '240.00',
-          'membership_cancellation.membership_cancel_reason' => $this->getRandomOptionValue('contract_cancel_reason')]);
+    // schedule and update for tomorrow
+    $this->modifyContract($contract['id'], 'update', 'tomorrow', [
+        'membership_payment.membership_annual'             => '240.00',
+        'membership_cancellation.membership_cancel_reason' => $this->getRandomOptionValue('contract_cancel_reason')]);
 
-      // run engine see if anything changed
-      $this->runContractEngine($contract['id']);
+    // run engine see if anything changed
+    $this->runContractEngine($contract['id']);
 
-      // things should not have changed
-      $contract_changed1 = $this->getContract($contract['id']);
-      $this->assertEquals($contract, $contract_changed1, "This shouldn't have changed");
+    // things should not have changed
+    $contract_changed1 = $this->getContract($contract['id']);
+    $this->assertEquals($contract, $contract_changed1, "This shouldn't have changed");
 
-      // run engine again for tomorrow
-      $this->runContractEngine($contract['id'], '+2 days');
-      $contract_changed2 = $this->getContract($contract['id']);
-      $this->assertNotEquals($contract, $contract_changed2, "This should have changed");
+    // run engine again for tomorrow
+    $this->runContractEngine($contract['id'], '+2 days');
+    $contract_changed2 = $this->getContract($contract['id']);
+    $this->assertNotEquals($contract, $contract_changed2, "This should have changed");
 
-      // make sure status is current
-      $this->assertEquals($this->getMembershipStatusID('Current'), $contract_changed2['status_id'], "The contract isn't active");
-      $this->assertEquals(240.00, $contract_changed2['membership_payment.membership_annual'], "The contract has the wrong amount");
-    }
+    // make sure status is current
+    $this->assertEquals($this->getMembershipStatusID('Current'), $contract_changed2['status_id'], "The contract isn't active");
+    $this->assertEquals(240.00, $contract_changed2['membership_payment.membership_annual'], "The contract has the wrong amount");
   }
 
   /**
    * Test a simple pause/resume
    */
   public function testSimplePauseResume() {
-    foreach ([1] as $is_sepa) {
-      // create a new contract
-      $contract = $this->createNewContract(['is_sepa' => $is_sepa]);
+    // create a new contract
+    $contract = $this->createNewContract(['is_sepa' => TRUE]);
 
-      // schedule and update for tomorrow
-      $this->modifyContract($contract['id'], 'pause', 'tomorrow', [ 'resume_date' => '+2 days' ]);
-      $changes = $this->callAPISuccess('Activity', 'get', ['source_record_id' => $contract['id']]);
+    // schedule and update for tomorrow
+    $this->modifyContract($contract['id'], 'pause', 'tomorrow', [ 'resume_date' => '+2 days' ]);
+    $changes = $this->callAPISuccess('Activity', 'get', ['source_record_id' => $contract['id']]);
 
 
-      // run engine see if anything changed
-      $this->runContractEngine($contract['id']);
+    // run engine see if anything changed
+    $this->runContractEngine($contract['id']);
 
-      // things should not have changed
-      $contract_changed1 = $this->getContract($contract['id']);
-      $this->assertEquals($contract, $contract_changed1, "This shouldn't have changed");
+    // things should not have changed
+    $contract_changed1 = $this->getContract($contract['id']);
+    $this->assertEquals($contract, $contract_changed1, "This shouldn't have changed");
 
-      // run engine again for tomorrow
-      $this->runContractEngine($contract['id'], '+1 day');
-      $contract_changed2 = $this->getContract($contract['id']);
-      $this->assertEquals($this->getMembershipStatusID('Paused'), $contract_changed2['status_id'], "The contract isn't paused");
-      $mandate = $this->getMandateForContract($contract['id']);
-      $this->assertEquals('ONHOLD', $mandate['status'], 'Mandate should be on hold');
+    // run engine again for tomorrow
+    $this->runContractEngine($contract['id'], '+1 day');
+    $contract_changed2 = $this->getContract($contract['id']);
+    $this->assertEquals($this->getMembershipStatusID('Paused'), $contract_changed2['status_id'], "The contract isn't paused");
+    $mandate = $this->getMandateForContract($contract['id']);
+    $this->assertEquals('ONHOLD', $mandate['status'], 'Mandate should be on hold');
 
-      // run engine again for the day after tomorrow
-      $this->runContractEngine($contract['id'], '+2 days');
-      $contract_changed2 = $this->getContract($contract['id']);
-      $this->assertEquals($this->getMembershipStatusID('Current'), $contract_changed2['status_id'], "The contract isn't paused");
-      $mandate = $this->getMandateForContract($contract['id']);
-      $this->assertEquals('FRST', $mandate['status'], 'Mandate should be active');
-      $this->assertEquals(
-        $contract_changed1['membership_payment.membership_recurring_contribution'],
-        $contract_changed2['membership_payment.membership_recurring_contribution'],
-        'Recurring contribution should have remained the same'
-      );
-    }
+    // run engine again for the day after tomorrow
+    $this->runContractEngine($contract['id'], '+2 days');
+    $contract_changed2 = $this->getContract($contract['id']);
+    $this->assertEquals($this->getMembershipStatusID('Current'), $contract_changed2['status_id'], "The contract isn't paused");
+    $mandate = $this->getMandateForContract($contract['id']);
+    $this->assertEquals('FRST', $mandate['status'], 'Mandate should be active');
+    $this->assertEquals(
+      $contract_changed1['membership_payment.membership_recurring_contribution'],
+      $contract_changed2['membership_payment.membership_recurring_contribution'],
+      'Recurring contribution should have remained the same'
+    );
   }
 
   /**
    * Test a simple revive
    */
   public function testSimpleRevive() {
-    foreach ([1] as $is_sepa) {
-      // create a new contract
-      $contract = $this->createNewContract(['is_sepa' => $is_sepa]);
+    // create a new contract
+    $contract = $this->createNewContract(['is_sepa' => TRUE]);
 
-      // schedule and update for tomorrow
-      $this->modifyContract($contract['id'], 'cancel', 'tomorrow', [
-          'membership_cancellation.membership_cancel_reason' => 'Unknown'
-      ]);
+    // schedule and update for tomorrow
+    $this->modifyContract($contract['id'], 'cancel', 'tomorrow', [
+        'membership_cancellation.membership_cancel_reason' => 'Unknown'
+    ]);
 
-      // run engine again for tomorrow
-      $this->runContractEngine($contract['id'], '+1 days');
-      $contract_cancelled = $this->getContract($contract['id']);
-      $this->assertNotEquals($contract, $contract_cancelled, "This should have changed");
+    // run engine again for tomorrow
+    $this->runContractEngine($contract['id'], '+1 days');
+    $contract_cancelled = $this->getContract($contract['id']);
+    $this->assertNotEquals($contract, $contract_cancelled, "This should have changed");
 
-      // make sure status is cancelled
-      $this->assertEquals($this->getMembershipStatusID('Cancelled'), $contract_cancelled['status_id'], "The contract wasn't cancelled");
+    // make sure status is cancelled
+    $this->assertEquals($this->getMembershipStatusID('Cancelled'), $contract_cancelled['status_id'], "The contract wasn't cancelled");
 
-      // now: revive contract
-      $this->modifyContract($contract['id'], 'revive', '+2 days', [
-          'membership_payment.membership_annual'             => '240.00',
-          'membership_cancellation.membership_cancel_reason' => $this->getRandomOptionValue('contract_cancel_reason')]);
+    // now: revive contract
+    $this->modifyContract($contract['id'], 'revive', '+2 days', [
+        'membership_payment.membership_annual'             => '240.00',
+        'membership_cancellation.membership_cancel_reason' => $this->getRandomOptionValue('contract_cancel_reason')]);
 
-      $this->runContractEngine($contract['id'], '+2 days');
-      $contract_revived = $this->getContract($contract['id']);
-      $this->assertNotEquals($contract_cancelled, $contract_revived, "This should have changed");
+    $this->runContractEngine($contract['id'], '+2 days');
+    $contract_revived = $this->getContract($contract['id']);
+    $this->assertNotEquals($contract_cancelled, $contract_revived, "This should have changed");
 
-      // make sure status is cancelled
-      $this->assertEquals($this->getMembershipStatusID('Current'), $contract_revived['status_id'], "The contract wasn't revived");
-      $this->assertEquals(240.00, $contract_revived['membership_payment.membership_annual'], "The contract has the wrong amount");
+    // make sure status is cancelled
+    $this->assertEquals($this->getMembershipStatusID('Current'), $contract_revived['status_id'], "The contract wasn't revived");
+    $this->assertEquals(240.00, $contract_revived['membership_payment.membership_annual'], "The contract has the wrong amount");
 
-      // make sure membership_cancellation was cleared GP-12430
-      $this->assertEmpty($contract_revived['membership_cancellation.membership_cancel_reason']);
-      $this->assertEmpty($contract_revived['membership_cancellation.membership_cancel_date'] ?? NULL);
-    }
+    // make sure membership_cancellation was cleared GP-12430
+    $this->assertEmpty($contract_revived['membership_cancellation.membership_cancel_reason']);
+    $this->assertEmpty($contract_revived['membership_cancellation.membership_cancel_date'] ?? NULL);
   }
 
   /**
