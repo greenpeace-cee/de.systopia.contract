@@ -98,7 +98,7 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
   protected static function getMembershipByID(int $membership_id) {
     return Api4\Membership::get(FALSE)
       ->addWhere('id', '=', $membership_id)
-      ->addSelect('*', 'status_id:name')
+      ->addSelect('*', 'custom.*', 'status_id:name')
       ->setLimit(1)
       ->execute()
       ->first();

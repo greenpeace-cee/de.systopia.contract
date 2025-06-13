@@ -1,6 +1,7 @@
 <?php
 
 use Civi\Api4;
+use Civi\Api4\Tag;
 
 class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
 
@@ -30,12 +31,12 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
       ->execute()
       ->first();
 
-     $cancel_reason = Api4\OptionValue::get(FALSE)
-      ->addSelect('id', 'filter')
-      ->addWhere('option_group_id:name', '=', 'contract_cancel_reason')
-      ->addWhere('value', '=', $activity['contract_cancellation.contact_history_cancel_reason'])
-      ->execute()
-      ->first();
+    $cancel_reason = Api4\OptionValue::get(FALSE)
+     ->addSelect('id', 'filter')
+     ->addWhere('option_group_id:name', '=', 'contract_cancel_reason')
+     ->addWhere('value', '=', $activity['contract_cancellation.contact_history_cancel_reason'])
+     ->execute()
+     ->first();
 
     $this->set('reason_editable', $cancel_reason['filter'] === 0);
     $this->assign('reason_editable', $cancel_reason['filter'] === 0);
@@ -99,7 +100,7 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
     );
 
     // Cancellation tags (cancel_tags)
-    $cancel_tags = (array) Api4\Tag::get(FALSE)
+    $cancel_tags = (array) Tag::get(FALSE)
       ->addWhere('parent_id:name', '=', 'Contract Cancellation')
       ->addWhere('is_selectable', '=', TRUE)
       ->addSelect('name', 'label', 'description', 'color')
@@ -168,7 +169,6 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
 
   function postProcess () {
     $activity = $this->get('activity');
-    $membership = $this->get('membership');
 
     $submitted = $this->exportValues();
 
@@ -178,52 +178,25 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
       ->execute()
       ->first()['value'];
 
-    $cancel_tags = empty($submitted['cancel_tags']) ? [] : explode(',', $submitted['cancel_tags']);
+    $cancel_tag_ids = empty($submitted['cancel_tags']) ? [] : explode(',', $submitted['cancel_tags']);
+    $cancel_tags = [];
+    foreach ($cancel_tag_ids as $cancel_tag_id) {
+      $cancel_tags[] = Tag::get(FALSE)
+        ->addSelect('name')
+        ->addWhere('id', '=', $cancel_tag_id)
+        ->execute()
+        ->first()['name'];
+    }
     $details = $submitted['details'];
     $medium_id = $submitted['medium_id'];
 
-    // Create an instance of CRM_Contract_Change_Cancel to render its default activity subject
-    $change = CRM_Contract_Change::getChangeForData($activity);
-    $change->setParameter('contract_cancellation.contact_history_cancel_reason', $cancel_reason);
-
-    // Update cancel reason and subject of the activity
-    Api4\Activity::update(FALSE)
-      ->addValue('contract_cancellation.contact_history_cancel_reason', $cancel_reason)
-      ->addValue('details', $details)
-      ->addValue('medium_id', $medium_id)
-      ->addValue('subject', $change->renderDefaultSubject(NULL))
-      ->addWhere('id', '=', $activity['id'])
-      ->execute();
-
-    // First, remove all existing cancellation tags
-    Api4\EntityTag::delete(FALSE)
-      ->addWhere('entity_table', '=', 'civicrm_activity')
-      ->addWhere('entity_id', '=', $activity['id'])
-      ->addWhere('tag_id', 'IN', $activity['cancel_tags'])
-      ->execute();
-
-    // Then link all submitted cancellation tags
-    foreach ($cancel_tags as $tag_id) {
-      Api4\EntityTag::create(FALSE)
-        ->addValue('entity_table', 'civicrm_activity')
-        ->addValue('entity_id', $activity['id'])
-        ->addValue('tag_id', $tag_id)
-        ->execute();
-    }
-
-    if ($activity['id'] !== $membership['most_recent_activity_id']) return;
-    if ($membership['status_id:name'] !== 'Cancelled') return;
-
-    Api4\Membership::update(FALSE)
-      ->addValue('membership_cancellation.membership_cancel_reason', $cancel_reason)
-      ->addValue('status_id:name', 'Cancelled')
-      ->addWhere('id', '=', $membership['id'])
-      ->execute();
-
-    Api4\ContributionRecur::update(FALSE)
-      ->addValue('cancel_reason', $cancel_reason)
-      ->addWhere('id', '=', $membership['recurring_contribution_id'])
-      ->execute();
+    civicrm_api3('Contract', 'amend_cancel', [
+      'activity_id' => $activity['id'],
+      'cancel_reason' => $cancel_reason,
+      'medium_id' => $medium_id,
+      'details' => $details,
+      'cancel_tags' => $cancel_tags,
+    ]);
   }
 
 }
