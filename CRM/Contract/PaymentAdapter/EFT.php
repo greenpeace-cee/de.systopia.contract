@@ -405,8 +405,16 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
             "min_date"            => $min_date,
         ]);
 
-        // Terminate the current mandate
-        self::terminate($recurring_contribution_id, "CHNG");
+        // Terminate the current mandate (if necessary)
+        $revive_activity_type = CRM_Core_PseudoConstant::getKey(
+            "CRM_Activity_BAO_Activity",
+            "activity_type_id",
+            "Contract_Revived"
+        );
+
+        if ($activity_type_id !== $revive_activity_type) {
+            self::terminate($recurring_contribution_id, "CHNG");
+        }
 
         // Create a new EFT payment
         $create_params = [
