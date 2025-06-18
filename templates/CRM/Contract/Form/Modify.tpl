@@ -9,9 +9,7 @@
 {literal}
 
 <script>
-    const EXT_VARS = CRM.vars["de.systopia.contract"];
-
-    import(`${EXT_VARS.ext_base_url}/js/Form/modify.js`).then(({ initForm }) => initForm());
+    import("de.systopia.contract/Form/modify").then(({ initForm }) => initForm());
 </script>
 
 {/literal}

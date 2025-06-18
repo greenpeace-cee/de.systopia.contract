@@ -1,4 +1,4 @@
-import { displayRelevantFormFields } from "./utils.js";
+import { displayRelevantFormFields } from "de.systopia.contract/Form/utils";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 
@@ -20,7 +20,7 @@ export async function initForm () {
     // Load & instantiate all available payment adapters
     const paymentAdapters = Object.fromEntries(
         await Promise.all(EXT_VARS.payment_adapters.map((adapterName) =>
-            import(`${EXT_VARS.ext_base_url}/js/Form/PaymentAdapter/${adapterName}.js`)
+            import(`de.systopia.contract/Form/PaymentAdapter/${adapterName}`)
                 .then(({ createAdapter }) => createAdapter({ formType: "Modify", formFields }))
                 .then(adapter => [adapterName, adapter])
     )));

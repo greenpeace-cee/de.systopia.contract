@@ -81,7 +81,6 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         // JS variables
         $resources->addVars("de.systopia.contract", [
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
-            "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
             "frequency_labels"        => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
             "payment_adapter_fields"  => $paymentAdapterFields,
             "payment_adapters"        => array_keys(CRM_Contract_Configuration::getPaymentAdapters()),

@@ -28,7 +28,6 @@ class CRM_Contract_Form_Cancel extends CRM_Core_Form {
     $resources = CRM_Core_Resources::singleton();
 
     $resources->addVars("de.systopia.contract", [
-      "ext_base_url"                 => rtrim($resources->getUrl("de.systopia.contract"), "/"),
       "next_sched_contribution_date" => $membership["next_sched_contribution_date"],
     ]);
   }

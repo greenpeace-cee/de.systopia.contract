@@ -1,5 +1,5 @@
-import { nextCollectionDate, parseMoney } from "../utils.js";
-import { PaymentAdapter } from "./payment-adapter.js";
+import { nextCollectionDate, parseMoney } from "de.systopia.contract/Form/utils";
+import { PaymentAdapter } from "de.systopia.contract/Form/PaymentAdapter/payment-adapter";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 const ADAPTER_VARS = CRM.vars["de.systopia.contract/eft"];

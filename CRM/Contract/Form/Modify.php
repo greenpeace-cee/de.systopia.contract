@@ -163,7 +163,6 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "current_payment_adapter" => $current_payment_adapter,
             "current_recurring"       => $rc_id,
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
-            "ext_base_url"            => rtrim($resources->getUrl("de.systopia.contract"), "/"),
             "frequency_labels"        => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
             "latest_contribution_date" => CRM_Contract_RecurringContribution::getLatestContribution($contract_id)["receive_date"],
             "membership_id"           => $contract_id,
