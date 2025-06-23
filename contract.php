@@ -87,6 +87,9 @@ function contract_civicrm_pageRun( &$page ){
  * @todo shorten this function call - move into an 1 or more alter functions
  */
 function contract_civicrm_buildForm($formName, &$form) {
+  CRM_Core_Resources::singleton()->addMarkup(
+    '<script type="importmap">' . json_encode(CRM_Contract_FormUtils::generateJsImportMap()) . '</script>'
+  );
 
   switch ($formName) {
     // Membership form in view mode

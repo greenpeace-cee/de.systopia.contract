@@ -1,4 +1,4 @@
-import { formatDateYMD } from "./utils.js";
+import { formatDateYMD } from "de.systopia.contract/Form/utils";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 
