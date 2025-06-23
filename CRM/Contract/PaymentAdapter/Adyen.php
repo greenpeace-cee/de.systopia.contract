@@ -587,7 +587,15 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       ->execute()
       ->first();
 
-    self::terminate($recurringContributionID);
+    $reviveActivityType = CRM_Core_PseudoConstant::getKey(
+      'CRM_Activity_BAO_Activity',
+      'activity_type_id',
+      'Contract_Revived'
+    );
+
+    if ($activityTypeID !== $reviveActivityType) {
+        self::terminate($recurringContributionID);
+    }
 
     $defaultCampaign = CRM_Utils_Array::value('campaign_id', $oldRC, NULL);
 
