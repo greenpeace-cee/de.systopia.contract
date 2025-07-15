@@ -36,7 +36,6 @@ class CRM_Contract_Form_Pause extends CRM_Core_Form {
 
     $resources->addVars("de.systopia.contract", [
       "cycle_day"                    => (int) $membership["rc.cycle_day"],
-      "ext_base_url"                 => rtrim($resources->getUrl("de.systopia.contract"), "/"),
       "next_sched_contribution_date" => $membership["next_sched_contribution_date"],
       "payment_adapter"              => $payment_adapter,
     ]);

@@ -270,4 +270,29 @@ class CRM_Contract_FormUtils {
     }
   }
 
+  public static function generateJsImportMap() {
+    $extension = Api4\Extension::get(FALSE)
+      ->addSelect('path', 'version')
+      ->addWhere('key', '=', 'de.systopia.contract')
+      ->execute()
+      ->first();
+
+    $base_path = $extension['path'] . '/js';
+    $base_url = CRM_Core_Resources::singleton()->getUrl('de.systopia.contract') . 'js';
+    $directory_it = new RecursiveDirectoryIterator($base_path);
+    $iterator_it = new RecursiveIteratorIterator($directory_it);
+    $regex_it = new RegexIterator($iterator_it, '/\.js$/');
+
+    $import_map = [];
+
+    foreach ($regex_it as $js_file) {
+      $pathname = $js_file->getPathname();
+      $virtual_path = str_replace($base_path, 'de.systopia.contract', preg_replace('/\.js$/', '', $pathname));
+      $actual_path = str_replace($base_path, $base_url, $pathname) . '?v=' . $extension['version'];
+      $import_map[$virtual_path] = $actual_path;
+    }
+
+    return [ 'imports' => $import_map ];
+  }
+
 }

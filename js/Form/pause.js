@@ -1,4 +1,4 @@
-import { formatDateYMD } from "./utils.js";
+import { formatDateYMD } from "de.systopia.contract/Form/utils";
 
 const EXT_VARS = CRM.vars["de.systopia.contract"];
 
@@ -12,7 +12,7 @@ export async function initForm() {
     ].map(name => [name, cj(`div.form-field div.content *[name=${name}]`)]));
 
     // Instantiate payment adapter
-    const paymentAdapter = await import(`${EXT_VARS.ext_base_url}/js/Form/PaymentAdapter/${EXT_VARS.payment_adapter}.js`)
+    const paymentAdapter = await import(`de.systopia.contract/Form/PaymentAdapter/${EXT_VARS.payment_adapter}`)
         .then(({ createAdapter }) => createAdapter({ formType: "Pause", formFields }));
 
     // Substitute the default 'Submit' button to trigger the 'onSubmit' hook

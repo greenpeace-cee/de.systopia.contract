@@ -1,9 +1,7 @@
 {literal}
 
 <script>
-    const EXT_VARS = CRM.vars["de.systopia.contract"];
-
-    import(`${EXT_VARS.ext_base_url}/js/Form/cancel.js`).then(({ initForm }) => initForm());
+    import("de.systopia.contract/Form/cancel").then(({ initForm }) => initForm());
 </script>
 
 {/literal}
