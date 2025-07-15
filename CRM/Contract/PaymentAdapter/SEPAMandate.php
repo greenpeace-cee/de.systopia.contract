@@ -670,8 +670,16 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         $bank_account = CRM_Contract_BankingLogic::getBankAccount($bank_account_id);
         $current_bic = CRM_Utils_Array::value("bic", $current_mandate_data);
 
-        // Terminate the current mandate
-        self::terminate($recurring_contribution_id, "CHNG");
+        // Terminate the current mandate (if necessary)
+        $revive_activity_type = CRM_Core_PseudoConstant::getKey(
+            "CRM_Activity_BAO_Activity",
+            "activity_type_id",
+            "Contract_Revived"
+        );
+
+        if ($activity_type_id !== $revive_activity_type) {
+            self::terminate($recurring_contribution_id, "CHNG");
+        }
 
         // Create a new mandate
         $create_params = [
