@@ -5,9 +5,9 @@
         </div>
     {/if}
 
-    {if !$reason_editable}
+    {if $technical_cancel_reason}
         <div class="messages warning">
-            The cancel reason for this contract cannot be changed
+            The cancel reason was provided by a bank or payment provider. Only change the cancel reason if the new one provides additional context.
         </div>
     {/if}
 
