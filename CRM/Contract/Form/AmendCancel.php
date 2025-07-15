@@ -38,8 +38,7 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
      ->execute()
      ->first();
 
-    $this->set('reason_editable', $cancel_reason['filter'] === 0);
-    $this->assign('reason_editable', $cancel_reason['filter'] === 0);
+    $this->assign('technical_cancel_reason', $cancel_reason['filter'] === 1);
 
     $activity['cancel_reason'] = $cancel_reason['id'];
     unset($activity['contract_cancellation.contact_history_cancel_reason']);
@@ -72,31 +71,22 @@ class CRM_Contract_Form_AmendCancel extends CRM_Core_Form {
 
   function buildQuickForm () {
     $activity = $this->get('activity');
-    $reason_editable = $this->get('reason_editable');
 
-    // Cancellation reason (cancel_reason)
-    if ($reason_editable) {
-      $cancel_reasons = (array) Api4\OptionValue::get(FALSE)
-        ->addSelect('value', 'label', 'description')
-        ->addWhere('option_group_id:name', '=', 'contract_cancel_reason')
-        ->addWhere('is_active', '=', TRUE)
-        ->addWhere('filter', '=', 0)
-        ->addOrderBy('weight', 'ASC')
-        ->execute();
-    } else {
-      $cancel_reasons = (array) Api4\OptionValue::get(FALSE)
-        ->addSelect('value', 'label', 'description')
-        ->addWhere('id', '=', $activity['cancel_reason'])
-        ->execute();
-    }
+    $cancel_reasons = (array) Api4\OptionValue::get(FALSE)
+      ->addSelect('value', 'label', 'description')
+      ->addWhere('option_group_id:name', '=', 'contract_cancel_reason')
+      ->addWhere('is_active', '=', TRUE)
+      ->addClause('OR', ['filter', '=', 0], ['id', '=', $activity['cancel_reason']])
+      ->addOrderBy('weight', 'ASC')
+      ->execute();
 
     $this->add(
       'select2',
       'cancel_reason',
       ts('Cancellation reason'),
       $cancel_reasons,
-      $reason_editable,
-      [ 'class' => 'crm-select2 huge', 'disabled' => !$reason_editable ]
+      TRUE,
+      [ 'class' => 'crm-select2 huge' ]
     );
 
     // Cancellation tags (cancel_tags)
