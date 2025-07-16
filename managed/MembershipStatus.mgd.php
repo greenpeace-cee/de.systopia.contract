@@ -70,6 +70,25 @@ return [
     ],
   ],
   [
+    'name' => 'MembershipStatus_Cancelled',
+    'entity' => 'MembershipStatus',
+    'cleanup' => 'never',
+    'update' => 'always',
+    'params' => [
+      'version' => 4,
+      'values' => [
+        'name' => 'Cancelled',
+        'label' => E::ts('Cancelled'),
+        'start_event' => 'end_date',
+        'end_event' => NULL,
+        'is_current_member' => FALSE,
+        'weight' => 6,
+        'is_reserved' => TRUE,
+        'is_active' => TRUE,
+      ],
+    ],
+  ],
+  [
     'name' => 'MembershipStatus_Paused',
     'entity' => 'MembershipStatus',
     'cleanup' => 'never',
