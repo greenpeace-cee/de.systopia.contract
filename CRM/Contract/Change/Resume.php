@@ -196,6 +196,7 @@ class CRM_Contract_Change_Resume extends CRM_Contract_Change {
       && $ncca_count === 1
       && $first_ncca['activity_type_id:name'] === 'Contract_Resumed'
       && $first_ncca['status_id:name'] === 'Scheduled'
+      && self::hasEditPermission($membership_data['id'])
     ) {
       $links[] = [
           'name'  => E::ts("Resume"),

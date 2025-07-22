@@ -324,6 +324,24 @@ function contract_civicrm_permission(&$permissions) {
     'label' => ts('CiviContract: Edit core membership', [ 'domain' => 'de.systopia.contract' ]),
     'description' => ts('Allow editing memberships using the core membership form', [ 'domain' => 'de.systopia.contract' ]),
   ];
+
+  $permissions['edit adyen contracts'] = [
+    'label' => ts('CiviContract: edit Adyen contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'description' => ts('Allow editing of Adyen contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'implied_by' => ['administer CiviCRM'],
+  ];
+
+  $permissions['edit eft contracts'] = [
+    'label' => ts('CiviContract: Edit EFT contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'description' => ts('Allow editing of EFT contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'implied_by' => ['administer CiviCRM'],
+  ];
+
+  $permissions['edit sepa_mandate contracts'] = [
+    'label' => ts('CiviContract: Edit SEPA contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'description' => ts('Allow editing of SEPA contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'implied_by' => ['administer CiviCRM'],
+  ];
 }
 
 function contract_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions) {
