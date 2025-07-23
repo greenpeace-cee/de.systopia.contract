@@ -19,6 +19,7 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
         'membership_general.membership_reference',
         'membership_referral.membership_referrer',
         'start_date',
+        'status_id',
       )
       ->addWhere('id', '=', $membership_id)
       ->execute()
@@ -143,6 +144,7 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
       ->addValue('membership_general.membership_reference', $submitted['membership_reference'])
       ->addValue('membership_referral.membership_referrer', $submitted['membership_referrer'] )
       ->addValue('start_date',                              $submitted['start_date']          )
+      ->addValue('status_id',                               $membership['status_id']          )
       ->execute();
   }
 
