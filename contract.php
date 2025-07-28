@@ -328,18 +328,24 @@ function contract_civicrm_permission(&$permissions) {
   $permissions['edit adyen contracts'] = [
     'label' => ts('CiviContract: edit Adyen contracts', [ 'domain' => 'de.systopia.contract' ]),
     'description' => ts('Allow editing of Adyen contracts', [ 'domain' => 'de.systopia.contract' ]),
-    'implied_by' => ['administer CiviCRM'],
+    'implied_by' => ['administer CiviCRM', 'administer CiviContract'],
   ];
 
   $permissions['edit eft contracts'] = [
     'label' => ts('CiviContract: Edit EFT contracts', [ 'domain' => 'de.systopia.contract' ]),
     'description' => ts('Allow editing of EFT contracts', [ 'domain' => 'de.systopia.contract' ]),
-    'implied_by' => ['administer CiviCRM'],
+    'implied_by' => ['administer CiviCRM', 'administer CiviContract'],
   ];
 
   $permissions['edit sepa_mandate contracts'] = [
     'label' => ts('CiviContract: Edit SEPA contracts', [ 'domain' => 'de.systopia.contract' ]),
     'description' => ts('Allow editing of SEPA contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'implied_by' => ['administer CiviCRM', 'administer CiviContract'],
+  ];
+
+  $permissions['administer CiviContract'] = [
+    'label' => ts('CiviContract: Administer contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'description' => ts('Allow administration of all contracts', [ 'domain' => 'de.systopia.contract' ]),
     'implied_by' => ['administer CiviCRM'],
   ];
 }
