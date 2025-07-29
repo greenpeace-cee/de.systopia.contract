@@ -51,7 +51,6 @@ class CRM_Contract_Form_CancelChange extends CRM_Core_Form {
         'submitOnce' => TRUE,
       ],
     ]);
-
   }
 
   public function postProcess() {

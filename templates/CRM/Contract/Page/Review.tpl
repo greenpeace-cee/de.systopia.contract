@@ -52,16 +52,20 @@
       <td nowrap="nowrap">
         <a href="{crmURL p='civicrm/activity' q="action=view&reset=1&id=`$a.id`&context=activity&searchContext=activity&cid=`$a.target_contact_id.0`"}" class="action-item crm-hover-button" title="View Activity">View</a>
 
-        {if
-          $activityStatuses[$a.status_id] == 'Scheduled'
-          && $activityTypes[$a.activity_type_id] != 'Resume Contract'
-          && $is_admin
-        }
+        {if $activityStatuses[$a.status_id] == 'Scheduled' && $is_admin}
           <a
-            title="Cancel Change"
+            title="Reschedule Change"
             class="action-item crm-hover-button"
-            href="{crmURL p='civicrm/contract/cancel-change' q="activity_id=`$a.id`"}"
-          >Cancel</a>
+            href="{crmURL p='civicrm/contract/reschedule-change' q="activity_id=`$a.id`"}"
+          >Reschedule</a>
+
+          {if $activityTypes[$a.activity_type_id] != 'Resume Contract'}
+            <a
+              title="Cancel Change"
+              class="action-item crm-hover-button"
+              href="{crmURL p='civicrm/contract/cancel-change' q="activity_id=`$a.id`"}"
+            >Cancel</a>
+          {/if}
         {elseif $activityTypes[$a.activity_type_id] == 'Cancel Contract'}
           <a
             title="Amend Cancellation"

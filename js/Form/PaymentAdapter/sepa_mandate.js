@@ -13,7 +13,7 @@ class SEPA extends PaymentAdapter {
     frequencyOptions = ADAPTER_VARS.payment_frequencies;
 
     isAllowedScheduleDate(date, options = {}) {
-        const minDate = new Date(ADAPTER_VARS.minimum_change_date ?? Date.now());
+        const minDate = new Date(EXT_VARS.minimum_change_date ?? Date.now());
 
         // Reject dates in the past/before the minimum change date
         if (date.getTime() < minDate.setHours(0, 0, 0, 0)) return false;
