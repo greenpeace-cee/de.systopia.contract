@@ -31,7 +31,7 @@
   </tr>
 
   {foreach from=$activities item=a}
-    <tr class="{if $activityStatuses[$a.status_id] eq 'Needs Review'}needs-review{/if} {if $activityStatuses[$a.status_id] eq 'Scheduled'}scheduled{/if} {if $activityStatuses[$a.status_id] eq 'Failed'}failed{/if}">
+    <tr class="{if $activityStatuses[$a.status_id] eq 'Needs Review'}needs-review{/if} {if $activityStatuses[$a.status_id] eq 'Scheduled'}scheduled{/if} {if $activityStatuses[$a.status_id] eq 'Failed'}failed{/if} {if $activityStatuses[$a.status_id] eq 'Cancelled'}cancelled{/if}">
 
       <td>{$a.id} {$activityTypes[$a.activity_type_id]}</td>
       <td>{$a.activity_date_time|crmDate}</td>
@@ -52,10 +52,26 @@
       <td nowrap="nowrap">
         <a href="{crmURL p='civicrm/activity' q="action=view&reset=1&id=`$a.id`&context=activity&searchContext=activity&cid=`$a.target_contact_id.0`"}" class="action-item crm-hover-button" title="View Activity">View</a>
 
-        {if $activityStatuses[$a.status_id] != 'Completed'}
-          <a href="{crmURL p='civicrm/activity/add' q="action=update&reset=1&id=`$a.id`&context=activity&searchContext=activity&cid=`$a.target_contact_id.0`"}" class="action-item crm-hover-button" title="Edit Activity">Edit</a>
+        {if $activityStatuses[$a.status_id] == 'Scheduled' && $is_admin}
+          <a
+            title="Reschedule Change"
+            class="action-item crm-hover-button"
+            href="{crmURL p='civicrm/contract/reschedule-change' q="activity_id=`$a.id`"}"
+          >Reschedule</a>
+
+          {if $activityTypes[$a.activity_type_id] != 'Resume Contract'}
+            <a
+              title="Cancel Change"
+              class="action-item crm-hover-button"
+              href="{crmURL p='civicrm/contract/cancel-change' q="activity_id=`$a.id`"}"
+            >Cancel</a>
+          {/if}
         {elseif $activityTypes[$a.activity_type_id] == 'Cancel Contract'}
-          <a href="{crmURL p='civicrm/contract/amend-cancel' q="activity_id=`$a.id`"}" class="action-item crm-hover-button" title="Amend Cancellation">Amend</a>
+          <a
+            title="Amend Cancellation"
+            class="action-item crm-hover-button"
+            href="{crmURL p='civicrm/contract/amend-cancel' q="activity_id=`$a.id`"}"
+          >Amend</a>
         {/if}
       </td>
     </tr>

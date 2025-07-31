@@ -123,7 +123,12 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
         $this->recurring_contribution = civicrm_api3("ContributionRecur", "getsingle", [ "id" => $rc_id ]);
 
         // Payment adapters
-        $this->payment_adapters = CRM_Contract_Configuration::getPaymentAdapters();
+        $this->payment_adapters = array_filter(
+            CRM_Contract_Configuration::getPaymentAdapters(),
+            fn ($adapter) => CRM_Core_Permission::check(["edit $adapter contracts"]),
+            ARRAY_FILTER_USE_KEY
+        );
+
         $resources = CRM_Core_Resources::singleton();
         $paymentAdapterFields = [];
 
@@ -169,7 +174,7 @@ class CRM_Contract_Form_Modify extends CRM_Core_Form {
             "minimum_change_date"     => CRM_Contract_DateHelper::minimumChangeDate()->format("Y-m-d"),
             "next_sched_contribution_date" => $next_sched_contribution_date,
             "payment_adapter_fields"  => $paymentAdapterFields,
-            "payment_adapters"        => array_keys(CRM_Contract_Configuration::getPaymentAdapters()),
+            "payment_adapters"        => array_keys($this->payment_adapters),
             "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($contact_id, true),
         ]);
     }
