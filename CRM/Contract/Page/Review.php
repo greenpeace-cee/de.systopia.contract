@@ -20,8 +20,11 @@ class CRM_Contract_Page_Review extends CRM_Core_Page {
     $membership = civicrm_api3('Membership', 'getsingle', [
       'id' => CRM_Utils_Request::retrieve('id', 'Positive')
     ]);
+
+    $rc_id = $membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')];
+
     $this->assign('currency', civicrm_api3('ContributionRecur', 'getvalue', [
-      'id' => $membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')],
+      'id' => $rc_id,
       'return' => 'currency',
     ]));
 
@@ -152,6 +155,8 @@ class CRM_Contract_Page_Review extends CRM_Core_Page {
       $activityParams['return'][]='custom_'.$customField['id'];
     }
 
+    $adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id);
+    $this->assign('has_edit_permission', CRM_Core_Permission::check("edit $adapter contracts"));
     $this->assign('is_admin', CRM_Core_Permission::check('administer CiviContract'));
 
     parent::run();

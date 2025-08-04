@@ -52,7 +52,15 @@
       <td nowrap="nowrap">
         <a href="{crmURL p='civicrm/activity' q="action=view&reset=1&id=`$a.id`&context=activity&searchContext=activity&cid=`$a.target_contact_id.0`"}" class="action-item crm-hover-button" title="View Activity">View</a>
 
-        {if $activityStatuses[$a.status_id] == 'Scheduled' && $is_admin}
+        {if $is_admin && $activityStatuses[$a.status_id] != 'Completed'}
+          <a
+            title="Edit Activity"
+            class="action-item crm-hover-button"
+            href="{crmURL p='civicrm/activity/add' q="action=update&reset=1&id=`$a.id`&context=activity&searchContext=activity&cid=`$a.target_contact_id.0`"}"
+          >Edit</a>
+        {/if}
+
+        {if $activityStatuses[$a.status_id] == 'Scheduled' && $has_edit_permission}
           <a
             title="Reschedule Change"
             class="action-item crm-hover-button"
