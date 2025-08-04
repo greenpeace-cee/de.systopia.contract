@@ -6,9 +6,18 @@ table.dataTable.display tbody tr.needs-review td,
 table.dataTable.display tbody tr.needs-review:hover td {
     background-color: rgb(255,220,220) !important;
 }
-table.dataTable.display tbody tr.failed td,
+
 table.dataTable.display tbody tr.failed td {
     background-color: #e6ab5e !important;
+}
+
+table.dataTable.display tbody tr.cancelled,
+table.dataTable.display tbody tr.cancelled:hover {
+    background-color: #ebeff0;
+
+    td:first-child {
+      text-decoration: line-through;
+    }
 }
 
 /* exclude review rows from shoreditch overflow handling  */
