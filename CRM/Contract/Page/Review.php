@@ -40,6 +40,8 @@ class CRM_Contract_Page_Review extends CRM_Core_Page {
         'target_contact_id',
         'source_contact_id',
         'details',
+        'created_date',
+        'modified_date',
         'campaign_id',
         'medium_id'
       ],

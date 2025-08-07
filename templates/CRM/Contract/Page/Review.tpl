@@ -46,7 +46,14 @@
       <td>{$mediums[$a.medium_id]}</td>
       <td>{$a.details|truncate:50}</td>
       <td>{$cancelReasons[$a.contract_cancellation_contact_history_cancel_reason]|truncate:50}</td>
-      <td><a href="{crmURL p='civicrm/contact/view' q="reset=1&cid=`$a.source_contact_id`"}">{$contacts[$a.source_contact_id]}</a></td>
+
+      <td>
+        <a href="{crmURL p='civicrm/contact/view' q="reset=1&cid=`$a.source_contact_id`"}">
+          {$contacts[$a.source_contact_id]}
+        </a>
+
+        {help title="Activity details" id="activity_metadata" file="CRM/Contract/Form/ActivityMetadata.hlp" source_contact=$contacts[$a.source_contact_id] created_date=$a.created_date modified_date=$a.modified_date}
+      </td>
 
       <td>{$activityStatuses[$a.status_id]}</td>
       <td nowrap="nowrap">
