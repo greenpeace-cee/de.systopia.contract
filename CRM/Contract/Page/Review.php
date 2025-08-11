@@ -20,16 +20,19 @@ class CRM_Contract_Page_Review extends CRM_Core_Page {
     $membership = civicrm_api3('Membership', 'getsingle', [
       'id' => CRM_Utils_Request::retrieve('id', 'Positive')
     ]);
+
+    $rc_id = $membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')];
+
     $this->assign('currency', civicrm_api3('ContributionRecur', 'getvalue', [
-      'id' => $membership[CRM_Contract_Utils::getCustomFieldId('membership_payment.membership_recurring_contribution')],
+      'id' => $rc_id,
       'return' => 'currency',
     ]));
 
     // Set activity params
     $activityParams = [
       'source_record_id' => $id,
-      'status_id' => ['NOT IN' => ['cancelled']],
       'activity_type_id' => ['IN' => CRM_Contract_Change::getActivityTypeIds()],
+      'is_deleted' => 0,
       'return' => [
         'activity_date_time',
         'status_id',
@@ -37,6 +40,8 @@ class CRM_Contract_Page_Review extends CRM_Core_Page {
         'target_contact_id',
         'source_contact_id',
         'details',
+        'created_date',
+        'modified_date',
         'campaign_id',
         'medium_id'
       ],
@@ -151,6 +156,10 @@ class CRM_Contract_Page_Review extends CRM_Core_Page {
     foreach(civicrm_api3('CustomField', 'get', [ 'custom_group_id' => ['IN' => ['contract_cancellation', 'contract_updates']]])['values'] as $customField){
       $activityParams['return'][]='custom_'.$customField['id'];
     }
+
+    $adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($rc_id);
+    $this->assign('has_edit_permission', CRM_Core_Permission::check("edit $adapter contracts"));
+    $this->assign('is_admin', CRM_Core_Permission::check('administer CiviContract'));
 
     parent::run();
   }
