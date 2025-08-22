@@ -182,17 +182,35 @@ function contract_civicrm_buildForm($formName, &$form) {
     case 'CRM_Activity_Form_Activity':
     case 'CRM_Fastactivity_Form_Add':
     case 'CRM_Fastactivity_Form_View':
-      if($form->getAction() == CRM_Core_Action::VIEW){
+      $activity_id =  CRM_Utils_Request::retrieve('id', 'Positive', $form);
 
+      if ($form->getAction() == CRM_Core_Action::VIEW) {
         // Show recurring contribution details
-        $id =  CRM_Utils_Request::retrieve('id', 'Positive', $form);
         $formUtils = new CRM_Contract_FormUtils($form, 'Activity');
         $formUtils->replaceIdWithLabel('contract_updates.ch_recurring_contribution', 'ContributionRecur');
         $formUtils->replaceIdWithLabel('contract_updates.ch_payment_instrument', 'PaymentInstrument');
         $formUtils->replaceIdWithLabel('contract_updates.ch_from_ba', 'BankAccountReference');
         $formUtils->replaceIdWithLabel('contract_updates.ch_to_ba', 'BankAccountReference');
 
-      }elseif($form->getAction() == CRM_Core_Action::UPDATE){
+      } elseif ($form->getAction() == CRM_Core_Action::UPDATE) {
+        $activity_count = \Civi\Api4\Activity::get(TRUE)
+          ->selectRowCount()
+          ->addWhere('id', '=', $activity_id)
+          ->addWhere('activity_type_id:name', 'IN', [
+            'Contract_Cancelled',
+            'Contract_Paused',
+            'Contract_Resumed',
+            'Contract_Revived',
+            'Contract_Signed',
+            'Contract_Updated',
+          ])
+          ->execute();
+
+        // Users need permission 'administer CiviContract' to edit contract activities
+        if ($activity_count->rowCount > 0 && !CRM_Core_Permission::check('administer CiviContract')) {
+          CRM_Core_Error::statusBounce('You don\'t have the necessary permissions to edit this activity', NULL, 'Permission denied');
+        }
+
         CRM_Core_Resources::singleton()->addScriptFile( 'de.systopia.contract', 'templates/CRM/Activity/Form/Edit.js' );
       }
       break;
@@ -323,6 +341,30 @@ function contract_civicrm_permission(&$permissions) {
   $permissions['edit core membership CiviContract'] = [
     'label' => ts('CiviContract: Edit core membership', [ 'domain' => 'de.systopia.contract' ]),
     'description' => ts('Allow editing memberships using the core membership form', [ 'domain' => 'de.systopia.contract' ]),
+  ];
+
+  $permissions['edit adyen contracts'] = [
+    'label' => ts('CiviContract: edit Adyen contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'description' => ts('Allow editing of Adyen contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'implied_by' => ['administer CiviCRM', 'administer CiviContract'],
+  ];
+
+  $permissions['edit eft contracts'] = [
+    'label' => ts('CiviContract: Edit EFT contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'description' => ts('Allow editing of EFT contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'implied_by' => ['administer CiviCRM', 'administer CiviContract'],
+  ];
+
+  $permissions['edit sepa_mandate contracts'] = [
+    'label' => ts('CiviContract: Edit SEPA contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'description' => ts('Allow editing of SEPA contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'implied_by' => ['administer CiviCRM', 'administer CiviContract'],
+  ];
+
+  $permissions['administer CiviContract'] = [
+    'label' => ts('CiviContract: Administer contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'description' => ts('Allow administration of all contracts', [ 'domain' => 'de.systopia.contract' ]),
+    'implied_by' => ['administer CiviCRM'],
   ];
 }
 

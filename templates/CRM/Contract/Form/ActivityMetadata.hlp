@@ -1,0 +1,7 @@
+{htxt id="activity_metadata"}
+    <ul style="list-style:none">
+        <li>Added by: <b>{$params.source_contact}</b></li>
+        <li>Created: <b>{$params.created_date|crmDate}</b></li>
+        <li>Last modified: <b>{$params.modified_date|crmDate}</b></li>
+    </ul>
+{/htxt}

@@ -79,6 +79,18 @@
     <access_arguments>edit memberships</access_arguments>
   </item>
   <item>
+    <path>civicrm/contract/cancel-change</path>
+    <title>Cancel scheduled contract change</title>
+    <page_callback>CRM_Contract_Form_CancelChange</page_callback>
+    <access_arguments>edit memberships</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/contract/reschedule-change</path>
+    <title>Reschedule contract change</title>
+    <page_callback>CRM_Contract_Form_RescheduleChange</page_callback>
+    <access_arguments>edit memberships</access_arguments>
+  </item>
+  <item>
     <path>civicrm/member/edit</path>
     <title>Edit membership</title>
     <page_callback>CRM_Contract_Form_EditMembership</page_callback>
