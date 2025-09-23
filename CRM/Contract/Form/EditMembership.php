@@ -27,6 +27,14 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
 
     $this->set('membership', $membership);
     $this->set('membership_channels', CRM_Contract_FormUtils::getOptionValueLabels('contact_channel'));
+
+    $contract_file = Api4\File::get(FALSE)
+      ->addWhere('id', '=', $membership['membership_general.contract_file'])
+      ->addSelect('id', 'file_name', 'url')
+      ->execute()
+      ->first();
+
+    $this->assign('contract_file', $contract_file);
   }
 
   public function buildQuickForm () {
@@ -69,11 +77,7 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
     );
 
     // Contract file (contract_file)
-    $this->addEntityRef(
-      'contract_file',
-      ts('Contract file'),
-      [ 'entity' => 'File' ]
-    );
+    $this->add('file', 'contract_file', ts('Contract file'));
 
     // Member since (join_date)
     $this->add('datepicker', 'join_date', ts('Member since'), [], TRUE, [ 'time' => FALSE ]);
@@ -103,7 +107,6 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
     $membership = $this->get('membership');
 
     parent::setDefaults([
-      'contract_file'        => $membership['membership_general.contract_file'],
       'join_date'            => $membership['join_date'],
       'membership_channel'   => $membership['membership_general.membership_channel'],
       'membership_contract'  => $membership['membership_general.membership_contract'],
@@ -134,18 +137,31 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
     $membership = $this->get('membership');
     $submitted = $this->exportValues();
 
-    Api4\Membership::update(FALSE)
+    $membership_update = Api4\Membership::update(FALSE)
       ->addWhere('id', '=', $membership['id'])
       ->addValue('join_date',                               $submitted['join_date']           )
-      ->addValue('membership_general.contract_file',        $submitted['contract_file']       )
       ->addValue('membership_general.membership_channel',   $submitted['membership_channel']  )
       ->addValue('membership_general.membership_contract',  $submitted['membership_contract'] )
       ->addValue('membership_general.membership_dialoger',  $submitted['membership_dialoger'] )
       ->addValue('membership_general.membership_reference', $submitted['membership_reference'])
       ->addValue('membership_referral.membership_referrer', $submitted['membership_referrer'] )
       ->addValue('start_date',                              $submitted['start_date']          )
-      ->addValue('status_id',                               $membership['status_id']          )
-      ->execute();
+      ->addValue('status_id',                               $membership['status_id']          );
+
+    $contract_file_metadata = $this->getElement('contract_file')->getValue();
+
+    if (!empty($contract_file_metadata)) {
+      $contract_file = Api4\File::create(FALSE)
+        ->addValue('content',   file_get_contents($contract_file_metadata['tmp_name']))
+        ->addValue('file_name', $contract_file_metadata['name']                       )
+        ->addValue('mime_type', $contract_file_metadata['type']                       )
+        ->execute()
+        ->first();
+
+      $membership_update->addValue('membership_general.contract_file', $contract_file['id']);
+    }
+
+    $membership_update->execute();
   }
 
 }
