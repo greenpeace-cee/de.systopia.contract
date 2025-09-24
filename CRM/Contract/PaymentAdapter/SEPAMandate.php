@@ -251,7 +251,6 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
             "bank_holidays"       => array_map(fn ($item) => $item["bank_holiday_date"], $bank_holidays),
             "creditor"            => CRM_Sepa_Logic_Settings::defaultCreditor(),
             "cycle_days"          => self::cycleDays(),
-            "minimum_change_date" => CRM_Contract_DateHelper::minimumChangeDate()->format('Y-m-d'),
             "notice_days"         => self::noticeDays()->d,
             "payment_frequencies" => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 4, 12]),
         ];

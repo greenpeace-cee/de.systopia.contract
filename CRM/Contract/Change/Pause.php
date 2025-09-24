@@ -199,7 +199,7 @@ class CRM_Contract_Change_Pause extends CRM_Contract_Change {
    * @param $membership_data      array  all known information on the membership in question
    */
   public static function modifyMembershipActionLinks(&$links, $current_status_name, $membership_data) {
-    if (in_array($current_status_name, self::getStartStatusList())) {
+    if (in_array($current_status_name, self::getStartStatusList()) && self::hasEditPermission($membership_data['id'])) {
       $links[] = [
           'name'  => E::ts("Pause"),
           'title' => self::getChangeTitle(),

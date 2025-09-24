@@ -750,4 +750,17 @@ abstract class CRM_Contract_Change implements CRM_Contract_Change_SubjectRendere
     return implode(',', $field_names);
   }
 
+  /**
+   * Check whether a user has the necessary permissions to edit a contract
+   *
+   * @param membership_id int ID of the membership/contract
+   * @param contact_id int    ID of the contact to check permissions for (defaults to currently logged-in user)
+   * @return bool             TRUE if user has permission, else FALSE
+   */
+  public static function hasEditPermission($membership_id, $contact_id = NULL) {
+    $recurring_contribution = CRM_Contract_RecurringContribution::getCurrentForContract($membership_id);
+    $payment_adapter = CRM_Contract_Utils::getPaymentAdapterForRecurringContribution($recurring_contribution['id']);
+
+    return CRM_Core_Permission::check(["edit $payment_adapter contracts"], $contact_id);
+  }
 }

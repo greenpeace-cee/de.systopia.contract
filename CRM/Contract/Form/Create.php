@@ -56,7 +56,12 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $this->membership_types = CRM_Contract_FormUtils::getMembershipTypes();
 
         // Payment adapters
-        $this->payment_adapters = CRM_Contract_Configuration::getPaymentAdapters();
+        $this->payment_adapters = array_filter(
+            CRM_Contract_Configuration::getPaymentAdapters(),
+            fn ($adapter) => CRM_Core_Permission::check(["edit $adapter contracts"]),
+            ARRAY_FILTER_USE_KEY
+        );
+
         $resources = CRM_Core_Resources::singleton();
         $paymentAdapterFields = [];
 
@@ -83,7 +88,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "frequency_labels"        => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
             "payment_adapter_fields"  => $paymentAdapterFields,
-            "payment_adapters"        => array_keys(CRM_Contract_Configuration::getPaymentAdapters()),
+            "payment_adapters"        => array_keys($this->payment_adapters),
             "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($this->contact["id"]),
         ]);
 
