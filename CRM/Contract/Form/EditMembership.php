@@ -151,10 +151,13 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
     $contract_file_metadata = $this->getElement('contract_file')->getValue();
 
     if (!empty($contract_file_metadata)) {
+      $uri = CRM_Utils_File::makeFileName($contract_file_metadata['name']);
+      $path = CRM_Core_Config::singleton()->customFileUploadDir . DIRECTORY_SEPARATOR . $uri;
+      rename($contract_file_metadata['tmp_name'], $path);
+
       $contract_file = Api4\File::create(FALSE)
-        ->addValue('content',   file_get_contents($contract_file_metadata['tmp_name']))
-        ->addValue('file_name', $contract_file_metadata['name']                       )
-        ->addValue('mime_type', $contract_file_metadata['type']                       )
+        ->addValue('mime_type', $contract_file_metadata['type'])
+        ->addValue('uri',       $uri                           )
         ->execute()
         ->first();
 
