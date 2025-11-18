@@ -39,6 +39,14 @@ table.dataTable.display tbody tr.cancelled:hover {
   margin-bottom: 15px;
 }
 
+.crm-form-block ul#activity-attachments {
+  list-style: disc;
+
+  li a.delete-attachment {
+    cursor: pointer;
+  }
+}
+
 /* shoreditch overwrites the jquery-ui css with opacity: 1, making
    disabled datepicker options look almost the same as enabled ones.
    we overwrite the overwrite with the original opacity from jquery-ui.

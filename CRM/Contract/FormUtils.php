@@ -295,4 +295,22 @@ class CRM_Contract_FormUtils {
     return [ 'imports' => $import_map ];
   }
 
+  /**
+   * Copy uploaded file to custom upload directory and create a File entity
+   *
+   * @param array $file_metadata
+   * @return Civi\Api4\File
+   */
+  public static function createFileFromUpload($file_metadata) {
+    $uri = CRM_Utils_File::makeFileName($file_metadata['name']);
+    $path = CRM_Core_Config::singleton()->customFileUploadDir . DIRECTORY_SEPARATOR . $uri;
+    rename($file_metadata['tmp_name'], $path);
+
+    return Api4\File::create(FALSE)
+      ->addValue('mime_type', $file_metadata['type'])
+      ->addValue('uri', $uri)
+      ->execute()
+      ->first();
+  }
+
 }
