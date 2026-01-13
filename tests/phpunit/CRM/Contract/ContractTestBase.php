@@ -1,5 +1,6 @@
 <?php
 
+use Civi\Api4;
 use Civi\Api4\Activity;
 use Civi\Test\Api3TestTrait;
 use CRM_Contract_ExtensionUtil as E;
@@ -38,7 +39,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
         ->installMe(__DIR__)
         ->install('org.project60.sepa')
         ->install('org.project60.banking')
-        ->apply();
+        ->apply(TRUE);
   }
 
   public function setUp(): void
@@ -62,12 +63,21 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
     $default_creditor_id = (int) CRM_Sepa_Logic_Settings::getSetting('batching_default_creditor');
     $this->assertNotEmpty($default_creditor_id, "There is no default SEPA creditor set");
 
-    \Civi\Api4\OptionValue::create(FALSE)
+    Api4\OptionValue::create(FALSE)
       ->addValue('option_group_id:name', 'contract_cancel_reason')
       ->addValue('label', 'Unknown')
       ->addValue('value', '1')
       ->addValue('name', 'Unknown')
       ->addValue('is_active', TRUE)
+      ->execute();
+
+    $settings_result = Api4\Setting::get(FALSE)
+      ->addSelect('enable_components')
+      ->execute()
+      ->first();
+
+    Api4\Setting::set(FALSE)
+      ->addValue('enable_components', array_merge($settings_result['value'], ['CiviCampaign']))
       ->execute();
   }
 
@@ -202,9 +212,24 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
    * @return array contract data
    */
   public function getContract($contract_id) {
-    $contract = $this->callAPISuccess('Membership', 'getsingle', ['id' => $contract_id]);
-    CRM_Contract_CustomData::labelCustomFields($contract);
-    return $contract;
+    // $contract = $this->callAPISuccess('Membership', 'getsingle', ['id' => $contract_id]);
+    // CRM_Contract_CustomData::labelCustomFields($contract);
+    return Api4\Membership::get(FALSE)
+      ->addSelect(
+        'id',
+        'campaign_id',
+        'contact_id',
+        'join_date',
+        'membership_cancellation.*',
+        'membership_general.*',
+        'membership_payment.*',
+        'membership_type_id:name',
+        'start_date',
+        'status_id:name'
+      )
+      ->addWhere('id', '=', $contract_id)
+      ->execute()
+      ->first();
   }
 
   /**

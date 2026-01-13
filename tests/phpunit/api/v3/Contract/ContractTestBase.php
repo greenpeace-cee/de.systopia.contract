@@ -133,18 +133,17 @@ implements Test\HeadlessInterface, Test\HookInterface, Test\TransactionalInterfa
   }
 
   private function createMembershipTypes() {
-    $membership_type_general_count = Api4\MembershipType::get(FALSE)
+    $membership_type_general = Api4\MembershipType::get(FALSE)
       ->selectRowCount()
       ->addWhere('name', '=', 'General')
-      ->execute()
-      ->count;
+      ->execute();
 
-    if ($membership_type_general_count > 0) return;
+    if ($membership_type_general->rowCount > 0) return;
 
     Api4\MembershipType::create(FALSE)
       ->addValue('duration_interval'     , 2)
       ->addValue('duration_unit'         , 'year')
-      ->addValue('financial_type_id.name', 'Member Dues')
+      ->addValue('financial_type_id:name', 'Member Dues')
       ->addValue('member_of_contact_id'  , 1)
       ->addValue('name'                  , 'General')
       ->addValue('period_type'           , 'rolling')
