@@ -87,6 +87,7 @@ class CRM_Contract_Form_Create extends CRM_Core_Form {
         $resources->addVars("de.systopia.contract", [
             "default_currency"        => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
             "frequency_labels"        => CRM_Contract_RecurringContribution::getPaymentFrequencies([1, 2, 3, 4, 6, 12]),
+            "minimum_change_date"     => CRM_Contract_DateHelper::minimumChangeDate()->format("Y-m-d"),
             "payment_adapter_fields"  => $paymentAdapterFields,
             "payment_adapters"        => array_keys($this->payment_adapters),
             "recurring_contributions" => CRM_Contract_RecurringContribution::getAllForContact($this->contact["id"]),
