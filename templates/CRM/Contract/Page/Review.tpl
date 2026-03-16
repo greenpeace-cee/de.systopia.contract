@@ -88,6 +88,19 @@
             href="{crmURL p='civicrm/contract/amend-cancel' q="activity_id=`$a.id`"}"
           >Amend</a>
         {/if}
+
+        {if
+          $activityTypes[$a.activity_type_id] == 'Update Contract'
+          || $activityTypes[$a.activity_type_id] == 'Revive Contract'
+          || $activityTypes[$a.activity_type_id] == 'Cancel Contract'
+          || $activityTypes[$a.activity_type_id] == 'Pause Contract'
+        }
+          <a
+            title="Manage attachments"
+            class="action-item crm-hover-button"
+            href="{crmURL p='civicrm/contract/activity-attachments' q="activity_id=`$a.id`"}"
+          >Attachments{if $a.attachment_count > 0} ({$a.attachment_count}){/if}</a>
+        {/if}
       </td>
     </tr>
   {/foreach}

@@ -8,6 +8,8 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use Civi\Api4;
+
 class CRM_Contract_Page_Review extends CRM_Core_Page {
 
   public function run() {
@@ -91,6 +93,12 @@ class CRM_Contract_Page_Review extends CRM_Core_Page {
       if(isset($activities[$key]['source_contact_id'])){
         $contacts[] = $activities[$key]['source_contact_id'];
       }
+      $activities[$key]['attachment_count'] = Api4\EntityFile::get(FALSE)
+        ->selectRowCount()
+        ->addWhere('entity_table', '=', 'civicrm_activity')
+        ->addWhere('entity_id', '=', $activity['id'])
+        ->execute()
+        ->rowCount;
     }
 
     $this->assign('activities', $activities);
