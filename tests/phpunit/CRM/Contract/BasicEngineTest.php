@@ -1,5 +1,6 @@
 <?php
 
+use Civi\Api4;
 use Civi\Api4\Activity;
 use CRM_Contract_ExtensionUtil as E;
 use Civi\Test\HeadlessInterface;
@@ -43,7 +44,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
 
       // annual amount
       $this->assertEquals('120.00', $contract['membership_payment.membership_annual']);
-      $this->assertEquals('2', $contract['status_id']);
+      $this->assertEquals('Current', $contract['status_id:name']);
       $this->assertNotEmpty($contract['membership_payment.membership_recurring_contribution']);
       $this->assertNotEmpty($contract['membership_payment.cycle_day']);
     }
@@ -79,7 +80,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->assertNotEquals($contract, $contract_changed2, "This should have changed");
 
     // make sure status is cancelled
-    $this->assertEquals($this->getMembershipStatusID('Cancelled'), $contract_changed2['status_id'], "The contract wasn't cancelled");
+    $this->assertEquals('Cancelled', $contract_changed2['status_id:name'], "The contract wasn't cancelled");
 
     // make sure 'cancel_reason' of the associated recurring contribution is updated
     $recurringContributionId = $contract_changed2["membership_payment.membership_recurring_contribution"];
@@ -109,7 +110,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     );
 
     $this->assertEquals(
-      date("Y-m-d 00:00:00"),
+      date("Y-m-d"),
       $contract_changed2["membership_cancellation.membership_cancel_date"]
     );
   }
@@ -139,7 +140,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->assertNotEquals($contract, $contract_changed2, "This should have changed");
 
     // make sure status is current
-    $this->assertEquals($this->getMembershipStatusID('Current'), $contract_changed2['status_id'], "The contract isn't active");
+    $this->assertEquals('Current', $contract_changed2['status_id:name'], "The contract isn't active");
     $this->assertEquals(240.00, $contract_changed2['membership_payment.membership_annual'], "The contract has the wrong amount");
   }
 
@@ -165,14 +166,14 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     // run engine again for tomorrow
     $this->runContractEngine($contract['id'], '+1 day');
     $contract_changed2 = $this->getContract($contract['id']);
-    $this->assertEquals($this->getMembershipStatusID('Paused'), $contract_changed2['status_id'], "The contract isn't paused");
+    $this->assertEquals('Paused', $contract_changed2['status_id:name'], "The contract isn't paused");
     $mandate = $this->getMandateForContract($contract['id']);
     $this->assertEquals('ONHOLD', $mandate['status'], 'Mandate should be on hold');
 
     // run engine again for the day after tomorrow
     $this->runContractEngine($contract['id'], '+2 days');
     $contract_changed2 = $this->getContract($contract['id']);
-    $this->assertEquals($this->getMembershipStatusID('Current'), $contract_changed2['status_id'], "The contract isn't paused");
+    $this->assertEquals('Current', $contract_changed2['status_id:name'], "The contract isn't paused");
     $mandate = $this->getMandateForContract($contract['id']);
     $this->assertEquals('FRST', $mandate['status'], 'Mandate should be active');
     $this->assertEquals(
@@ -200,7 +201,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->assertNotEquals($contract, $contract_cancelled, "This should have changed");
 
     // make sure status is cancelled
-    $this->assertEquals($this->getMembershipStatusID('Cancelled'), $contract_cancelled['status_id'], "The contract wasn't cancelled");
+    $this->assertEquals('Cancelled', $contract_cancelled['status_id:name'], "The contract wasn't cancelled");
 
     // now: revive contract
     $this->modifyContract($contract['id'], 'revive', '+2 days', [
@@ -212,7 +213,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->assertNotEquals($contract_cancelled, $contract_revived, "This should have changed");
 
     // make sure status is cancelled
-    $this->assertEquals($this->getMembershipStatusID('Current'), $contract_revived['status_id'], "The contract wasn't revived");
+    $this->assertEquals('Current', $contract_revived['status_id:name'], "The contract wasn't revived");
     $this->assertEquals(240.00, $contract_revived['membership_payment.membership_annual'], "The contract has the wrong amount");
 
     // make sure membership_cancellation was cleared GP-12430
@@ -274,11 +275,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     $this->runContractEngine($contract['id'], '+2 days');
 
     $contract_changed = $this->getContract($contract['id']);
-    $this->assertEquals(
-      'Cancelled',
-      CRM_Contract_Utils::getMembershipStatusName($contract_changed['status_id']),
-      'Membership should be cancelled'
-    );
+    $this->assertEquals('Cancelled', $contract_changed['status_id:name'], 'Membership should be cancelled');
 
     // cancel contract again (while it's already cancelled)
     $this->modifyContract($contract['id'], 'cancel', '+1 days', [
@@ -432,14 +429,14 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     // run engine for tomorrow
     $this->runContractEngine($contract['id'], '+1 day');
     $contract_changed1 = $this->getContract($contract['id']);
-    $this->assertEquals($this->getMembershipStatusID('Paused'), $contract_changed1['status_id'], "The contract isn't paused");
+    $this->assertEquals('Paused', $contract_changed1['status_id:name'], "The contract isn't paused");
     $mandate = $this->getMandateForContract($contract['id']);
     $this->assertEquals('ONHOLD', $mandate['status'], 'Mandate should be on hold');
 
     // run engine again for the day after tomorrow
     $this->runContractEngine($contract['id'], '+2 days');
     $contract_changed2 = $this->getContract($contract['id']);
-    $this->assertEquals($this->getMembershipStatusID('Current'), $contract_changed2['status_id'], "The contract isn't paused");
+    $this->assertEquals('Current', $contract_changed2['status_id:name'], "The contract isn't paused");
     $mandate = $this->getMandateForContract($contract['id']);
     $this->assertEquals('FRST', $mandate['status'], 'Mandate should be active');
     $this->assertEquals('10', $contract_changed2['membership_payment.cycle_day'], 'cycle_day should have changed');

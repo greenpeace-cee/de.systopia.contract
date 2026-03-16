@@ -86,7 +86,15 @@ class SEPA extends PaymentAdapter {
             const warning = cj("div.form-field#activity_date div#debit_before_update");
             const nextContribDate = new Date(EXT_VARS.next_sched_contribution_date);
             const scheduleDate = new Date(this.formFields["activity_date"].val() || 0);
-            nextContribDate.getTime() < scheduleDate.getTime() ? warning.show() : warning.hide();
+
+            if (
+                nextContribDate.getTime() > Date.now()
+                && nextContribDate.getTime() < scheduleDate.getTime()
+            ) {
+                warning.show();
+            } else {
+                warning.hide();
+            }
         }
 
         // Payment preview
@@ -166,7 +174,7 @@ class SEPA extends PaymentAdapter {
                 payment_adapter: "sepa_mandate",
                 min_date: formatDateYMD(new Date(Math.max(
                     new Date(startDate).getTime(),
-                    new Date(ADAPTER_VARS.minimum_change_date).getTime() + (24 * 60 * 60 * 1000),
+                    new Date(EXT_VARS.minimum_change_date).getTime() + (24 * 60 * 60 * 1000),
                 ))),
             })
             : await nextCollectionDate({
