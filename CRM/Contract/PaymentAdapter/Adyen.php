@@ -15,19 +15,6 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function create($params) {
-    $paymentTokenParamMapping = [
-      //                         | original name              | required | default |
-      'billing_first_name'    => [ 'billing_first_name'       , FALSE    , NULL    ],
-      'billing_last_name'     => [ 'billing_last_name'        , FALSE    , NULL    ],
-      'contact_id'            => [ 'contact_id'               , TRUE     , NULL    ],
-      'email'                 => [ 'email'                    , FALSE    , NULL    ],
-      'expiry_date'           => [ 'expiry_date'              , FALSE    , NULL    ],
-      'ip_address'            => [ 'ip_address'               , FALSE    , NULL    ],
-      'masked_account_number' => [ 'account_number'           , FALSE    , NULL    ],
-      'payment_processor_id'  => [ 'payment_processor_id'     , TRUE     , NULL    ],
-      'token'                 => [ 'stored_payment_method_id' , TRUE     , NULL    ],
-    ];
-
     $paymentToken = NULL;
     $useExistingToken = isset($params['payment_token_id']);
 
@@ -45,10 +32,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
         unset($params['shopper_reference']);
     } else {
-      $paymentToken = civicrm_api4('PaymentToken', 'create', [
-        'checkPermissions' => FALSE,
-        'values'           => self::mapParameters($paymentTokenParamMapping, $params),
-      ])->first();
+      $paymentToken = self::createPaymentToken($params);
     }
 
     $paymentProcessorID = $paymentToken['payment_processor_id'];
@@ -621,18 +605,39 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'min_date'            => $minDate,
     ]);
 
-    $defaultShopperReference = $oldRC['processor_id'];
+    $params['contact_id'] = $params['contact_id'] ?? $oldRC['contact_id'];
 
-    if (
-      isset($params['payment_token_id'])
-      && $params['payment_token_id'] !== $oldRC['payment_token_id']
-    ) {
-      $defaultShopperReference = Api4\ContributionRecur::get(FALSE)
-        ->addWhere('payment_token_id', '=', $params['payment_token_id'])
-        ->addSelect('processor_id')
-        ->setLimit(1)
-        ->execute()
-        ->first()['processor_id'];
+    $defaultShopperReference = NULL;
+
+    // adyen details can be either:
+    // 1. not provided => use payment token linked to current RC
+    // 2. provided via explicit payment_token_id => re-use as-is and get processor_id from linked ContributionRecur
+    // 3. provided via new shopper_reference => create new PaymentToken
+
+    if (empty($params['payment_token_id']) && empty($params['shopper_reference'])) {
+      // 1. (will be handled as 2.)
+      $params['payment_token_id'] = $oldRC['payment_token_id'];
+    }
+
+    if (!empty($params['payment_token_id'])) {
+      // 2.
+      if ($oldRC['payment_token_id'] == $params['payment_token_id']) {
+        // prefer current ContributionRecur
+        $defaultShopperReference = $oldRC['processor_id'];
+      }
+      else {
+        $defaultShopperReference = Api4\ContributionRecur::get(FALSE)
+          ->addWhere('payment_token_id', '=', $params['payment_token_id'])
+          ->addSelect('processor_id')
+          ->setLimit(1)
+          ->execute()
+          ->first()['processor_id'];
+      }
+    }
+    else if (!empty($params['shopper_reference'])) {
+      // 3.
+      $paymentToken = self::createPaymentToken($params);
+      $params['payment_token_id'] = $paymentToken['id'];
     }
 
     $recurContribParamMapping = [
@@ -649,7 +654,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'next_sched_contribution_date' => [ NULL                     , FALSE    , $startDate->format('Y-m-d')      ],
       'payment_processor_id'         => [ 'payment_processor_id'   , FALSE    , $oldRC['payment_processor_id']   ],
       'payment_token_id'             => [ 'payment_token_id'       , FALSE    , $oldRC['payment_token_id']       ],
-      'processor_id'                 => [ NULL                     , FALSE    , $defaultShopperReference         ],
+      'processor_id'                 => [ 'shopper_reference'      , FALSE    , $defaultShopperReference         ],
       'start_date'                   => [ NULL                     , FALSE    , $startDate->format('Y-m-d')      ],
       'trxn_id'                      => [ NULL                     , FALSE    , NULL                             ],
     ];
@@ -663,7 +668,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       ->execute()
       ->first();
 
-    $updateParams['payment_instrument_id'] = $existingRC['payment_instrument_id'];
+    $updateParams['payment_instrument_id'] = $params['payment_instrument_id'] ?? $existingRC['payment_instrument_id'];
 
     $newRecurringContribution = civicrm_api4('ContributionRecur', 'create', [
       'checkPermissions' => FALSE,
@@ -677,7 +682,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $result = [];
 
     foreach ($mapping as $key => $spec) {
-      list($originalName, $isRequired, $default) = $spec;
+      [$originalName, $isRequired, $default] = $spec;
 
       if (is_null($originalName)) {
         $result[$key] = $default;
@@ -746,6 +751,27 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     return $paymentTokens;
   }
 
-}
+  /**
+   * @throws \CRM_Core_Exception
+   * @throws \Civi\API\Exception\NotImplementedException
+   */
+  private static function createPaymentToken(array $params) {
+    $paymentTokenParamMapping = [
+      //                         | original name              | required | default |
+      'billing_first_name'    => [ 'billing_first_name'       , FALSE    , NULL    ],
+      'billing_last_name'     => [ 'billing_last_name'        , FALSE    , NULL    ],
+      'contact_id'            => [ 'contact_id'               , TRUE     , NULL    ],
+      'email'                 => [ 'email'                    , FALSE    , NULL    ],
+      'expiry_date'           => [ 'expiry_date'              , FALSE    , NULL    ],
+      'ip_address'            => [ 'ip_address'               , FALSE    , NULL    ],
+      'masked_account_number' => [ 'account_number'           , FALSE    , NULL    ],
+      'payment_processor_id'  => [ 'payment_processor_id'     , TRUE     , NULL    ],
+      'token'                 => [ 'stored_payment_method_id' , TRUE     , NULL    ],
+    ];
+    return civicrm_api4('PaymentToken', 'create', [
+      'checkPermissions' => FALSE,
+      'values'           => self::mapParameters($paymentTokenParamMapping, $params),
+    ])->first();
+  }
 
-?>
+}
