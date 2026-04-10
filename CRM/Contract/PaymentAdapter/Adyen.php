@@ -36,17 +36,17 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     }
 
     $paymentProcessorID = $paymentToken['payment_processor_id'];
-    $defaultShopperReference = CRM_Utils_Array::value('cr.processor_id', $paymentToken);
+    $defaultShopperReference = $paymentToken['cr.processor_id'] ?? NULL;
 
     $inProgressOptVal = (int) CRM_Contract_Utils::getOptionValue('contribution_recur_status', 'In Progress');
     $defaultCurrency = Civi::settings()->get('defaultCurrency');
     $memberDuesTypeID = CRM_Contract_Utils::getFinancialTypeID('Member Dues');
 
-    $cycleDay = (int) CRM_Utils_Array::value('cycle_day', $params);
+    $cycleDay = (int) ($params['cycle_day'] ?? NULL);
 
     $startDate = self::startDate([
-      'cycle_day' => CRM_Utils_Array::value('cycle_day', $params),
-      'min_date'  => CRM_Utils_Array::value('start_date', $params),
+      'cycle_day' => $params['cycle_day'] ?? NULL,
+      'min_date'  => $params['start_date'] ?? NULL,
     ]);
 
     $recurContribParamMapping = [
@@ -113,9 +113,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       ->execute()
       ->first();
 
-    $cycleDay = CRM_Utils_Array::value('cycle_day', $update, $originalRC['cycle_day']);
-    $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $update, TRUE);
-    $minDate = CRM_Utils_Array::value('start_date', $update, $originalRC['start_date']);
+    $cycleDay = $update['cycle_day'] ?? $originalRC['cycle_day'];
+    $deferPaymentStart = $update['defer_payment_start'] ?? TRUE;
+    $minDate = $update['start_date'] ?? $originalRC['start_date'];
 
     $update['start_date'] = self::startDate([
       'cycle_day'           => $cycleDay,
@@ -134,9 +134,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function formFields($params = []) {
-    $form = CRM_Utils_Array::value('form', $params, NULL);
-    $contactID = CRM_Utils_Array::value('contact_id', $params, NULL);
-    $submitted = CRM_Utils_Array::value('submitted', $params, []);
+    $form = $params['form'] ?? NULL;
+    $contactID = $params['contact_id'] ?? NULL;
+    $submitted = $params['submitted'] ?? [];
 
     $useExistingToken =
       isset($submitted['pa-adyen-use_existing_token'])
@@ -171,7 +171,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'type'         => 'select',
       ],
       'payment_token_id' => [
-        'default'      => CRM_Utils_Array::value('payment_token_id', $defaults),
+        'default'      => $defaults['payment_token_id'] ?? NULL,
         'display_name' => 'Payment token ID',
         'enabled'      => TRUE,
         'name'         => 'payment_token_id',
@@ -181,7 +181,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'type'         => 'select',
       ],
       'payment_processor_id' => [
-        'default'      => CRM_Utils_Array::value('payment_processor_id', $defaults),
+        'default'      => $defaults['payment_processor_id'] ?? NULL,
         'display_name' => 'Payment processor',
         'enabled'      => $form === 'sign',
         'name'         => 'payment_processor_id',
@@ -191,7 +191,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'type'         => 'select',
       ],
       'payment_instrument_id' => [
-        'default'      => CRM_Utils_Array::value('payment_instrument_id', $defaults),
+        'default'      => $defaults['payment_instrument_id'],
         'display_name' => 'Payment instrument',
         'enabled'      => $form === 'sign',
         'name'         => 'payment_instrument_id',
@@ -405,11 +405,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'In Progress'
     );
 
-    $update['contribution_status_id'] = CRM_Utils_Array::value(
-      'contribution_status_id',
-      $update,
-      $inProgressOptVal
-    );
+    $update['contribution_status_id'] = $update['contribution_status_id'] ?? $inProgressOptVal;
 
     return self::update($recurringContributionID, $update);
   }
@@ -423,11 +419,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'In Progress'
     );
 
-    $update['contribution_status_id'] = CRM_Utils_Array::value(
-      'contribution_status_id',
-      $update,
-      $inProgressOptVal
-    );
+    $update['contribution_status_id'] = $update['contribution_status_id'] ?? $inProgressOptVal;
 
     $reviveActivityType  = CRM_Core_PseudoConstant::getKey(
       'CRM_Activity_BAO_Activity',
@@ -468,16 +460,12 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     }
 
     if (isset($recurring_contribution)) {
-      $params['cycle_day'] = CRM_Utils_Array::value(
-        'cycle_day',
-        $params,
-        $recurring_contribution['cycle_day']
-      );
+      $params['cycle_day'] = $params['cycle_day'] ?? $recurring_contribution['cycle_day'];
     }
 
     // Defer payment start
 
-    $defer_payment_start = CRM_Utils_Array::value('defer_payment_start', $params, FALSE);
+    $defer_payment_start = $params['defer_payment_start'] ?? FALSE;
 
     if ($defer_payment_start && isset($params['membership_id'])) {
       $latest_contribution = CRM_Contract_RecurringContribution::getLatestContribution(
@@ -587,16 +575,16 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         self::terminate($recurringContributionID);
     }
 
-    $defaultCampaign = CRM_Utils_Array::value('campaign_id', $oldRC, NULL);
+    $defaultCampaign = $oldRC['campaign_id'] ?? NULL;
 
     if (array_key_exists('campaign_id', $params) && empty($params['campaign_id'])) {
       // Remove invalid campaign IDs (GP-34548)
       $params['campaign_id'] = NULL;
     }
 
-    $cycleDay = CRM_Utils_Array::value('cycle_day', $params, $oldRC['cycle_day']);
-    $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $params, TRUE);
-    $minDate = CRM_Utils_Array::value('start_date', $params, $oldRC['start_date']);
+    $cycleDay = $params['cycle_day'] ?? $oldRC['cycle_day'];
+    $deferPaymentStart = $params['defer_payment_start'] ?? TRUE;
+    $minDate = $params['start_date'] ?? $oldRC['start_date'];
 
     $startDate = self::startDate([
       'cycle_day'           => $cycleDay,
