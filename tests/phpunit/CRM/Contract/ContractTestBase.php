@@ -39,7 +39,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
         ->installMe(__DIR__)
         ->install('org.project60.sepa')
         ->install('org.project60.banking')
-        ->apply(TRUE);
+        ->apply();
   }
 
   public function setUp(): void
@@ -63,12 +63,19 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
     $default_creditor_id = (int) CRM_Sepa_Logic_Settings::getSetting('batching_default_creditor');
     $this->assertNotEmpty($default_creditor_id, "There is no default SEPA creditor set");
 
-    Api4\OptionValue::create(FALSE)
-      ->addValue('option_group_id:name', 'contract_cancel_reason')
-      ->addValue('label', 'Unknown')
-      ->addValue('value', '1')
-      ->addValue('name', 'Unknown')
-      ->addValue('is_active', TRUE)
+    Api4\OptionValue::save(FALSE)
+      ->addRecord([
+        'option_group_id:name' => 'contract_cancel_reason',
+        'label' => 'Unknown',
+        'value' => 1,
+        'name' => 'Unknown',
+        'is_active' => TRUE,
+      ])
+      ->setReload(TRUE)
+      ->setMatch([
+        'option_group_id',
+        'name',
+      ])
       ->execute();
 
     $settings_result = Api4\Setting::get(FALSE)
