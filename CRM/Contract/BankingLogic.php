@@ -13,8 +13,6 @@
  */
 class CRM_Contract_BankingLogic {
 
-  /** cached value for self::getCreditorBankAccount() */
-  protected static $_creditorBankAccount = NULL;
   protected static $_ibanReferenceType = NULL;
 
   /**
@@ -114,11 +112,11 @@ class CRM_Contract_BankingLogic {
    * Get the (target) bank account of the creditor
    */
   public static function getCreditorBankAccount() {
-    if (self::$_creditorBankAccount === NULL) {
+    if ((Civi::$statics[__CLASS__]['creditorBankAccount'] ?? NULL) === NULL) {
       $creditor = CRM_Sepa_Logic_Settings::defaultCreditor();
-      self::$_creditorBankAccount = self::getOrCreateBankAccount($creditor->creditor_id, $creditor->iban, $creditor->bic);
+      Civi::$statics[__CLASS__]['creditorBankAccount'] = self::getOrCreateBankAccount($creditor->creditor_id, $creditor->iban, $creditor->bic);
     }
-    return self::$_creditorBankAccount;
+    return Civi::$statics[__CLASS__]['creditorBankAccount'];
   }
 
   /**

@@ -15,19 +15,6 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function create($params) {
-    $paymentTokenParamMapping = [
-      //                         | original name              | required | default |
-      'billing_first_name'    => [ 'billing_first_name'       , FALSE    , NULL    ],
-      'billing_last_name'     => [ 'billing_last_name'        , FALSE    , NULL    ],
-      'contact_id'            => [ 'contact_id'               , TRUE     , NULL    ],
-      'email'                 => [ 'email'                    , FALSE    , NULL    ],
-      'expiry_date'           => [ 'expiry_date'              , FALSE    , NULL    ],
-      'ip_address'            => [ 'ip_address'               , FALSE    , NULL    ],
-      'masked_account_number' => [ 'account_number'           , FALSE    , NULL    ],
-      'payment_processor_id'  => [ 'payment_processor_id'     , TRUE     , NULL    ],
-      'token'                 => [ 'stored_payment_method_id' , TRUE     , NULL    ],
-    ];
-
     $paymentToken = NULL;
     $useExistingToken = isset($params['payment_token_id']);
 
@@ -45,24 +32,21 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
 
         unset($params['shopper_reference']);
     } else {
-      $paymentToken = civicrm_api4('PaymentToken', 'create', [
-        'checkPermissions' => FALSE,
-        'values'           => self::mapParameters($paymentTokenParamMapping, $params),
-      ])->first();
+      $paymentToken = self::createPaymentToken($params);
     }
 
     $paymentProcessorID = $paymentToken['payment_processor_id'];
-    $defaultShopperReference = CRM_Utils_Array::value('cr.processor_id', $paymentToken);
+    $defaultShopperReference = $paymentToken['cr.processor_id'] ?? NULL;
 
     $inProgressOptVal = (int) CRM_Contract_Utils::getOptionValue('contribution_recur_status', 'In Progress');
     $defaultCurrency = Civi::settings()->get('defaultCurrency');
     $memberDuesTypeID = CRM_Contract_Utils::getFinancialTypeID('Member Dues');
 
-    $cycleDay = (int) CRM_Utils_Array::value('cycle_day', $params);
+    $cycleDay = (int) ($params['cycle_day'] ?? NULL);
 
     $startDate = self::startDate([
-      'cycle_day' => CRM_Utils_Array::value('cycle_day', $params),
-      'min_date'  => CRM_Utils_Array::value('start_date', $params),
+      'cycle_day' => $params['cycle_day'] ?? NULL,
+      'min_date'  => $params['start_date'] ?? NULL,
     ]);
 
     $recurContribParamMapping = [
@@ -129,9 +113,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       ->execute()
       ->first();
 
-    $cycleDay = CRM_Utils_Array::value('cycle_day', $update, $originalRC['cycle_day']);
-    $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $update, TRUE);
-    $minDate = CRM_Utils_Array::value('start_date', $update, $originalRC['start_date']);
+    $cycleDay = $update['cycle_day'] ?? $originalRC['cycle_day'];
+    $deferPaymentStart = $update['defer_payment_start'] ?? TRUE;
+    $minDate = $update['start_date'] ?? $originalRC['start_date'];
 
     $update['start_date'] = self::startDate([
       'cycle_day'           => $cycleDay,
@@ -150,9 +134,9 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
   }
 
   public static function formFields($params = []) {
-    $form = CRM_Utils_Array::value('form', $params, NULL);
-    $contactID = CRM_Utils_Array::value('contact_id', $params, NULL);
-    $submitted = CRM_Utils_Array::value('submitted', $params, []);
+    $form = $params['form'] ?? NULL;
+    $contactID = $params['contact_id'] ?? NULL;
+    $submitted = $params['submitted'] ?? [];
 
     $useExistingToken =
       isset($submitted['pa-adyen-use_existing_token'])
@@ -187,7 +171,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'type'         => 'select',
       ],
       'payment_token_id' => [
-        'default'      => CRM_Utils_Array::value('payment_token_id', $defaults),
+        'default'      => $defaults['payment_token_id'] ?? NULL,
         'display_name' => 'Payment token ID',
         'enabled'      => TRUE,
         'name'         => 'payment_token_id',
@@ -197,7 +181,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'type'         => 'select',
       ],
       'payment_processor_id' => [
-        'default'      => CRM_Utils_Array::value('payment_processor_id', $defaults),
+        'default'      => $defaults['payment_processor_id'] ?? NULL,
         'display_name' => 'Payment processor',
         'enabled'      => $form === 'sign',
         'name'         => 'payment_processor_id',
@@ -207,7 +191,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         'type'         => 'select',
       ],
       'payment_instrument_id' => [
-        'default'      => CRM_Utils_Array::value('payment_instrument_id', $defaults),
+        'default'      => $defaults['payment_instrument_id'],
         'display_name' => 'Payment instrument',
         'enabled'      => $form === 'sign',
         'name'         => 'payment_instrument_id',
@@ -421,11 +405,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'In Progress'
     );
 
-    $update['contribution_status_id'] = CRM_Utils_Array::value(
-      'contribution_status_id',
-      $update,
-      $inProgressOptVal
-    );
+    $update['contribution_status_id'] = $update['contribution_status_id'] ?? $inProgressOptVal;
 
     return self::update($recurringContributionID, $update);
   }
@@ -439,11 +419,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'In Progress'
     );
 
-    $update['contribution_status_id'] = CRM_Utils_Array::value(
-      'contribution_status_id',
-      $update,
-      $inProgressOptVal
-    );
+    $update['contribution_status_id'] = $update['contribution_status_id'] ?? $inProgressOptVal;
 
     $reviveActivityType  = CRM_Core_PseudoConstant::getKey(
       'CRM_Activity_BAO_Activity',
@@ -484,16 +460,12 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     }
 
     if (isset($recurring_contribution)) {
-      $params['cycle_day'] = CRM_Utils_Array::value(
-        'cycle_day',
-        $params,
-        $recurring_contribution['cycle_day']
-      );
+      $params['cycle_day'] = $params['cycle_day'] ?? $recurring_contribution['cycle_day'];
     }
 
     // Defer payment start
 
-    $defer_payment_start = CRM_Utils_Array::value('defer_payment_start', $params, FALSE);
+    $defer_payment_start = $params['defer_payment_start'] ?? FALSE;
 
     if ($defer_payment_start && isset($params['membership_id'])) {
       $latest_contribution = CRM_Contract_RecurringContribution::getLatestContribution(
@@ -603,16 +575,16 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
         self::terminate($recurringContributionID);
     }
 
-    $defaultCampaign = CRM_Utils_Array::value('campaign_id', $oldRC, NULL);
+    $defaultCampaign = $oldRC['campaign_id'] ?? NULL;
 
     if (array_key_exists('campaign_id', $params) && empty($params['campaign_id'])) {
       // Remove invalid campaign IDs (GP-34548)
       $params['campaign_id'] = NULL;
     }
 
-    $cycleDay = CRM_Utils_Array::value('cycle_day', $params, $oldRC['cycle_day']);
-    $deferPaymentStart = CRM_Utils_Array::value('defer_payment_start', $params, TRUE);
-    $minDate = CRM_Utils_Array::value('start_date', $params, $oldRC['start_date']);
+    $cycleDay = $params['cycle_day'] ?? $oldRC['cycle_day'];
+    $deferPaymentStart = $params['defer_payment_start'] ?? TRUE;
+    $minDate = $params['start_date'] ?? $oldRC['start_date'];
 
     $startDate = self::startDate([
       'cycle_day'           => $cycleDay,
@@ -621,18 +593,39 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'min_date'            => $minDate,
     ]);
 
-    $defaultShopperReference = $oldRC['processor_id'];
+    $params['contact_id'] = $params['contact_id'] ?? $oldRC['contact_id'];
 
-    if (
-      isset($params['payment_token_id'])
-      && $params['payment_token_id'] !== $oldRC['payment_token_id']
-    ) {
-      $defaultShopperReference = Api4\ContributionRecur::get(FALSE)
-        ->addWhere('payment_token_id', '=', $params['payment_token_id'])
-        ->addSelect('processor_id')
-        ->setLimit(1)
-        ->execute()
-        ->first()['processor_id'];
+    $defaultShopperReference = NULL;
+
+    // adyen details can be either:
+    // 1. not provided => use payment token linked to current RC
+    // 2. provided via explicit payment_token_id => re-use as-is and get processor_id from linked ContributionRecur
+    // 3. provided via new shopper_reference => create new PaymentToken
+
+    if (empty($params['payment_token_id']) && empty($params['shopper_reference'])) {
+      // 1. (will be handled as 2.)
+      $params['payment_token_id'] = $oldRC['payment_token_id'];
+    }
+
+    if (!empty($params['payment_token_id'])) {
+      // 2.
+      if ($oldRC['payment_token_id'] == $params['payment_token_id']) {
+        // prefer current ContributionRecur
+        $defaultShopperReference = $oldRC['processor_id'];
+      }
+      else {
+        $defaultShopperReference = Api4\ContributionRecur::get(FALSE)
+          ->addWhere('payment_token_id', '=', $params['payment_token_id'])
+          ->addSelect('processor_id')
+          ->setLimit(1)
+          ->execute()
+          ->first()['processor_id'];
+      }
+    }
+    else if (!empty($params['shopper_reference'])) {
+      // 3.
+      $paymentToken = self::createPaymentToken($params);
+      $params['payment_token_id'] = $paymentToken['id'];
     }
 
     $recurContribParamMapping = [
@@ -649,7 +642,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       'next_sched_contribution_date' => [ NULL                     , FALSE    , $startDate->format('Y-m-d')      ],
       'payment_processor_id'         => [ 'payment_processor_id'   , FALSE    , $oldRC['payment_processor_id']   ],
       'payment_token_id'             => [ 'payment_token_id'       , FALSE    , $oldRC['payment_token_id']       ],
-      'processor_id'                 => [ NULL                     , FALSE    , $defaultShopperReference         ],
+      'processor_id'                 => [ 'shopper_reference'      , FALSE    , $defaultShopperReference         ],
       'start_date'                   => [ NULL                     , FALSE    , $startDate->format('Y-m-d')      ],
       'trxn_id'                      => [ NULL                     , FALSE    , NULL                             ],
     ];
@@ -663,7 +656,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
       ->execute()
       ->first();
 
-    $updateParams['payment_instrument_id'] = $existingRC['payment_instrument_id'];
+    $updateParams['payment_instrument_id'] = $params['payment_instrument_id'] ?? $existingRC['payment_instrument_id'];
 
     $newRecurringContribution = civicrm_api4('ContributionRecur', 'create', [
       'checkPermissions' => FALSE,
@@ -677,7 +670,7 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     $result = [];
 
     foreach ($mapping as $key => $spec) {
-      list($originalName, $isRequired, $default) = $spec;
+      [$originalName, $isRequired, $default] = $spec;
 
       if (is_null($originalName)) {
         $result[$key] = $default;
@@ -746,6 +739,27 @@ class CRM_Contract_PaymentAdapter_Adyen implements CRM_Contract_PaymentAdapter {
     return $paymentTokens;
   }
 
-}
+  /**
+   * @throws \CRM_Core_Exception
+   * @throws \Civi\API\Exception\NotImplementedException
+   */
+  private static function createPaymentToken(array $params) {
+    $paymentTokenParamMapping = [
+      //                         | original name              | required | default |
+      'billing_first_name'    => [ 'billing_first_name'       , FALSE    , NULL    ],
+      'billing_last_name'     => [ 'billing_last_name'        , FALSE    , NULL    ],
+      'contact_id'            => [ 'contact_id'               , TRUE     , NULL    ],
+      'email'                 => [ 'email'                    , FALSE    , NULL    ],
+      'expiry_date'           => [ 'expiry_date'              , FALSE    , NULL    ],
+      'ip_address'            => [ 'ip_address'               , FALSE    , NULL    ],
+      'masked_account_number' => [ 'account_number'           , FALSE    , NULL    ],
+      'payment_processor_id'  => [ 'payment_processor_id'     , TRUE     , NULL    ],
+      'token'                 => [ 'stored_payment_method_id' , TRUE     , NULL    ],
+    ];
+    return civicrm_api4('PaymentToken', 'create', [
+      'checkPermissions' => FALSE,
+      'values'           => self::mapParameters($paymentTokenParamMapping, $params),
+    ])->first();
+  }
 
-?>
+}
