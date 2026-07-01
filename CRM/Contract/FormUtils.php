@@ -40,7 +40,7 @@ class CRM_Contract_FormUtils {
     $id = CRM_Contract_Utils::getCustomFieldId($name);
 
     // Get the custom data that was sent to the template
-    $details = $this->form->get_template_vars('viewCustomData');
+    $details = $this->form->getTemplateVars('viewCustomData');
 
     // We need to know the id for the row of the custom group table that
     // this custom data is stored in
@@ -85,7 +85,7 @@ class CRM_Contract_FormUtils {
       'custom_group_id' => 'membership_payment',
       'name' => 'membership_recurring_contribution',
     ]);
-    $details = $this->form->get_template_vars('viewCustomData');
+    $details = $this->form->getTemplateVars('viewCustomData');
     $customGroupTableId = key($details[$result['custom_group_id']]);
     $recContributionId = $details[$result['custom_group_id']][$customGroupTableId]['fields'][$result['id']]['data'];
 
