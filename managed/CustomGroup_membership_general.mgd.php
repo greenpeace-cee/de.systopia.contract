@@ -145,4 +145,28 @@ return [
       ],
     ],
   ],
+  [
+    'name' => 'CustomGroup_membership_general_CustomField_membership_engagement_campaign',
+    'entity' => 'CustomField',
+    'cleanup' => 'never',
+    'update' => 'always',
+    'params' => [
+      'version' => 4,
+      'values' => [
+        'custom_group_id.name' => 'membership_general',
+        'name' => 'membership_engagement_campaign',
+        'label' => E::ts('Membership Engagement Campaign'),
+        'data_type' => 'EntityReference',
+        'html_type' => 'Autocomplete-Select',
+        'is_searchable' => TRUE,
+        'column_name' => 'membership_engagement_campaign',
+        'filter' => 'parent_id.name=ENGAGE',
+        'fk_entity' => 'Campaign',
+      ],
+      'match' => [
+        'custom_group_id',
+        'name',
+      ],
+    ],
+  ],
 ];

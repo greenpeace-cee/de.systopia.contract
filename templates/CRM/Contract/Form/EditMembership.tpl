@@ -31,6 +31,12 @@
         <div class="clear"></div>
     </div>
 
+    <div class="crm-section form-field" id="membership_engagement_campaign">
+        <div class="label">{$form.membership_engagement_campaign.label}</div>
+        <div class="content">{$form.membership_engagement_campaign.html}</div>
+        <div class="clear"></div>
+    </div>
+
     <div class="crm-section form-field" id="membership_referrer">
         <div class="label">{$form.membership_referrer.label}</div>
         <div class="content">{$form.membership_referrer.html}</div>

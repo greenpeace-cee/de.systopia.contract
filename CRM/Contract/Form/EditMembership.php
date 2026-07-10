@@ -17,6 +17,7 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
         'membership_general.membership_contract',
         'membership_general.membership_dialoger',
         'membership_general.membership_reference',
+        'membership_general.membership_engagement_campaign',
         'membership_referral.membership_referrer',
         'start_date',
         'status_id',
@@ -76,6 +77,13 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
       [ 'entity' => 'Contact' ]
     );
 
+    CRM_Core_BAO_CustomField::addQuickFormElement(
+      $this,
+      'membership_engagement_campaign',
+      CRM_Core_BAO_CustomField::getFieldByName('membership_general.membership_engagement_campaign')['id'],
+      FALSE
+    );
+
     // Contract file (contract_file)
     $this->add('file', 'contract_file', ts('Contract file'));
 
@@ -112,6 +120,7 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
       'membership_contract'  => $membership['membership_general.membership_contract'],
       'membership_dialoger'  => $membership['membership_general.membership_dialoger'],
       'membership_reference' => $membership['membership_general.membership_reference'],
+      'membership_engagement_campaign' => $membership['membership_general.membership_engagement_campaign'],
       'membership_referrer'  => $membership['membership_referral.membership_referrer'],
       'start_date'           => $membership['start_date'],
     ]);
@@ -144,6 +153,7 @@ class CRM_Contract_Form_EditMembership extends CRM_Core_Form {
       ->addValue('membership_general.membership_contract',  $submitted['membership_contract'] )
       ->addValue('membership_general.membership_dialoger',  $submitted['membership_dialoger'] )
       ->addValue('membership_general.membership_reference', $submitted['membership_reference'])
+      ->addValue('membership_general.membership_engagement_campaign', $submitted['membership_engagement_campaign'])
       ->addValue('membership_referral.membership_referrer', $submitted['membership_referrer'] )
       ->addValue('start_date',                              $submitted['start_date']          )
       ->addValue('status_id',                               $membership['status_id']          );
