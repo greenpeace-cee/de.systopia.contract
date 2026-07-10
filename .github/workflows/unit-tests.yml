@@ -77,6 +77,9 @@ jobs:
           git clone https://github.com/Project60/org.project60.sepa.git "$EXT_DIR/org.project60.sepa"
           git clone https://github.com/greenpeace-cee/adyen.git "$EXT_DIR/adyen"
           git clone https://github.com/greenpeace-cee/mjwshared.git "$EXT_DIR/mjwshared"
+          composer install --working-dir="$EXT_DIR/org.project60.banking"
+          composer install --working-dir="$EXT_DIR/org.project60.sepa"
+          composer install --working-dir="$EXT_DIR/adyen"
           cv en de.systopia.contract
       - id: run-tests
         name: "Run Tests"
