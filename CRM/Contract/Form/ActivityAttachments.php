@@ -10,40 +10,14 @@ class CRM_Contract_Form_ActivityAttachments extends CRM_Core_Form {
     if (empty($activity_id)) throw new CRM_Core_Exception('Missing activity ID');
 
     $this->set('activity_id', $activity_id);
-
-    $activity = Api4\Activity::get(FALSE)
-      ->addSelect(
-        'id',
-        'GROUP_CONCAT(file.id) AS file_ids',
-        'GROUP_CONCAT(file.file_name) AS file_names',
-        'GROUP_CONCAT(file.url) AS file_urls'
-      )
-      ->addJoin(
-        'EntityFile AS entity_file',
-        'LEFT',
-        ['entity_file.entity_id', '=', $activity_id],
-        ['entity_file.entity_table', '=', "'civicrm_activity'"]
-      )
-      ->addJoin(
-        'File AS file',
-        'LEFT',
-        ['file.id', '=', 'entity_file.file_id']
-      )
-      ->addWhere('id', '=', $activity_id)
-      ->addGroupBy('id')
-      ->execute()
-      ->first();
-
     $files = [];
 
-    if (is_array($activity['file_ids'])) {
-      foreach ($activity['file_ids'] as $i => $file_id) {
-        $files[] = [
-          'id'   => $file_id,
-          'name' => $activity['file_names'][$i],
-          'url'  => $activity['file_urls'][$i],
-        ];
-      }
+    foreach (CRM_Core_BAO_File::getEntityFile('civicrm_activity', $activity_id) as $file) {
+      $files[] = [
+        'id'   => $file['fileID'],
+        'name' => $file['cleanName'],
+        'url' => $file['url']
+      ];
     }
 
     $this->assign('files', $files);
