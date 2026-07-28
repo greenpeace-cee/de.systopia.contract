@@ -409,6 +409,7 @@ class api_v3_Contract_StartDateTest extends api_v3_Contract_ContractTestBase {
           ->addValue('entity_id'   , $recurring_contribution['id'])
           ->addValue('entity_table', 'civicrm_contribution_recur')
           ->addValue('reference'   , bin2hex(random_bytes(8)))
+          ->addValue('status', 'FRST')
           ->execute()
           ->first();
 
