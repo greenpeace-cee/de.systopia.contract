@@ -149,7 +149,7 @@ class CRM_Contract_BAO_ContractPaymentLink extends CRM_Contract_DAO_ContractPaym
    * @param $page
    */
   public static function injectLinks(&$page) {
-    $contribution_recur = $page->getTemplate()->get_template_vars("recur");
+    $contribution_recur = $page->getTemplate()->getTemplateVars("recur");
     if (!empty($contribution_recur['id'])) {
       // gather some data
       $contribution_recur_id = (int) $contribution_recur['id'];
