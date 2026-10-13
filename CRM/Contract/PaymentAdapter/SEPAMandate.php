@@ -317,13 +317,8 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
         switch ($apiEndpoint) {
             case "Contract.create": {
                 $now = date("Y-m-d H:i:s");
-
-                $start_date = CRM_Utils_Date::processDate(
-                    $submitted["start_date"],
-                    null,
-                    null,
-                    "Y-m-d H:i:s"
-                );
+                $start_date = CRM_Utils_Date::processDate($submitted["start_date"], null, null, "Y-m-d H:i:s");
+                $join_date = CRM_Utils_Date::processDate($submitted["join_date"], null, null, "Y-m-d H:i:s");
 
                 $result = [
                     "payment_method.amount"             => CRM_Contract_Utils::formatMoney($submitted["amount"]),
@@ -331,7 +326,7 @@ class CRM_Contract_PaymentAdapter_SEPAMandate implements CRM_Contract_PaymentAda
                     "payment_method.creation_date"      => $now,
                     "payment_method.currency"           => CRM_Sepa_Logic_Settings::defaultCreditor()->currency,
                     "payment_method.cycle_day"          => $submitted["cycle_day"],
-                    "payment_method.date"               => $start_date,
+                    "payment_method.date"               => $join_date,
                     "payment_method.financial_type_id"  => 2, // = Member dues
                     "payment_method.frequency_interval" => 12 / (int) $submitted["frequency"],
                     "payment_method.frequency_unit"     => "month",
