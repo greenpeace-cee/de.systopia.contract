@@ -557,4 +557,21 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
       'entity_id' => $contract['membership_payment.membership_recurring_contribution'],
     ]);
   }
+
+  /**
+   * Assert the contract's only active payment link (if any) and its total number of links
+   *
+   * @param int $contract_id
+   * @param int|null $active_rc_id expected recurring contribution of the active link, NULL for none
+   * @param int $total expected number of links, including inactive ones
+   */
+  public function assertPaymentLinks($contract_id, $active_rc_id, $total) {
+    $links = $this->callAPISuccess('ContractPaymentLink', 'get', [
+      'contract_id' => $contract_id,
+      'options'     => ['limit' => 0],
+    ])['values'];
+    $active = array_column(array_filter($links, fn($link) => $link['is_active']), 'contribution_recur_id');
+    $this->assertEquals($active_rc_id ? [$active_rc_id] : [], $active, 'Unexpected active payment links');
+    $this->assertCount($total, $links, 'Unexpected number of payment links');
+  }
 }

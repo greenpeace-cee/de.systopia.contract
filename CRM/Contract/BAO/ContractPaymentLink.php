@@ -26,7 +26,7 @@ class CRM_Contract_BAO_ContractPaymentLink extends CRM_Contract_DAO_ContractPaym
     $params = array(
         'contract_id'           => $contract_id,
         'contribution_recur_id' => $contribution_recur_id,
-        '$is_active'            => $is_active ? 1 : 0,
+        'is_active'             => $is_active ? 1 : 0,
     );
 
     // set dates

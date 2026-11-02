@@ -47,6 +47,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       $this->assertEquals('Current', $contract['status_id:name']);
       $this->assertNotEmpty($contract['membership_payment.membership_recurring_contribution']);
       $this->assertNotEmpty($contract['membership_payment.cycle_day']);
+      $this->assertPaymentLinks($contract['id'], $contract['membership_payment.membership_recurring_contribution'], 1);
     }
   }
 
@@ -81,6 +82,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
 
     // make sure status is cancelled
     $this->assertEquals('Cancelled', $contract_changed2['status_id:name'], "The contract wasn't cancelled");
+    $this->assertPaymentLinks($contract['id'], NULL, 1);
 
     // make sure 'cancel_reason' of the associated recurring contribution is updated
     $recurringContributionId = $contract_changed2["membership_payment.membership_recurring_contribution"];
@@ -142,6 +144,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     // make sure status is current
     $this->assertEquals('Current', $contract_changed2['status_id:name'], "The contract isn't active");
     $this->assertEquals(240.00, $contract_changed2['membership_payment.membership_annual'], "The contract has the wrong amount");
+    $this->assertPaymentLinks($contract['id'], $contract_changed2['membership_payment.membership_recurring_contribution'], 2);
   }
 
   /**
@@ -181,6 +184,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
       $contract_changed2['membership_payment.membership_recurring_contribution'],
       'Recurring contribution should have remained the same'
     );
+    $this->assertPaymentLinks($contract['id'], $contract_changed2['membership_payment.membership_recurring_contribution'], 1);
   }
 
   /**
@@ -215,6 +219,7 @@ class CRM_Contract_BasicEngineTest extends CRM_Contract_ContractTestBase {
     // make sure status is cancelled
     $this->assertEquals('Current', $contract_revived['status_id:name'], "The contract wasn't revived");
     $this->assertEquals(240.00, $contract_revived['membership_payment.membership_annual'], "The contract has the wrong amount");
+    $this->assertPaymentLinks($contract['id'], $contract_revived['membership_payment.membership_recurring_contribution'], 2);
 
     // make sure membership_cancellation was cleared GP-12430
     $this->assertEmpty($contract_revived['membership_cancellation.membership_cancel_reason']);
