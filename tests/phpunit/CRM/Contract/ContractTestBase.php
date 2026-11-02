@@ -202,7 +202,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
       $contact  = $this->createContactWithRandomEmail();
       $new_type = $this->callAPISuccess('MembershipType', 'create', [
           'member_of_contact_id' => $contact['id'],
-          'financial_type_id'    => "1",
+          'financial_type_id'    => CRM_Contract_Utils::getFinancialTypeID('Donation'),
           'duration_unit'        => "year",
           'duration_interval'    => "1",
           'period_type'          => "rolling",
@@ -261,7 +261,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
       $params['amount'] = '120.00';
     }
     if (empty($params['financial_type_id'])) {
-      $params['financial_type_id'] = '1';
+      $params['financial_type_id'] = CRM_Contract_Utils::getFinancialTypeID('Donation');
     }
     if (empty($params['currency'])) {
       $params['currency'] = 'EUR';

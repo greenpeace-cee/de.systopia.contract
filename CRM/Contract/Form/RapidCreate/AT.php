@@ -314,7 +314,7 @@ class CRM_Contract_Form_RapidCreate_AT extends CRM_Core_Form {
       'iban'               => $submitted['iban'],
       // 'source'             => ??
       'campaign_id'        => $submitted['campaign_id'],
-      'financial_type_id'  => 2, // Membership Dues
+      'financial_type_id'  => CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_ContributionRecur', 'financial_type_id', 'Member Dues'),
       'frequency_unit'     => 'month',
       'cycle_day'          => $submitted['cycle_day'],
       'frequency_interval' => $frequency_interval,
