@@ -202,7 +202,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
       $contact  = $this->createContactWithRandomEmail();
       $new_type = $this->callAPISuccess('MembershipType', 'create', [
           'member_of_contact_id' => $contact['id'],
-          'financial_type_id'    => "1",
+          'financial_type_id'    => CRM_Contract_Utils::getFinancialTypeID('Donation'),
           'duration_unit'        => "year",
           'duration_interval'    => "1",
           'period_type'          => "rolling",
@@ -261,7 +261,7 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
       $params['amount'] = '120.00';
     }
     if (empty($params['financial_type_id'])) {
-      $params['financial_type_id'] = '1';
+      $params['financial_type_id'] = CRM_Contract_Utils::getFinancialTypeID('Donation');
     }
     if (empty($params['currency'])) {
       $params['currency'] = 'EUR';
@@ -556,5 +556,22 @@ class CRM_Contract_ContractTestBase extends TestCase implements HeadlessInterfac
       'entity_table' => 'civicrm_contribution_recur',
       'entity_id' => $contract['membership_payment.membership_recurring_contribution'],
     ]);
+  }
+
+  /**
+   * Assert the contract's only active payment link (if any) and its total number of links
+   *
+   * @param int $contract_id
+   * @param int|null $active_rc_id expected recurring contribution of the active link, NULL for none
+   * @param int $total expected number of links, including inactive ones
+   */
+  public function assertPaymentLinks($contract_id, $active_rc_id, $total) {
+    $links = $this->callAPISuccess('ContractPaymentLink', 'get', [
+      'contract_id' => $contract_id,
+      'options'     => ['limit' => 0],
+    ])['values'];
+    $active = array_column(array_filter($links, fn($link) => $link['is_active']), 'contribution_recur_id');
+    $this->assertEquals($active_rc_id ? [$active_rc_id] : [], $active, 'Unexpected active payment links');
+    $this->assertCount($total, $links, 'Unexpected number of payment links');
   }
 }

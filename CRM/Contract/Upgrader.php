@@ -8,6 +8,8 @@
 | http://www.systopia.de/                                      |
 +--------------------------------------------------------------*/
 
+use CRM_Contract_ExtensionUtil as E;
+
 /**
  * Collection of upgrade steps.
  */
@@ -16,10 +18,6 @@ class CRM_Contract_Upgrader extends CRM_Extension_Upgrader_Base {
   // By convention, functions that look like "function upgrade_NNNN()" are
   // upgrade tasks. They are executed in order (like Drupal's hook_update_N).
 
-
-  public function install() {
-    $this->executeSqlFile('sql/contract.sql');
-  }
 
   public function enable() {
     // create sub-type 'Dialoger'
@@ -40,7 +38,7 @@ class CRM_Contract_Upgrader extends CRM_Extension_Upgrader_Base {
 
   public function upgrade_1370() {
     $this->ctx->log->info('Applying update 1370');
-    $this->executeSqlFile('sql/contract.sql');
+    E::schema()->createEntityTable('upgrade/schema/1370-ContractPaymentLink.entityType.php');
     return TRUE;
   }
 
@@ -94,6 +92,28 @@ class CRM_Contract_Upgrader extends CRM_Extension_Upgrader_Base {
     $this->ctx->log->info('Applying update 1500');
     $customData = new CRM_Contract_CustomData('de.systopia.contract');
     $this->convertLegacyUpdates();
+    return TRUE;
+  }
+
+  public function upgrade_1700() {
+    $this->ctx->log->info('Applying update 1700');
+    $table = 'civicrm_contract_payment';
+    $contractFk = 'FK_' . CRM_Core_BAO_SchemaHandler::getIndexName($table, 'contract_id');
+    $recurFk = 'FK_' . CRM_Core_BAO_SchemaHandler::getIndexName($table, 'contribution_recur_id');
+    // Replace legacy FK with the name generated for new installs
+    CRM_Core_BAO_SchemaHandler::safeRemoveFK($table, 'FK_civicrm_contract_payment_id');
+    if (!CRM_Core_BAO_SchemaHandler::checkFKExists($table, $contractFk)) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE `{$table}` ADD CONSTRAINT `{$contractFk}` FOREIGN KEY (`contract_id`) REFERENCES `civicrm_membership` (`id`) ON DELETE CASCADE", [], TRUE, NULL, FALSE, FALSE);
+    }
+    if (!CRM_Core_BAO_SchemaHandler::checkFKExists($table, $recurFk)) {
+      $orphans = CRM_Core_DAO::executeQuery("
+        DELETE p FROM `{$table}` p
+        LEFT JOIN civicrm_contribution_recur r ON r.id = p.contribution_recur_id
+        WHERE r.id IS NULL
+      ")->affectedRows();
+      $this->ctx->log->info("Deleted {$orphans} payment links without a recurring contribution");
+      CRM_Core_DAO::executeQuery("ALTER TABLE `{$table}` ADD CONSTRAINT `{$recurFk}` FOREIGN KEY (`contribution_recur_id`) REFERENCES `civicrm_contribution_recur` (`id`) ON DELETE CASCADE", [], TRUE, NULL, FALSE, FALSE);
+    }
     return TRUE;
   }
 

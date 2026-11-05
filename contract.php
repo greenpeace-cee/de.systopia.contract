@@ -373,16 +373,3 @@ function contract_civicrm_alterAPIPermissions($entity, $action, &$params, &$perm
     $permissions[$entity][$action] = ['access CiviMember'];
   }
 }
-
-/**
- * Entity Types Hook
- * @param $entityTypes
- */
-function contract_civicrm_entityTypes(&$entityTypes) {
-  // add my DAO's
-  $entityTypes[] = array(
-      'name' => 'ContractPaymentLink',
-      'class' => 'CRM_Contract_DAO_ContractPaymentLink',
-      'table' => 'civicrm_contract_payment',
-  );
-}

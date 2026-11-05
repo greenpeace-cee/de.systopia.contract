@@ -167,7 +167,7 @@ class CRM_Contract_PaymentAdapter_EFT implements CRM_Contract_PaymentAdapter {
                     "payment_method.create_date"        => $now,
                     "payment_method.currency"           => $submitted["currency"],
                     "payment_method.cycle_day"          => $submitted["cycle_day"],
-                    "payment_method.financial_type_id"  => 2, // = Member dues
+                    "payment_method.financial_type_id"  => CRM_Core_PseudoConstant::getKey("CRM_Contribute_BAO_ContributionRecur", "financial_type_id", "Member Dues"),
                     "payment_method.frequency_interval" => 12 / (int) $submitted["frequency"],
                     "payment_method.frequency_unit"     => "month",
                     "payment_method.validation_date"    => $now,
